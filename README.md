@@ -4,13 +4,15 @@ A **MiLB-first, player-first discovery and development platform** built around â
 
 ## Current development preview
 
-This is the first product-direction redesign of the original Next.js foundation. The homepage starts with a compact performance table rather than marketing or market tiles. The shared navigation covers Home, Players, Organizations, Leagues, Data, Screener, and News. Player pages connect statistics, assignment history, trajectory, and related stories. `/teams` and existing team/player IDs remain available; `/market` redirects to the homepage.
+The MiLB-first foundation now has a light, editorial baseball front page: a compact game strip, two lead stories, visual highlight previews, Trending Prospects, Top Prospects, and recorded fictional call-ups. Detailed research tables and filters remain on the inner pages. The shared navigation covers Home, Players, Organizations, Leagues, Data, Screener, and News. Player pages connect statistics, assignment history, trajectory, and related stories. `/teams` and existing team/player IDs remain available; `/market` redirects to the homepage.
 
 **All players, parent organizations, affiliates, statistics, stories, assignments, Grades, and Momentum values are fictional.** The preview contains 18 stable demo players (including a two-way player), three invented parent organizations, 13 teams, five affiliated levels, and an AFL-style context. It represents a fictional snapshot ending October 24, 2026, not a real baseball schedule or live feed. No real player or club is assigned fabricated statistics.
 
+The homepage Trending Prospects widget uses the existing priority demo order with small 7D/14D/30D and level controls. Top Prospects is a separate illustrative overall-Grade list. Scores and editorial/media presentation fixtures live in `src/data/demo-home.ts`; they are never written to the database. Original local SVG baseball artwork stands in for approved imagery. Highlight links open explicit storyboard previews, not fake video players. The call-ups section reuses existing fictional affiliate promotions and their player-development links.
+
 ### Discovery modes and filters
 
-- **Prospect Priority** is the default, with **All Levels + 14D + All players**. Its hand-authored demo order highlights higher-level performance and developmental context.
+- On the detailed discovery pages, **Prospect Priority** is the default, with **All Levels + 14D + All players**. Its hand-authored demo order highlights higher-level performance and developmental context.
 - **Pure Performance** uses a different hand-authored order. A Single-A performer can lead ahead of AAA/AA players.
 - Levels/contexts: AAA, AA, High-A, Single-A, Rookie/Complex, and Arizona Fall League.
 - Timeframes: 7D, 14D, 30D, and Season. Each selects an explicit fictional statistical snapshot and its independently authored order. These windows are **not calculated from game logs**. Season means the current playing-team stint; affiliated and AFL stats are not combined.
@@ -21,7 +23,7 @@ There is **no** Prospect Priority formula, Pure Performance formula, real Grade/
 
 ## Stack and local setup
 
-Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, PostgreSQL/Drizzle, Recharts, Zod, and ESLint. No new application dependencies were needed for the redesign. The visual system uses dark charcoal, restrained blue links, traditional statistical tables, and system sans-serif fonts.
+Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, PostgreSQL/Drizzle, Recharts, Zod, and ESLint. No new application dependencies were needed for the redesign. The shared visual system uses white backgrounds, light-gray separators, restrained teal links, compact system sans-serif typography, and traditional baseball-stat tables. The homepage is editorial rather than a full leaderboard.
 
 Node.js 22+ and npm are required; Node 24 was used for validation. PostgreSQL is **optional** for the UI.
 
@@ -101,4 +103,4 @@ The demo remains compatible with Vercel and needs no credentials. Database-backe
 
 Next: research legitimate MiLB/AFL APIs, datasets, or licensed feeds, then define provider contracts and identity-resolution requirements. Do not start real ingestion or ranking methodology implicitly as part of this UI phase. NCAA/amateur coverage is a potential later expansion.
 
-See [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), and [Redesign review](docs/REDESIGN.md).
+See [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Product redesign review](docs/REDESIGN.md), and [Current visual design](docs/VISUAL-DESIGN.md).

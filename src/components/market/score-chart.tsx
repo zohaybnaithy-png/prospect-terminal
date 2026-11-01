@@ -43,24 +43,24 @@ export function ScoreChart({
             data={observations}
             margin={{ top: 20, right: 20, bottom: 0, left: -16 }}
           >
-            <CartesianGrid stroke="#34383d" vertical={false} />
+            <CartesianGrid stroke="#dce5e3" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={shortDate}
-              tick={{ fill: "#a2a7ae", fontSize: 11 }}
+              tick={{ fill: "#637573", fontSize: 11 }}
               tickLine={false}
               minTickGap={30}
             />
             <YAxis
               domain={metric === "grade" ? [0, 100] : ["auto", "auto"]}
-              tick={{ fill: "#a2a7ae", fontSize: 11 }}
+              tick={{ fill: "#637573", fontSize: 11 }}
               tickLine={false}
             />
             <Tooltip
               labelFormatter={(label) => shortDate(String(label))}
               contentStyle={{
-                background: "#25282d",
-                border: "1px solid #51565e",
+                background: "#ffffff",
+                border: "1px solid #bacac7",
                 borderRadius: 0,
                 fontSize: 12,
               }}
@@ -69,7 +69,7 @@ export function ScoreChart({
               type="linear"
               dataKey={metric}
               name={metric === "grade" ? "Prospect Grade" : "Momentum"}
-              stroke="#7faee8"
+              stroke="#236e70"
               strokeWidth={2}
               dot={{ r: 3 }}
               isAnimationActive={false}

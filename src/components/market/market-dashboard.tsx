@@ -1,125 +1,77 @@
 import Link from "next/link";
 import { prospectRepository } from "@/services/prospects";
-import { discoverDemoPlayers, defaultFilters } from "@/services/discovery";
-import { PerformanceExplorer } from "@/components/discovery/performance-explorer";
-import { SectionTitle, Momentum } from "@/components/ui/primitives";
+import { homeHeadlines, demoHighlights } from "@/data/demo-home";
+import { DEMO_AS_OF } from "@/data/demo";
 import {
-  PlayerLink,
-  TeamLink,
-  ContextLink,
-} from "@/components/ui/entity-links";
+  HeadlineCard,
+  HighlightCard,
+  TopProspects,
+  RecentCallups,
+} from "@/components/home/editorial";
+import { TrendingProspects } from "@/components/home/trending-prospects";
 import { NewsList } from "./news-list";
-import { shortDate } from "@/lib/format";
 export async function MarketDashboard() {
   const catalog = await prospectRepository.catalog();
-  const risers = [...catalog.players]
-    .sort((a, b) => b.momentum - a.momentum)
-    .slice(0, 4);
-  const afl = discoverDemoPlayers(catalog, {
-    ...defaultFilters,
-    context: "afl",
-    ranking: "performance",
-    window: "7d",
-  });
-  const events = catalog.memberships
-    .filter((m) => m.assignmentType !== "assignment")
-    .sort((a, b) => b.startsOn.localeCompare(a.startsOn))
-    .slice(0, 4);
   return (
     <>
-      <div className="home-heading">
-        <div>
-          <h1>Minor league discovery</h1>
-          <p>
-            Recent performers, development movement, and players worth a closer
-            look.
-          </p>
+      <h1 className="sr-only">
+        Prospect Terminal: prospect performance, development, news and
+        highlights
+      </h1>
+      <div className="homepage-grid">
+        <div className="homepage-editorial">
+          <section aria-labelledby="latest-title" className="latest-headlines">
+            <div className="home-section-heading">
+              <h2 id="latest-title">Latest Prospect News</h2>
+              <Link href="/news">All news →</Link>
+            </div>
+            <div className="headline-grid">
+              {homeHeadlines.map((item) => (
+                <HeadlineCard
+                  key={item.newsId}
+                  {...item}
+                  story={catalog.news.find((n) => n.id === item.newsId)!}
+                  catalog={catalog}
+                />
+              ))}
+            </div>
+          </section>
+          <section
+            aria-labelledby="highlights-title"
+            className="recent-highlights"
+          >
+            <div className="home-section-heading">
+              <h2 id="highlights-title">Recent Highlights</h2>
+              <Link href="/highlights">All previews →</Link>
+            </div>
+            <div className="highlight-grid">
+              {demoHighlights.map((highlight) => (
+                <HighlightCard
+                  key={highlight.id}
+                  highlight={highlight}
+                  catalog={catalog}
+                />
+              ))}
+            </div>
+          </section>
+          <RecentCallups catalog={catalog} />
         </div>
-        <Link href="/data">Full statistical leaderboards →</Link>
-      </div>
-      <PerformanceExplorer catalog={catalog} />
-      <div className="home-columns">
-        <section>
-          <SectionTitle
-            title="Biggest demo risers"
-            action={<Link href="/screener">Open screener →</Link>}
-          />
-          <p className="small-muted">
-            Illustrative Momentum, not a calculated ranking.
+        <aside className="homepage-sidebar" aria-label="Prospect intelligence">
+          <TrendingProspects catalog={catalog} />
+          <TopProspects catalog={catalog} />
+          <p className="home-fine-print">
+            Demo snapshot: {DEMO_AS_OF}. All ratings, performances, scores,
+            stories, and artwork are fictional.
           </p>
-          <ol className="compact-player-list">
-            {risers.map((p) => (
-              <li key={p.id}>
-                <PlayerLink player={p} />
-                <ContextLink
-                  context={catalog.contexts.find(
-                    (c) =>
-                      c.id ===
-                      catalog.teams.find((t) => t.id === p.teamId)!.contextId,
-                  )!}
-                />
-                <Momentum value={p.momentum} />
-              </li>
-            ))}
-          </ol>
-        </section>
-        <section>
-          <SectionTitle
-            title="Arizona Fall League"
-            action={<Link href="/leagues/afl">AFL performers →</Link>}
-          />
-          <p className="small-muted">
-            Pure Performance · 7D · fictional fall assignments
-          </p>
-          <ol className="compact-player-list">
-            {afl.map((p) => (
-              <li key={p.id}>
-                <PlayerLink player={p} />
-                <TeamLink
-                  team={catalog.teams.find((t) => t.id === p.teamId)!}
-                />
-                <span>{p.position}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-        <section>
-          <SectionTitle title="Development wire" />
-          <ul className="transaction-list">
-            {events.map((m) => {
-              const p = catalog.players.find((p) => p.id === m.playerId)!;
-              const t = catalog.teams.find((t) => t.id === m.teamId)!;
-              return (
-                <li key={m.id}>
-                  <time dateTime={m.startsOn}>{shortDate(m.startsOn)}</time>
-                  <div>
-                    <PlayerLink player={p} />
-                    <p>
-                      {m.assignmentType === "afl-assignment"
-                        ? "Fall assignment"
-                        : "Promotion"}{" "}
-                      · <TeamLink team={t} full />
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        </aside>
       </div>
-      <section className="news-section">
-        <SectionTitle
-          title="Latest prospect news"
-          action={<Link href="/news">All news →</Link>}
-        />
-        <NewsList items={catalog.news.slice(0, 3)} catalog={catalog} />
+      <section className="home-more">
+        <div className="home-section-heading">
+          <h2>More from the Minors</h2>
+          <Link href="/leagues/afl">Explore the Arizona Fall League →</Link>
+        </div>
+        <NewsList items={catalog.news.slice(2)} catalog={catalog} />
       </section>
-      <p className="about-note">
-        <strong>About Prospect Terminal.</strong> A player-first home for
-        discovering who is performing, following development, and exploring the
-        context behind the numbers. This preview uses fictional data; legitimate
-        MiLB/AFL data research comes next.
-      </p>
     </>
   );
 }

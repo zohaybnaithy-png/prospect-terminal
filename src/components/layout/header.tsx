@@ -19,15 +19,15 @@ export function Header() {
         <Link href="/" className="brand" aria-label="Prospect Terminal home">
           <span className="brand-monogram">PT</span>
           <span>
-            Prospect Terminal<small>Minor league discovery & development</small>
+            Prospect Terminal<small>Track baseball’s next generation.</small>
           </span>
         </Link>
         <form action="/players" className="global-search">
           <Search size={16} aria-hidden="true" />
           <input
             name="q"
-            aria-label="Search demo players"
-            placeholder="Search players…"
+            aria-label="Search player or team"
+            placeholder="Search player or team"
           />
           <button type="submit" aria-label="Submit player search">
             Search

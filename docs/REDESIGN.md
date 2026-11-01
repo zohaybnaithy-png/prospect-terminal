@@ -1,4 +1,6 @@
-# MiLB-first redesign review
+# MiLB-first product redesign review (previous visual phase)
+
+The MiLB/player-development architecture and discovery behavior below are retained. This document records the previous visual phase; the current light editorial homepage and viewport QA are described in [VISUAL-DESIGN.md](VISUAL-DESIGN.md).
 
 ## User experience
 

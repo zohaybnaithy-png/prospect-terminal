@@ -2,9 +2,11 @@
 
 ## Product and read-model boundaries
 
-Prospect Terminal is MiLB-first and player-first: discovery → player → performance/development → context. The existing App Router, strict TypeScript, Drizzle/PostgreSQL core, stable UUIDs, lazy database client, and explicit demo repository remain. The UI is a dense baseball information site rather than a financial-market terminal.
+Prospect Terminal is MiLB-first and player-first: discovery → player → performance/development → context. The existing App Router, strict TypeScript, Drizzle/PostgreSQL core, stable UUIDs, lazy database client, and explicit demo repository remain. The UI uses a light editorial baseball front page and compact statistical research pages.
 
-Server pages load serializable read models through `ProspectRepository`. `catalog()` supplies the small fictional universe; no database connection is made during rendering. Search/filter state and sortable player tables live in client components. The trajectory chart is the other main interactive island. No production fallback silently converts real-data failures into demo data, and adding DATABASE_URL does not switch the UI source.
+Server pages load serializable read models through `ProspectRepository`. `catalog()` supplies the small fictional universe; no database connection is made during rendering. The homepage is composed from small editorial components: ScoreStrip, HeadlineCard, TrendingProspects, TopProspects, HighlightCard, and RecentCallups. Only the trending timeframe/context controls require a homepage client boundary. Presentation-only scores, story image references, and highlight storyboards are isolated in `src/data/demo-home.ts`; they do not extend backend contracts or change memberships. Highlights link to `/highlights` previews with an explicit no-footage notice.
+
+Search/filter state and sortable player tables live in client components. The trajectory chart is the other main interactive island. No production fallback silently converts real-data failures into demo data, and adding DATABASE_URL does not switch the UI source.
 
 `DataTable<T>` is a presentation-only primitive usable from server and client compositions. `PlayerTable` adds optional column sorting for identity, age, statistics, Grade, and Momentum. Numeric alignment, sticky headers, explicit captions, focusable horizontal scrolling, restrained hover states, and shared entity-link components make the same entities navigable everywhere. Mobile tables retain their information and scroll; there is no decorative sparkline or hidden statistical column system.
 

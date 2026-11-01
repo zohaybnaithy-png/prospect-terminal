@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ScoreStrip } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -20,9 +21,10 @@ export default function RootLayout({
           Skip to content
         </a>
         <Header />
+        <ScoreStrip />
         <div className="demo-ribbon">
-          <strong>DEMO</strong> All players, organizations, teams, statistics,
-          news, and scores are fictional. No live data or ranking algorithms.
+          <strong>DEMO</strong> Fictional players, organizations, teams, scores
+          & stories. No live data.
         </div>
         <main id="main" className="main-shell">
           {children}
@@ -32,6 +34,7 @@ export default function RootLayout({
           <span>MiLB-first · Player-first · Development preview</span>
           <Link href="/teams">Affiliate directory</Link>
           <Link href="/data">Statistical data</Link>
+          <Link href="/highlights">Highlight previews</Link>
         </footer>
       </body>
     </html>

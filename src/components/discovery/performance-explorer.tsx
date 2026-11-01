@@ -50,7 +50,7 @@ export function PerformanceExplorer({
   catalog,
   initial = {},
   variant = "discovery",
-  title = "Who’s balling out?",
+  title = "Recent prospect performance",
   lockedContext = false,
 }: {
   catalog: Catalog;
