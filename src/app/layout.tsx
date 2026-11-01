@@ -4,11 +4,11 @@ import { Header } from "@/components/layout/header";
 import "./globals.css";
 export const metadata: Metadata = {
   title: {
-    default: "Prospect Terminal | The next wave",
+    default: "Prospect Terminal | MiLB discovery",
     template: "%s | Prospect Terminal",
   },
   description:
-    "A baseball prospect intelligence workspace. Foundation preview using entirely fictional development data.",
+    "Discover minor league performers and follow player development. Fictional demonstration data; no live statistics or scoring models.",
 };
 export default function RootLayout({
   children,
@@ -21,22 +21,17 @@ export default function RootLayout({
         </a>
         <Header />
         <div className="demo-ribbon">
-          <span className="status-dot" />
-          <strong>DEVELOPMENT PREVIEW</strong>
-          <span className="ribbon-divider">/</span>
-          <span>Fictional players, teams, stats & scores. No live data.</span>
+          <strong>DEMO</strong> All players, organizations, teams, statistics,
+          news, and scores are fictional. No live data or ranking algorithms.
         </div>
         <main id="main" className="main-shell">
           {children}
         </main>
         <footer className="site-footer">
-          <Link href="/" className="footer-brand">
-            PROSPECT TERMINAL
-          </Link>
-          <span>Built for the next wave.</span>
-          <span className="footer-note">
-            FOUNDATION v0.1 <span>·</span> DEMO DATA ONLY
-          </span>
+          <Link href="/">Prospect Terminal</Link>
+          <span>MiLB-first · Player-first · Development preview</span>
+          <Link href="/teams">Affiliate directory</Link>
+          <Link href="/data">Statistical data</Link>
         </footer>
       </body>
     </html>

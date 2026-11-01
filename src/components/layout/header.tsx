@@ -1,62 +1,58 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ArrowUpRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 const links = [
-  ["Market", "/market"],
+  ["Home", "/"],
   ["Players", "/players"],
-  ["Teams", "/teams"],
+  ["Organizations", "/organizations"],
+  ["Leagues", "/leagues"],
+  ["Data", "/data"],
   ["Screener", "/screener"],
   ["News", "/news"],
 ];
 export function Header() {
-  const pathname = usePathname();
+  const path = usePathname();
   return (
     <header className="site-header">
-      <div className="header-inner">
+      <div className="header-top">
         <Link href="/" className="brand" aria-label="Prospect Terminal home">
-          <span className="brand-icon">
-            <Activity size={24} strokeWidth={2.5} />
-          </span>
+          <span className="brand-monogram">PT</span>
           <span>
-            PROSPECT<span className="brand-sub">TERMINAL</span>
+            Prospect Terminal<small>Minor league discovery & development</small>
           </span>
         </Link>
-        <nav aria-label="Main navigation">
-          {links.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className={
-                pathname.startsWith(href) ||
-                (href === "/market" && pathname === "/")
-                  ? "active"
-                  : ""
-              }
-              aria-current={
-                pathname.startsWith(href) ||
-                (href === "/market" && pathname === "/")
-                  ? "page"
-                  : undefined
-              }
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
         <form action="/players" className="global-search">
-          <Search size={15} aria-hidden="true" />
+          <Search size={16} aria-hidden="true" />
           <input
             name="q"
             aria-label="Search demo players"
             placeholder="Search players…"
           />
-          <kbd>↵</kbd>
+          <button type="submit" aria-label="Submit player search">
+            Search
+          </button>
         </form>
-        <span className="header-edition">
-          NCAA D1 <ArrowUpRight size={13} />
-        </span>
       </div>
+      <nav aria-label="Main navigation">
+        {links.map(([label, href]) => {
+          const active =
+            href === "/"
+              ? path === "/" || path === "/market"
+              : path.startsWith(href) ||
+                (href === "/organizations" && path.startsWith("/teams"));
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={active ? "active" : ""}
+              aria-current={active ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
     </header>
   );
 }

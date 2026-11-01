@@ -11,3 +11,7 @@ export const shortDate = (date: string) =>
     day: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${date}T12:00:00Z`));
+export const ageOn = (birthDate: string, asOf: string) => {
+  const age = Number(asOf.slice(0, 4)) - Number(birthDate.slice(0, 4));
+  return age - (asOf.slice(5) < birthDate.slice(5) ? 1 : 0);
+};

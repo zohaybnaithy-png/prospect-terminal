@@ -1,228 +1,125 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  TrendingUp,
-  TrendingDown,
-  Zap,
-  Crosshair,
-  ChevronRight,
-} from "lucide-react";
-import { getMarketOverview, prospectRepository } from "@/services/prospects";
+import { prospectRepository } from "@/services/prospects";
+import { discoverDemoPlayers, defaultFilters } from "@/services/discovery";
+import { PerformanceExplorer } from "@/components/discovery/performance-explorer";
 import { SectionTitle, Momentum } from "@/components/ui/primitives";
-import { PlayerTable } from "./player-table";
-import { Spotlight } from "./spotlight";
+import {
+  PlayerLink,
+  TeamLink,
+  ContextLink,
+} from "@/components/ui/entity-links";
 import { NewsList } from "./news-list";
+import { shortDate } from "@/lib/format";
 export async function MarketDashboard() {
-  const [{ top, rising, falling }, teams, news] = await Promise.all([
-    getMarketOverview(),
-    prospectRepository.listTeams(),
-    prospectRepository.listNews(),
-  ]);
-  const spotlight = top[0];
-  const cards = [
-    {
-      label: "Top Prospects",
-      tag: "THE LEADERS",
-      Icon: Crosshair,
-      player: top[0],
-      value: String(top[0].grade),
-      unit: "GRADE",
-      href: "/players?sort=grade",
-      color: "mint",
-      caption: "Highest illustrative prospect grade",
-    },
-    {
-      label: "Trending Up",
-      tag: "POSITIVE MOVEMENT",
-      Icon: TrendingUp,
-      player: rising[0],
-      value: `+${rising[0].momentum.toFixed(1)}`,
-      unit: "MOMENTUM",
-      href: "/players?sort=momentum",
-      color: "mint",
-      caption: `${rising.length} demo players with positive momentum`,
-    },
-    {
-      label: "Trending Down",
-      tag: "NEGATIVE MOVEMENT",
-      Icon: TrendingDown,
-      player: falling[0],
-      value: falling[0].momentum.toFixed(1),
-      unit: "MOMENTUM",
-      href: "/players?sort=falling",
-      color: "coral",
-      caption: `${falling.length} demo players with negative momentum`,
-    },
-    {
-      label: "Breakouts",
-      tag: "ON THE RADAR",
-      Icon: Zap,
-      player: rising[1],
-      value: `+${rising[1].momentum.toFixed(1)}`,
-      unit: "MOMENTUM",
-      href: `/players/${rising[1].id}`,
-      color: "amber",
-      caption: "Editorial demo selection · no model yet",
-    },
-  ];
+  const catalog = await prospectRepository.catalog();
+  const risers = [...catalog.players]
+    .sort((a, b) => b.momentum - a.momentum)
+    .slice(0, 4);
+  const afl = discoverDemoPlayers(catalog, {
+    ...defaultFilters,
+    context: "afl",
+    ranking: "performance",
+    window: "7d",
+  });
+  const events = catalog.memberships
+    .filter((m) => m.assignmentType !== "assignment")
+    .sort((a, b) => b.startsOn.localeCompare(a.startsOn))
+    .slice(0, 4);
   return (
     <>
-      <div className="market-topline">
-        <span>THE COLLEGE PROSPECT MARKET</span>
-        <span>
-          <span className="status-dot" /> DEMO SNAPSHOT{" "}
-          <span className="topline-date">APR 18, 2026</span>
-        </span>
-      </div>
-      <section className="hero">
+      <div className="home-heading">
         <div>
-          <div className="hero-kicker">
-            <span /> BASEBALL’S NEXT GENERATION
-          </div>
-          <h1>
-            See the game.
-            <br />
-            <span>Find the next wave.</span>
-          </h1>
+          <h1>Minor league discovery</h1>
           <p>
-            A clearer view of tomorrow’s talent. Track prospects,
-            <br className="desktop-break" /> follow the movement, and look
-            beyond the box score.
+            Recent performers, development movement, and players worth a closer
+            look.
           </p>
-          <Link className="primary-link" href="/players">
-            Explore prospects <ArrowUpRight size={16} />
-          </Link>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="radar-grid" />
-          <div className="radar-diamond diamond-outer" />
-          <div className="radar-diamond diamond-inner" />
-          <div className="radar-line" />
-          <span className="radar-node node-one" />
-          <span className="radar-node node-two" />
-          <span className="radar-node node-three" />
-          <div className="radar-label label-one">
-            SCOUT THE SIGNAL<span>35.042° N / 89.982° W</span>
-          </div>
-          <div className="radar-label label-two">
-            THE FUTURE IS IN PLAY <ArrowUpRight size={12} />
-          </div>
-          <span className="radar-plus plus-one">+</span>
-          <span className="radar-plus plus-two">+</span>
-        </div>
-      </section>
-      <section className="overview-section">
-        <SectionTitle
-          title="Market overview"
-          action={
-            <span className="section-note">
-              NCAA DIVISION I <span> / </span> FICTIONAL DATA
-            </span>
-          }
-        />
-        <div className="overview-grid">
-          {cards.map(
-            ({
-              label,
-              tag,
-              Icon,
-              player,
-              value,
-              unit,
-              href,
-              color,
-              caption,
-            }) => (
-              <Link
-                href={href}
-                className={`overview-card ${color}`}
-                key={label}
-              >
-                <div className="card-top">
-                  <span>
-                    <Icon size={16} />
-                    {label}
-                  </span>
-                  <ArrowUpRight size={16} />
-                </div>
-                <div className="card-value">
-                  {value}
-                  <span>{unit}</span>
-                </div>
-                <div className="card-player">
-                  {player.name}
-                  <span>{tag}</span>
-                </div>
-                <p>{caption}</p>
-              </Link>
-            ),
-          )}
-        </div>
-      </section>
-      <div className="dashboard-grid">
-        <section className="panel trending-panel">
-          <div className="panel-heading">
-            <SectionTitle
-              eyebrow="FOLLOW THE MOVEMENT"
-              title="Trending players"
-              action={
-                <Link className="text-link" href="/players">
-                  All players <ArrowRight size={14} />
-                </Link>
-              }
-            />
-            <div className="table-subtitle">
-              <span className="tiny-label">MOMENTUM LEADERS</span>
-              <span>
-                {rising.length} RISING <span className="muted">/</span>{" "}
-                {falling.length} FALLING
-              </span>
-            </div>
-          </div>
-          <PlayerTable players={rising.slice(0, 7)} teams={teams} />
-          <div className="panel-bottom">
-            <span>All scores and statistics are illustrative.</span>
-            <Link href="/screener">
-              Open screener <ChevronRight size={13} />
-            </Link>
-          </div>
-        </section>
-        <section className="panel spotlight-panel">
-          <div className="panel-heading">
-            <SectionTitle
-              eyebrow="ONE TO WATCH"
-              title="Prospect spotlight"
-              action={<span className="pill">DEMO</span>}
-            />
-          </div>
-          <Spotlight
-            player={spotlight}
-            team={teams.find((t) => t.id === spotlight.teamId)!}
+        <Link href="/data">Full statistical leaderboards →</Link>
+      </div>
+      <PerformanceExplorer catalog={catalog} />
+      <div className="home-columns">
+        <section>
+          <SectionTitle
+            title="Biggest demo risers"
+            action={<Link href="/screener">Open screener →</Link>}
           />
+          <p className="small-muted">
+            Illustrative Momentum, not a calculated ranking.
+          </p>
+          <ol className="compact-player-list">
+            {risers.map((p) => (
+              <li key={p.id}>
+                <PlayerLink player={p} />
+                <ContextLink
+                  context={catalog.contexts.find(
+                    (c) =>
+                      c.id ===
+                      catalog.teams.find((t) => t.id === p.teamId)!.contextId,
+                  )!}
+                />
+                <Momentum value={p.momentum} />
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section>
+          <SectionTitle
+            title="Arizona Fall League"
+            action={<Link href="/leagues/afl">AFL performers →</Link>}
+          />
+          <p className="small-muted">
+            Pure Performance · 7D · fictional fall assignments
+          </p>
+          <ol className="compact-player-list">
+            {afl.map((p) => (
+              <li key={p.id}>
+                <PlayerLink player={p} />
+                <TeamLink
+                  team={catalog.teams.find((t) => t.id === p.teamId)!}
+                />
+                <span>{p.position}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section>
+          <SectionTitle title="Development wire" />
+          <ul className="transaction-list">
+            {events.map((m) => {
+              const p = catalog.players.find((p) => p.id === m.playerId)!;
+              const t = catalog.teams.find((t) => t.id === m.teamId)!;
+              return (
+                <li key={m.id}>
+                  <time dateTime={m.startsOn}>{shortDate(m.startsOn)}</time>
+                  <div>
+                    <PlayerLink player={p} />
+                    <p>
+                      {m.assignmentType === "afl-assignment"
+                        ? "Fall assignment"
+                        : "Promotion"}{" "}
+                      · <TeamLink team={t} full />
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </div>
       <section className="news-section">
         <SectionTitle
-          eyebrow="FROM AROUND THE DIAMOND"
-          title="The latest intelligence"
-          action={
-            <Link className="text-link" href="/news">
-              All news <ArrowRight size={14} />
-            </Link>
-          }
+          title="Latest prospect news"
+          action={<Link href="/news">All news →</Link>}
         />
-        <NewsList items={news} />
+        <NewsList items={catalog.news.slice(0, 3)} catalog={catalog} />
       </section>
-      <div className="foundation-note">
-        <span className="note-symbol">PT / 01</span>
-        <p>
-          <strong>A foundation for better prospect intelligence.</strong> This
-          is an early development preview. Real data, rankings, and analytics
-          are on the roadmap.
-        </p>
-        <Momentum value={8.4} />
-      </div>
+      <p className="about-note">
+        <strong>About Prospect Terminal.</strong> A player-first home for
+        discovering who is performing, following development, and exploring the
+        context behind the numbers. This preview uses fictional data; legitimate
+        MiLB/AFL data research comes next.
+      </p>
     </>
   );
 }

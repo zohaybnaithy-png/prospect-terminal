@@ -1,29 +1,33 @@
 # Roadmap
 
-## Phase 1 — Foundation
+## Phase 1 — MiLB-first product foundation and UI
 
-Implemented: Next.js App Router, TypeScript, Tailwind, ESLint, PostgreSQL/Drizzle schema and initial migration, lazy database utilities, fictional fixture/seed data, responsive shared layout, market dashboard, player and team routes, basic demo filtering, score-history visualization, and documentation. No real baseball data, authentication, or score algorithms.
+Implemented: player-first discovery, Prospect Priority/Pure Performance demo modes, timeframe/context/type controls, compact statistical tables, player pages, organization/affiliate context, league pages, Data, Screener, chronological news, and fictional development trajectories. Preserve the Next.js/Drizzle core, stable identities, historical memberships, and database-independent demo mode. No real discovery/scoring methodology exists yet.
 
-## Phase 2 — Real NCAA data ingestion
+## Phase 2 — Research legitimate MiLB/AFL data sources
 
-Select an authorized NCAA D1 data source and confirm licensing and coverage. Define validated provider adapters, normalized identity mapping, provenance, idempotent ingestion, historical season retention, and transfer handling. Test against provider fixtures and reconcile records before replacing demo mode. Add data freshness and failure reporting.
+Determine permitted APIs, public datasets, licensed feeds, and external-link options. Verify licensing, coverage, field definitions, historical availability, rate limits, and redistribution rights. Evaluate organization/affiliate/AFL identifiers and player identity coverage. Do not assume access to FanGraphs or Baseball Savant proprietary data.
 
-## Phase 3 — Player/team discovery
+## Phase 3 — Real game/season ingestion and identity resolution
 
-Connect repository read models to verified database records. Add paginated search, level/conference filters, deeper profiles, game logs, complete rosters, and richer screening. Preserve historical affiliations and test two-way players and transfers.
+Build provider contracts, Zod validation, normalized external-ID mappings, provenance, idempotent writes, and reconciliation workflows. Preserve assignments, parent-organization history, two-way roles, and separate regular/fall-team statistics. Quarantine ambiguous identities and test incremental updates. Select an explicit database repository only after validation.
 
-## Phase 4 — Prospect Grade + Momentum
+## Phase 4 — Real recent-performance discovery
 
-Define and validate separate quality and momentum methodologies. Evaluate calibration and bias, version models, retain historical observations, and make changes explainable with verified evidence. Backtest before presenting either metric as decision support.
+Implement verified game-window aggregation for 7D/14D/30D/season, date bounds, sample sizes, context eligibility, and data freshness. Establish trustworthy raw-stat leaderboards before interpreting developmental importance. Never mix missing data with fabricated fallback records.
 
-## Phase 5 — News/highlights
+## Phase 5 — Prospect Priority / Pure Performance methodology
 
-Add licensed news and highlight sources, multi-player story links, optional game-linked media, deduplication, provenance, and reliable editorial context. Validate outbound links and media handling.
+Design, document, and evaluate the two methods using real data. Establish developmental context, age/level treatment, sample reliability, and transparency. Independently define Prospect Grade and Momentum; version and backtest models, preserve history, and expose uncertainty. The current hand-authored demo arrays are not a starting mathematical formula.
 
-## Phase 6 — MiLB expansion
+## Phase 6 — Development trajectories, promotions, news, highlights
 
-Extend provider adapters to AAA, AA, High-A, Single-A, and Rookie classifications using the existing core entities. Resolve cross-level identities and movement without replacing player IDs or historical statistics. NCAA D2/D3, JUCO, and high school follow source availability and licensing.
+Connect sourced events and memberships to timelines and historical context. Add licensed news/highlights, transaction provenance, evidence-backed explanations, and more complete historical statistical views. Preserve organization identity during AFL assignments and support trades without replacing player IDs.
 
-## Phase 7 — Advanced analytics/ML
+## Phase 7 — Advanced analytics / scouting / ML
 
-Develop reproducible feature pipelines, evaluation datasets, uncertainty estimates, and model monitoring. Explore cohort comparisons and forecasting only after sufficient reliable historical data exists. Authentication, authorization, operational monitoring, and production access policies require their own scoped work before a public personalized product launch.
+Explore permitted tracking data, traditional scouting information, richer splits, comparisons, and evaluated modeling only when reliable coverage and appropriate rights exist. Do not fabricate unavailable measurements. Authentication, monitoring, and operational security need separately scoped work before personalized/public production features.
+
+## Phase 8 — Potential NCAA/amateur expansion
+
+Evaluate NCAA, JUCO, and high school sources and identity continuity with professional baseball. Reuse existing League/Level/Conference, memberships, stable players, and stat models. MiLB/AFL remain the immediate product focus.

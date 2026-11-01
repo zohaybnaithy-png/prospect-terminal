@@ -47,7 +47,16 @@ export const conferences = pgTable("conferences", {
   name: text("name").notNull(),
   ...timestamps(),
 });
+export const organizations = pgTable("organizations", {
+  id: id(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  abbreviation: text("abbreviation").notNull(),
+  ...timestamps(),
+});
 export const teams = pgTable("teams", {
+  // Fall-league teams can contain players from multiple parent organizations.
+  organizationId: uuid("organization_id").references(() => organizations.id),
   id: id(),
   levelId: uuid("level_id")
     .notNull()
@@ -72,6 +81,34 @@ export const players = pgTable("players", {
     .default({}),
   ...timestamps(),
 });
+// Organization affiliation is independent of temporary affiliate / fall assignments.
+export const playerOrganizationMemberships = pgTable(
+  "player_organization_memberships",
+  {
+    id: id(),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    startsOn: date("starts_on").notNull(),
+    endsOn: date("ends_on"),
+    ...timestamps(),
+  },
+  (t) => [
+    index("organization_membership_player").on(t.playerId),
+    uniqueIndex("organization_membership_stint").on(
+      t.playerId,
+      t.organizationId,
+      t.startsOn,
+    ),
+    check(
+      "organization_membership_dates",
+      sql`${t.endsOn} IS NULL OR ${t.endsOn} >= ${t.startsOn}`,
+    ),
+  ],
+);
 export const seasons = pgTable(
   "seasons",
   {
@@ -100,6 +137,7 @@ export const playerTeamMemberships = pgTable(
     startsOn: date("starts_on").notNull(),
     endsOn: date("ends_on"),
     jerseyNumber: text("jersey_number"),
+    assignmentType: text("assignment_type").notNull().default("assignment"),
     ...timestamps(),
   },
   (t) => [

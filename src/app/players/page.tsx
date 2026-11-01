@@ -1,33 +1,30 @@
 import type { Metadata } from "next";
 import { PageHeading } from "@/components/ui/primitives";
-import { PlayerExplorer } from "@/components/market/player-explorer";
+import { PerformanceExplorer } from "@/components/discovery/performance-explorer";
 import { prospectRepository } from "@/services/prospects";
 export const metadata: Metadata = { title: "Players" };
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string | string[] }>;
 }) {
-  const [players, teams, params] = await Promise.all([
-    prospectRepository.listPlayers(),
-    prospectRepository.listTeams(),
+  const [catalog, params] = await Promise.all([
+    prospectRepository.catalog(),
     searchParams,
   ]);
-  const sort = ["grade", "momentum", "falling"].includes(params.sort ?? "")
-    ? params.sort
-    : "grade";
+  const query = typeof params.q === "string" ? params.q : "";
   return (
     <>
       <PageHeading
-        title="The next wave"
-        description="Explore the development player universe. Every name, stat, and score below is fictional."
+        title="Player directory"
+        description="Search players, compare recent samples, and follow development across the minors. Fictional demo records only."
       />
-      <PlayerExplorer
-        key={`${params.q}-${sort}`}
-        players={players}
-        teams={teams}
-        initialQuery={typeof params.q === "string" ? params.q : ""}
-        initialSort={sort}
+      <PerformanceExplorer
+        key={query}
+        catalog={catalog}
+        initial={{ query }}
+        variant="directory"
+        title="Players & recent performance"
       />
     </>
   );

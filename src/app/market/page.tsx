@@ -1,6 +1,5 @@
-import type { Metadata } from "next";
-import { MarketDashboard } from "@/components/market/market-dashboard";
-export const metadata: Metadata = { title: "Market" };
+import { redirect } from "next/navigation";
+/** Keep existing bookmarks while making player-first discovery the home surface. */
 export default function MarketPage() {
-  return <MarketDashboard />;
+  redirect("/");
 }
