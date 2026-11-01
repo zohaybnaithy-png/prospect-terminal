@@ -146,25 +146,22 @@ h3 {
   color: #26383a;
   text-decoration: none;
 }
-.brand-monogram {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: #216769;
-  font: 700 19px var(--heading);
-  letter-spacing: -1px;
+.brand-logo {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  overflow: hidden;
 }
-.brand small {
-  display: block;
-  color: #626e6f;
-  font:
-    11px/1.25 Arial,
-    Helvetica,
-    sans-serif;
-  letter-spacing: 0;
-  margin-top: 4px;
+.brand-logo-image {
+  /* Crop only the supplied image's padding; retain its original aspect ratio. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 204%;
+  max-width: none;
+  height: auto;
+  transform: translate(-50%, -50%);
 }
 .global-search {
   display: flex;

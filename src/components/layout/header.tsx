@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
+import prospectLogo from "../../../prospect-terminal-logo.png";
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 const links = [
@@ -17,10 +19,16 @@ export function Header() {
     <header className="site-header">
       <div className="header-top">
         <Link href="/" className="brand" aria-label="Prospect Terminal home">
-          <span className="brand-monogram">PT</span>
-          <span>
-            Prospect Terminal<small>Track baseball’s next generation.</small>
+          <span className="brand-logo">
+            <Image
+              src={prospectLogo}
+              alt=""
+              className="brand-logo-image"
+              sizes="90px"
+              preload
+            />
           </span>
+          <span>Prospect Terminal</span>
         </Link>
         <form action="/players" className="global-search">
           <Search size={16} aria-hidden="true" />
