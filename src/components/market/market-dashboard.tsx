@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { prospectRepository } from "@/services/prospects";
 import { homeHeadlines, demoHighlights } from "@/data/demo-home";
 import { DEMO_AS_OF } from "@/data/demo";
@@ -8,7 +9,10 @@ import {
   TopProspects,
   RecentCallups,
 } from "@/components/home/editorial";
-import { TrendingProspects } from "@/components/home/trending-prospects";
+import {
+  AflRecentPerformersFallback,
+  AflRecentPerformersSection,
+} from "@/components/afl/home-performers";
 import { NewsList } from "./news-list";
 export async function MarketDashboard() {
   const catalog = await prospectRepository.catalog();
@@ -57,11 +61,16 @@ export async function MarketDashboard() {
           <RecentCallups catalog={catalog} />
         </div>
         <aside className="homepage-sidebar" aria-label="Prospect intelligence">
-          <TrendingProspects catalog={catalog} />
+          <Suspense fallback={<AflRecentPerformersFallback />}>
+            <AflRecentPerformersSection />
+          </Suspense>
           <TopProspects catalog={catalog} />
           <p className="home-fine-print">
-            Demo snapshot: {DEMO_AS_OF}. All ratings, performances, scores,
-            stories, and artwork are fictional.
+            AFL Recent Performers and the score strip use real 2026 Arizona Fall
+            League game data (MLB Stats API, development use). News, highlights,
+            call-ups and Top Prospects Grades are fictional demo placeholders
+            (snapshot {DEMO_AS_OF}); no Prospect Grade or Momentum model exists
+            yet.
           </p>
         </aside>
       </div>

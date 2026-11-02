@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ScoreStrip } from "@/components/home/score-strip";
+import { Suspense } from "react";
+import { ScoreStrip, ScoreStripFallback } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s | Prospect Terminal",
   },
   description:
-    "Discover minor league performers and follow player development. Fictional demonstration data; no live statistics or scoring models.",
+    "Discover minor league performers and follow player development. Real 2026 Arizona Fall League statistics alongside clearly labeled demo content; no scoring models yet.",
 };
 export default function RootLayout({
   children,
@@ -21,10 +22,14 @@ export default function RootLayout({
           Skip to content
         </a>
         <Header />
-        <ScoreStrip />
+        <Suspense fallback={<ScoreStripFallback />}>
+          <ScoreStrip />
+        </Suspense>
         <div className="demo-ribbon">
-          <strong>DEMO</strong> Fictional players, organizations, teams, scores
-          & stories. No live data.
+          <strong>AFL 2026</strong> Scores, the AFL player directory and player
+          profiles use real ingested Arizona Fall League data. News, highlights,
+          call-ups, Prospect Grades, Momentum and the fictional organizations
+          are demo placeholders.
         </div>
         <main id="main" className="main-shell">
           {children}

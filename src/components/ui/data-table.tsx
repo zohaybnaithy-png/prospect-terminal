@@ -19,6 +19,7 @@ export function DataTable<T>({
   caption,
   sort,
   onSort,
+  emptyMessage = "No demo players match these filters. Try a different level, role, or search.",
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -26,6 +27,7 @@ export function DataTable<T>({
   caption: string;
   sort?: TableSort | null;
   onSort?: (key: string) => void;
+  emptyMessage?: string;
 }) {
   return (
     <div
@@ -82,12 +84,7 @@ export function DataTable<T>({
           ))}
         </tbody>
       </table>
-      {!rows.length && (
-        <div className="empty-state">
-          No demo players match these filters. Try a different level, role, or
-          search.
-        </div>
-      )}
+      {!rows.length && <div className="empty-state">{emptyMessage}</div>}
     </div>
   );
 }

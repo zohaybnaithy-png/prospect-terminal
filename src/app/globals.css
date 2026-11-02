@@ -570,6 +570,75 @@ select {
   color: #596b6d;
   font-size: 12px;
 }
+/* Real-data states (AFL). Same restrained palette; no new visual language. */
+.afl-notice {
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #4d5c5e;
+  font-size: 12px;
+}
+.afl-notice.compact {
+  padding: 9px 10px;
+  font-size: 10px;
+}
+.placeholder-panel {
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  color: #657174;
+  font-size: 11px;
+}
+.placeholder-value {
+  color: #8a9595;
+}
+.score-strip-empty {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 10px;
+  color: #697474;
+  align-self: center;
+}
+.score-game-heading > time {
+  font-size: 9px;
+  font-weight: 700;
+  color: #3e5353;
+}
+.trend-value.neutral {
+  color: var(--text);
+}
+.trend-value small {
+  margin-left: 3px;
+  color: #788582;
+  font-size: 8px;
+  font-weight: 400;
+}
+.afl-filter-form .search-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.afl-filter-form .search-label > span {
+  color: #536567;
+  font-size: 10px;
+  font-weight: 600;
+}
+.afl-filter-form button[type="submit"] {
+  border: 1px solid #226c6e;
+  border-radius: 0;
+  background: #226c6e;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 11px;
+  min-height: 29px;
+}
+.afl-filter-form button[type="submit"]:hover {
+  background: #1b5d60;
+}
+a.reset-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
 .compact-player-list {
   margin: 7px 0 0;
   padding: 0;
