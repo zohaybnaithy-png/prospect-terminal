@@ -3,6 +3,7 @@ import { resolve, relative } from "node:path";
 import { fetchJson } from "../http";
 import { fingerprint } from "../plan";
 import { mlbBaseUrl } from "./mlb-config";
+import { progress } from "../progress";
 export interface SourceDocument {
   url: string;
   fetchedAt: string;
@@ -50,6 +51,7 @@ export class MlbClient {
       await (
         this.options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
       )(100);
+      const startedAt = Date.now();
       try {
         const body = await fetchJson(url, {
           fetcher: this.options.fetcher,
@@ -63,6 +65,11 @@ export class MlbClient {
           body,
         };
         this.documents.push(document);
+        progress("http:get", {
+          path: url.pathname,
+          ms: Date.now() - startedAt,
+          n: this.documents.length,
+        });
         if (this.options.recordDir) {
           await mkdir(this.options.recordDir, { recursive: true });
           await writeFile(
@@ -78,6 +85,10 @@ export class MlbClient {
         }
         return body;
       } catch (error) {
+        progress("http:failed", {
+          path: url.pathname,
+          ms: Date.now() - startedAt,
+        });
         throw new Error(
           `${url.pathname}: ${error instanceof Error ? error.message : "request failed"}`,
         );
