@@ -5,12 +5,14 @@ import type {
   NormalizedBatch,
   IngestionIssue,
 } from "./contracts";
-import { buildPlan, fingerprint } from "./plan";
+import { buildPlan, fingerprint, normalizedFingerprint } from "./plan";
+import { beginStage, progress } from "./progress";
 export interface IngestionReport {
   notices?: NormalizedBatch["notices"];
   provider: string;
   snapshotKey: string;
   contentHash: string;
+  rawContentHash: string;
   status:
     | "dry-run"
     | "applied"
@@ -41,16 +43,34 @@ export async function ingest(
   sink?: IngestionSink,
   options?: { dryRun?: boolean },
 ): Promise<IngestionReport> {
-  const snapshot = snapshotSchema.parse(await adapter.load());
+  beginStage("acquire:start", { provider: adapter.id });
+  const startedAt = Date.now();
+  const loaded = await adapter.load();
+  progress("acquire:done", { ms: Date.now() - startedAt });
+  beginStage("validate:snapshot");
+  const snapshot = snapshotSchema.parse(loaded);
   if (
     snapshot.provider !== adapter.id ||
     snapshot.adapterVersion !== adapter.version
   )
     throw new Error("Source identity/version mismatch");
+  beginStage("normalize:start");
   const normalized = adapter.normalize(snapshot);
+  progress("normalize:done", {
+    records: normalized.records.length,
+    issues: normalized.issues.length,
+    notices: normalized.notices?.length ?? 0,
+  });
   const notices = normalized.notices?.length
     ? { notices: normalized.notices }
     : {};
+  progress("dispatch", {
+    path: !sink
+      ? "offline-dry-run"
+      : options?.dryRun
+        ? "database-preview"
+        : "database-apply",
+  });
   if (sink && options?.dryRun && sink.preview)
     return { ...(await sink.preview(snapshot, normalized)), ...notices };
   if (sink && !options?.dryRun)
@@ -60,7 +80,8 @@ export async function ingest(
     ...notices,
     provider: snapshot.provider,
     snapshotKey: snapshot.key,
-    contentHash: fingerprint(snapshot.payload),
+    contentHash: normalizedFingerprint(normalized),
+    rawContentHash: fingerprint(snapshot.payload),
     status: batch.issues.length
       ? batch.quarantinePolicy === "records"
         ? "dry-run-with-quarantine"

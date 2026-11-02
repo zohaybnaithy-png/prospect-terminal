@@ -196,3 +196,28 @@ test("bounded network-error retries are injected and cannot turn an outage into 
   assert.equal(attempts, 3);
   assert.deepEqual(response, { ok: true });
 });
+test("contentHash identifies normalized data across captures; rawContentHash identifies the capture", async () => {
+  const capture = async (
+    data = syntheticMlb(),
+    at = "2026-10-27T12:00:00Z",
+  ) => {
+    const source = new MLBStatsApiSource(
+      { season: 2026 },
+      {
+        fetcher: mockMlbFetch(data).fetcher,
+        sleep: async () => {},
+        clock: () => new Date(at),
+      },
+    );
+    return ingest(source);
+  };
+  const first = await capture();
+  await new Promise((r) => setTimeout(r, 5));
+  const second = await capture(undefined, "2026-10-28T12:00:00Z");
+  assert.equal(second.records, first.records);
+  assert.equal(second.contentHash, first.contentHash);
+  assert.notEqual(second.rawContentHash, first.rawContentHash);
+  const corrected = syntheticMlb();
+  corrected.boxes["8001"].teams.home.players.ID1001.stats.batting.hits = 1;
+  assert.notEqual((await capture(corrected)).contentHash, first.contentHash);
+});

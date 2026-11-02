@@ -10,6 +10,7 @@ import { recordSchema, recordKey } from "../contracts";
 import { selectAflSchedule, normalizedGame } from "./mlb-schedule";
 import type { ScheduleGame } from "./mlb-schedule";
 import { MlbClient } from "./mlb-client";
+import { beginStage, updateStage } from "../progress";
 import { AFL, MLB_SOURCE_ID, validateMlbOptions } from "./mlb-config";
 import type { MlbOptions } from "./mlb-config";
 import {
@@ -92,6 +93,7 @@ export class MLBStatsApiSource implements SourceAdapter {
   private async capture(): Promise<SourceSnapshot> {
     const o = this.options;
     const params = { season: o.season };
+    beginStage("acquire:league");
     const league = await this.client.get(`league/${AFL.leagueId}`, params);
     const confirmed = z
       .object({
@@ -111,6 +113,7 @@ export class MLBStatsApiSource implements SourceAdapter {
       throw new Error(
         "League response does not match configured AFL league 119 / sport 17",
       );
+    beginStage("acquire:teams");
     const teams = await this.client.get("teams", {
       ...params,
       leagueIds: AFL.leagueId,
@@ -132,8 +135,10 @@ export class MLBStatsApiSource implements SourceAdapter {
       ? discovered.filter((t) => t.id === o.team)
       : discovered;
     const rosters: Part[] = [];
-    if (o.mode !== "games")
+    if (o.mode !== "games") {
+      beginStage("acquire:rosters", { done: 0, total: rosterTeams.length });
       for (const team of rosterTeams) {
+        updateStage({ done: rosters.length });
         try {
           rosters.push({
             id: team.id,
@@ -151,11 +156,13 @@ export class MLBStatsApiSource implements SourceAdapter {
           });
         }
       }
+    }
     let schedule: unknown;
     let scheduleError: string | undefined;
     const boxes: Part[] = [];
     if (o.mode !== "rosters") {
       try {
+        beginStage("acquire:schedule");
         schedule = await this.client.get("schedule", {
           ...params,
           leagueId: AFL.leagueId,
@@ -169,7 +176,9 @@ export class MLBStatsApiSource implements SourceAdapter {
           new Set(discovered.map((t) => t.id)),
           o,
         );
+        beginStage("acquire:boxscores", { done: 0 });
         for (const { game: g } of selected.games.values()) {
+          updateStage({ done: boxes.length });
           try {
             if (gameStatus(g.status) !== "final") continue;
             boxes.push({
@@ -223,6 +232,7 @@ export class MLBStatsApiSource implements SourceAdapter {
           /* Normalization emits diagnostics. */
         }
     const people: unknown[] = [];
+    beginStage("acquire:people", { players: personIds.size });
     for (const ids of chunks(
       [...personIds].sort((a, b) => a - b),
       50,
@@ -253,6 +263,7 @@ export class MLBStatsApiSource implements SourceAdapter {
         /* Optional enrichment stays unresolved. */
       }
     const organizationTeams: unknown[] = [];
+    beginStage("acquire:organization-teams");
     const known = new Set(discovered.map((t) => t.id));
     for (const ids of chunks(
       [...currentTeams].filter((id) => !known.has(id)),
@@ -291,6 +302,7 @@ export class MLBStatsApiSource implements SourceAdapter {
       } catch {
         /* Optional enrichment. */
       }
+    beginStage("acquire:parent-organizations", { teams: parentIds.size });
     for (const ids of chunks([...parentIds], 50))
       try {
         organizationTeams.push(

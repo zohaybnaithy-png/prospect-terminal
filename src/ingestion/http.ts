@@ -1,3 +1,4 @@
+import { progress } from "./progress";
 /** Bounded JSON transport. Inject fetch/sleep in tests; no scraping, redirects, or TLS overrides. */
 export async function fetchJson(
   url: URL,
@@ -27,6 +28,11 @@ export async function fetchJson(
       });
     } catch (error) {
       if (attempt + 1 < attempts) {
+        progress("http:retry", {
+          path: url.pathname,
+          attempt: attempt + 1,
+          reason: error instanceof Error ? error.name : "transport",
+        });
         await sleep(Math.min(250 * 2 ** attempt, 2000));
         continue;
       }
@@ -40,6 +46,11 @@ export async function fetchJson(
         (response.status === 429 || response.status >= 500) &&
         attempt + 1 < attempts
       ) {
+        progress("http:retry", {
+          path: url.pathname,
+          attempt: attempt + 1,
+          reason: `HTTP ${response.status}`,
+        });
         const seconds = Number(response.headers.get("retry-after"));
         await sleep(
           Number.isFinite(seconds) && seconds > 0

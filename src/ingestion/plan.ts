@@ -17,6 +17,17 @@ export function stableJson(value: unknown): string {
 }
 export const fingerprint = (value: unknown) =>
   createHash("sha256").update(stableJson(value)).digest("hex");
+/**
+ * Snapshot identity used for contentHash: the normalized result, independent of record order
+ * and of capture metadata such as response fetch times. Identical upstream data hashes identically.
+ * The raw capture remains identifiable through rawContentHash and the stored response manifest.
+ */
+export const normalizedFingerprint = (batch: NormalizedBatch) =>
+  fingerprint({
+    records: batch.records.map(fingerprint).sort(),
+    issues: batch.issues.map(fingerprint).sort(),
+    notices: (batch.notices ?? []).map(fingerprint).sort(),
+  });
 export function references(record: IngestionRecord): [EntityKind, string][] {
   switch (record.kind) {
     case "level":
