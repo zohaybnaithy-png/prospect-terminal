@@ -104,3 +104,15 @@ The demo remains compatible with Vercel and needs no credentials. Database-backe
 Next: research legitimate MiLB/AFL APIs, datasets, or licensed feeds, then define provider contracts and identity-resolution requirements. Do not start real ingestion or ranking methodology implicitly as part of this UI phase. NCAA/amateur coverage is a potential later expansion.
 
 See [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Product redesign review](docs/REDESIGN.md), and [Current visual design](docs/VISUAL-DESIGN.md).
+
+## AFL ingestion: local live source and offline fixtures
+
+The UI remains unchanged and demo-only. A separate worker now supports the MLB Stats API for **AFL 2026 (league 119, sport 17)**, plus the preserved offline fixture source. First local test:
+
+```sh
+npm run ingest:afl -- --source=live --season=2026 --dry-run
+```
+
+For real writes, export INGESTION_DATABASE_URL, migrate that database with `DATABASE_URL="$INGESTION_DATABASE_URL" npm run db:migrate`, then add `--apply`. Source discovery, rosters/organization observations, schedule, completed boxscores, raw game lines, and rolling-stat queries are implemented separately from web rendering. `--from`, `--to`, `--team`, `--games-only`, and `--rosters-only` support incremental work. Optional `--record-dir` preserves raw responses for debugging.
+
+The source adapter was tested offline against native-shaped synthetic fixtures, including PostgreSQL replay/correction and aggregation tests. The project owner verified local API access; this cloud task intentionally made no Stats API request. See [INGESTION.md](docs/INGESTION.md) for exact setup, formulas, source boundaries, additive migrations 0002/0003, and known limitations. Nothing automatically replaces the visible demo content or implements Momentum/rankings.

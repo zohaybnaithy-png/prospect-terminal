@@ -1,0 +1,569 @@
+{
+  "synthetic": true,
+  "note": "Native-shaped synthetic API responses. Names, teams, player IDs, games and statistics are fictional; only AFL identifiers are configured real context. No internet recording.",
+  "league": {
+    "leagues": [
+      {
+        "id": 119,
+        "name": "Arizona Fall League",
+        "sport": {
+          "id": 17
+        }
+      }
+    ]
+  },
+  "teams": {
+    "teams": [
+      {
+        "id": 9101,
+        "name": "Fixture Fall Team 1",
+        "abbreviation": "F1",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      },
+      {
+        "id": 9102,
+        "name": "Fixture Fall Team 2",
+        "abbreviation": "F2",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      },
+      {
+        "id": 9103,
+        "name": "Fixture Fall Team 3",
+        "abbreviation": "F3",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      },
+      {
+        "id": 9104,
+        "name": "Fixture Fall Team 4",
+        "abbreviation": "F4",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      },
+      {
+        "id": 9105,
+        "name": "Fixture Fall Team 5",
+        "abbreviation": "F5",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      },
+      {
+        "id": 9106,
+        "name": "Fixture Fall Team 6",
+        "abbreviation": "F6",
+        "league": {
+          "id": 119
+        },
+        "sport": {
+          "id": 17
+        }
+      }
+    ]
+  },
+  "rosters": {
+    "9101": {
+      "roster": [
+        {
+          "person": {
+            "id": 1001,
+            "fullName": "Fixture Aster Bat"
+          },
+          "position": {
+            "abbreviation": "SS"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          }
+        },
+        {
+          "person": {
+            "id": 1003,
+            "fullName": "Fixture Two Way"
+          },
+          "position": {
+            "abbreviation": "TWP"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          }
+        }
+      ]
+    },
+    "9102": {
+      "roster": [
+        {
+          "person": {
+            "id": 1002,
+            "fullName": "Fixture Lumen Arm"
+          },
+          "position": {
+            "abbreviation": "P"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          }
+        }
+      ]
+    },
+    "9103": {
+      "roster": [
+        {
+          "person": {
+            "id": 1001,
+            "fullName": "Fixture Aster Bat"
+          },
+          "position": {
+            "abbreviation": "SS"
+          },
+          "status": {
+            "code": "A",
+            "description": "Active"
+          }
+        }
+      ]
+    },
+    "9104": {
+      "roster": []
+    },
+    "9105": {
+      "roster": []
+    },
+    "9106": {
+      "roster": []
+    }
+  },
+  "people": {
+    "people": [
+      {
+        "id": 1001,
+        "fullName": "Fixture Aster Bat",
+        "primaryPosition": {
+          "abbreviation": "SS"
+        },
+        "birthDate": "2005-04-10",
+        "batSide": {
+          "code": "L"
+        },
+        "pitchHand": {
+          "code": "R"
+        },
+        "height": "6' 1\"",
+        "weight": 185,
+        "currentTeam": {
+          "id": 9201
+        }
+      },
+      {
+        "id": 1002,
+        "fullName": "Fixture Lumen Arm",
+        "primaryPosition": {
+          "abbreviation": "P"
+        },
+        "currentTeam": {
+          "id": 9102
+        }
+      },
+      {
+        "id": 1003,
+        "fullName": "Fixture Two Way",
+        "primaryPosition": {
+          "abbreviation": "TWP"
+        },
+        "batSide": {
+          "code": "R"
+        },
+        "pitchHand": {
+          "code": "L"
+        },
+        "currentTeam": {
+          "id": 9302
+        }
+      }
+    ]
+  },
+  "organizationTeams": {
+    "teams": [
+      {
+        "id": 9201,
+        "name": "Fixture Affiliated Club",
+        "abbreviation": "FAC",
+        "sport": {
+          "id": 12
+        },
+        "parentOrgId": 9301
+      },
+      {
+        "id": 9302,
+        "name": "Fixture Parent B",
+        "abbreviation": "FPB",
+        "sport": {
+          "id": 1
+        }
+      },
+      {
+        "id": 9301,
+        "name": "Fixture Parent A",
+        "abbreviation": "FPA",
+        "sport": {
+          "id": 1
+        }
+      }
+    ]
+  },
+  "schedule": {
+    "dates": [
+      {
+        "date": "2026-10-24",
+        "games": [
+          {
+            "gamePk": 8001,
+            "gameDate": "2026-10-25T02:30:00Z",
+            "officialDate": "2026-10-24",
+            "season": "2026",
+            "leagueId": 119,
+            "status": {
+              "abstractGameState": "Final",
+              "detailedState": "Final"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 9101
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 9102
+                },
+                "score": 2
+              }
+            },
+            "venue": {
+              "name": "Fixture Park"
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-10",
+        "games": [
+          {
+            "gamePk": 8002,
+            "gameDate": "2026-10-10T23:30:00Z",
+            "officialDate": "2026-10-10",
+            "season": "2026",
+            "leagueId": 119,
+            "status": {
+              "abstractGameState": "Final",
+              "detailedState": "Final"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 9101
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 9102
+                },
+                "score": 2
+              }
+            },
+            "venue": {
+              "name": "Fixture Park"
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-26",
+        "games": [
+          {
+            "gamePk": 8003,
+            "gameDate": "2026-10-26T23:30:00Z",
+            "officialDate": "2026-10-26",
+            "season": "2026",
+            "leagueId": 119,
+            "status": {
+              "abstractGameState": "Preview",
+              "detailedState": "Preview"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 9101
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 9102
+                },
+                "score": 2
+              }
+            },
+            "venue": {
+              "name": "Fixture Park"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxes": {
+    "8001": {
+      "teams": {
+        "home": {
+          "team": {
+            "id": 9101
+          },
+          "players": {
+            "ID1001": {
+              "person": {
+                "id": 1001,
+                "fullName": "Fixture Aster Bat"
+              },
+              "position": {
+                "abbreviation": "SS"
+              },
+              "stats": {
+                "batting": {
+                  "plateAppearances": 5,
+                  "atBats": 4,
+                  "hits": 2,
+                  "doubles": 1,
+                  "triples": 0,
+                  "homeRuns": 0,
+                  "baseOnBalls": 1,
+                  "strikeOuts": 1,
+                  "hitByPitch": 0,
+                  "sacFlies": 0,
+                  "stolenBases": 1,
+                  "runs": 1,
+                  "rbi": 2,
+                  "caughtStealing": 0,
+                  "sacBunts": 0,
+                  "catchersInterference": 0
+                },
+                "pitching": {}
+              }
+            },
+            "ID1003": {
+              "person": {
+                "id": 1003,
+                "fullName": "Fixture Two Way"
+              },
+              "position": {
+                "abbreviation": "TWP"
+              },
+              "stats": {
+                "batting": {
+                  "plateAppearances": 4,
+                  "atBats": 4,
+                  "hits": 1,
+                  "doubles": 0,
+                  "triples": 0,
+                  "homeRuns": 1,
+                  "baseOnBalls": 0,
+                  "strikeOuts": 1,
+                  "hitByPitch": 0,
+                  "sacFlies": 0,
+                  "stolenBases": 1,
+                  "runs": 1,
+                  "rbi": 2,
+                  "caughtStealing": 0,
+                  "sacBunts": 0,
+                  "catchersInterference": 0
+                },
+                "pitching": {
+                  "inningsPitched": "1.0",
+                  "battersFaced": 4,
+                  "hits": 1,
+                  "runs": 0,
+                  "earnedRuns": 0,
+                  "baseOnBalls": 0,
+                  "strikeOuts": 2,
+                  "homeRuns": 0,
+                  "hitBatsmen": 0,
+                  "numberOfPitches": 15
+                }
+              }
+            }
+          }
+        },
+        "away": {
+          "team": {
+            "id": 9102
+          },
+          "players": {
+            "ID1002": {
+              "person": {
+                "id": 1002,
+                "fullName": "Fixture Lumen Arm"
+              },
+              "position": {
+                "abbreviation": "P"
+              },
+              "stats": {
+                "batting": {},
+                "pitching": {
+                  "inningsPitched": "5.2",
+                  "battersFaced": 22,
+                  "hits": 4,
+                  "runs": 3,
+                  "earnedRuns": 3,
+                  "baseOnBalls": 2,
+                  "strikeOuts": 7,
+                  "homeRuns": 1,
+                  "hitBatsmen": 0,
+                  "numberOfPitches": 88
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "8002": {
+      "teams": {
+        "home": {
+          "team": {
+            "id": 9101
+          },
+          "players": {
+            "ID1001": {
+              "person": {
+                "id": 1001,
+                "fullName": "Fixture Aster Bat"
+              },
+              "position": {
+                "abbreviation": "SS"
+              },
+              "stats": {
+                "batting": {
+                  "plateAppearances": 5,
+                  "atBats": 4,
+                  "hits": 2,
+                  "doubles": 1,
+                  "triples": 0,
+                  "homeRuns": 0,
+                  "baseOnBalls": 1,
+                  "strikeOuts": 1,
+                  "hitByPitch": 0,
+                  "sacFlies": 0,
+                  "stolenBases": 1,
+                  "runs": 1,
+                  "rbi": 2,
+                  "caughtStealing": 0,
+                  "sacBunts": 0,
+                  "catchersInterference": 0
+                },
+                "pitching": {}
+              }
+            },
+            "ID1003": {
+              "person": {
+                "id": 1003,
+                "fullName": "Fixture Two Way"
+              },
+              "position": {
+                "abbreviation": "TWP"
+              },
+              "stats": {
+                "batting": {
+                  "plateAppearances": 4,
+                  "atBats": 4,
+                  "hits": 1,
+                  "doubles": 0,
+                  "triples": 0,
+                  "homeRuns": 1,
+                  "baseOnBalls": 0,
+                  "strikeOuts": 1,
+                  "hitByPitch": 0,
+                  "sacFlies": 0,
+                  "stolenBases": 1,
+                  "runs": 1,
+                  "rbi": 2,
+                  "caughtStealing": 0,
+                  "sacBunts": 0,
+                  "catchersInterference": 0
+                },
+                "pitching": {
+                  "inningsPitched": "1.0",
+                  "battersFaced": 4,
+                  "hits": 1,
+                  "runs": 0,
+                  "earnedRuns": 0,
+                  "baseOnBalls": 0,
+                  "strikeOuts": 2,
+                  "homeRuns": 0,
+                  "hitBatsmen": 0,
+                  "numberOfPitches": 15
+                }
+              }
+            }
+          }
+        },
+        "away": {
+          "team": {
+            "id": 9102
+          },
+          "players": {
+            "ID1002": {
+              "person": {
+                "id": 1002,
+                "fullName": "Fixture Lumen Arm"
+              },
+              "position": {
+                "abbreviation": "P"
+              },
+              "stats": {
+                "batting": {},
+                "pitching": {
+                  "inningsPitched": "5.2",
+                  "battersFaced": 22,
+                  "hits": 4,
+                  "runs": 3,
+                  "earnedRuns": 3,
+                  "baseOnBalls": 2,
+                  "strikeOuts": 7,
+                  "homeRuns": 1,
+                  "hitBatsmen": 0,
+                  "numberOfPitches": 88
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

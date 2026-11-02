@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   index,
   check,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 const id = () => uuid("id").primaryKey().defaultRandom();
@@ -75,6 +76,8 @@ export const players = pgTable("players", {
   bats: text("bats"),
   throws: text("throws"),
   birthDate: date("birth_date"),
+  height: text("height"),
+  weight: integer("weight"),
   externalIds: jsonb("external_ids")
     .$type<Record<string, string>>()
     .notNull()
@@ -169,11 +172,22 @@ export const games = pgTable(
       .references(() => teams.id),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("scheduled"),
+    officialDate: date("official_date"),
+    leagueId: uuid("league_id").references(() => leagues.id),
+    homeScore: integer("home_score"),
+    awayScore: integer("away_score"),
+    venue: text("venue"),
+    boxscoreComplete: boolean("boxscore_complete").notNull().default(false),
     ...timestamps(),
   },
   (t) => [check("different_teams", sql`${t.homeTeamId} <> ${t.awayTeamId}`)],
 );
 const batting = () => ({
+  runs: integer("runs"),
+  rbi: integer("rbi"),
+  caughtStealing: integer("caught_stealing"),
+  sacrificeBunts: integer("sacrifice_bunts"),
+  catcherInterference: integer("catcher_interference"),
   plateAppearances: integer("plate_appearances").notNull().default(0),
   atBats: integer("at_bats").notNull().default(0),
   hits: integer("hits").notNull().default(0),
@@ -188,6 +202,9 @@ const batting = () => ({
 });
 // Outs, rather than decimal innings, avoid treating 6.1 IP as 6.1 real innings.
 const pitching = () => ({
+  runs: integer("runs"),
+  hitBatters: integer("hit_batters"),
+  pitches: integer("pitches"),
   outsRecorded: integer("outs_recorded").notNull().default(0),
   battersFaced: integer("batters_faced").notNull().default(0),
   hitsAllowed: integer("hits_allowed").notNull().default(0),

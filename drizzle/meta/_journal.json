@@ -15,6 +15,20 @@
       "when": 1793506869799,
       "tag": "0001_conscious_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793586609158,
+      "tag": "0002_material_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793591225603,
+      "tag": "0003_gorgeous_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

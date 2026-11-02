@@ -1,0 +1,235 @@
+{
+  "fixture": true,
+  "version": 1,
+  "observedAt": "2026-10-25T00:00:00Z",
+  "records": [
+    {
+      "entity": "league",
+      "id": "fall",
+      "fullName": "Fictional AFL ingestion league"
+    },
+    {
+      "entity": "level",
+      "id": "fall-classification",
+      "league": "fall",
+      "fullName": "Fall assignment"
+    },
+    {
+      "entity": "season",
+      "id": "fall-2026",
+      "year": 2026,
+      "fullName": "AFL ingestion fixture 2026"
+    },
+    {
+      "entity": "organization",
+      "id": "org-1",
+      "fullName": "Fictional Harbor Organization",
+      "abbreviation": "FO1"
+    },
+    {
+      "entity": "organization",
+      "id": "org-2",
+      "fullName": "Fictional Mesa Organization",
+      "abbreviation": "FO2"
+    },
+    {
+      "entity": "team",
+      "id": "fall-team-1",
+      "fullName": "Fictional Juniper Suns",
+      "abbreviation": "FT1",
+      "level": "fall-classification",
+      "organization": null
+    },
+    {
+      "entity": "team",
+      "id": "fall-team-2",
+      "fullName": "Fictional Canyon Swifts",
+      "abbreviation": "FT2",
+      "level": "fall-classification",
+      "organization": null
+    },
+    {
+      "entity": "player",
+      "id": "person-1",
+      "fullName": "Demo Aster Finch",
+      "position": "SS",
+      "bats": "R",
+      "throws": "R",
+      "birthDate": "2004-05-10"
+    },
+    {
+      "entity": "organizationMembership",
+      "key": "org-stint-1",
+      "player": "person-1",
+      "organization": "org-1",
+      "startsOn": "2026-01-01",
+      "endsOn": null
+    },
+    {
+      "entity": "teamMembership",
+      "key": "fall-stint-1",
+      "player": "person-1",
+      "team": "fall-team-1",
+      "season": "fall-2026",
+      "startsOn": "2026-10-01",
+      "endsOn": null,
+      "assignmentType": "afl-assignment"
+    },
+    {
+      "entity": "rosterObservation",
+      "key": "fall-roster-1",
+      "player": "person-1",
+      "team": "fall-team-1",
+      "organization": "org-1"
+    },
+    {
+      "entity": "player",
+      "id": "person-2",
+      "fullName": "Demo Lumen Vale",
+      "position": "RHP",
+      "bats": "R",
+      "throws": "R",
+      "birthDate": "2004-05-10"
+    },
+    {
+      "entity": "organizationMembership",
+      "key": "org-stint-2",
+      "player": "person-2",
+      "organization": "org-1",
+      "startsOn": "2026-01-01",
+      "endsOn": null
+    },
+    {
+      "entity": "teamMembership",
+      "key": "fall-stint-2",
+      "player": "person-2",
+      "team": "fall-team-2",
+      "season": "fall-2026",
+      "startsOn": "2026-10-01",
+      "endsOn": null,
+      "assignmentType": "afl-assignment"
+    },
+    {
+      "entity": "rosterObservation",
+      "key": "fall-roster-2",
+      "player": "person-2",
+      "team": "fall-team-2",
+      "organization": "org-1"
+    },
+    {
+      "entity": "player",
+      "id": "person-3",
+      "fullName": "Demo Quill Cedar",
+      "position": "RHP / DH",
+      "bats": "R",
+      "throws": "R",
+      "birthDate": "2004-05-10"
+    },
+    {
+      "entity": "organizationMembership",
+      "key": "org-stint-3",
+      "player": "person-3",
+      "organization": "org-2",
+      "startsOn": "2026-01-01",
+      "endsOn": null
+    },
+    {
+      "entity": "teamMembership",
+      "key": "fall-stint-3",
+      "player": "person-3",
+      "team": "fall-team-1",
+      "season": "fall-2026",
+      "startsOn": "2026-10-01",
+      "endsOn": null,
+      "assignmentType": "afl-assignment"
+    },
+    {
+      "entity": "rosterObservation",
+      "key": "fall-roster-3",
+      "player": "person-3",
+      "team": "fall-team-1",
+      "organization": "org-2"
+    },
+    {
+      "entity": "game",
+      "id": "game-1",
+      "season": "fall-2026",
+      "homeTeam": "fall-team-1",
+      "awayTeam": "fall-team-2",
+      "startsAt": "2026-10-24T19:00:00Z",
+      "status": "final"
+    },
+    {
+      "entity": "battingGame",
+      "key": "batting-1",
+      "player": "person-1",
+      "team": "fall-team-1",
+      "game": "game-1",
+      "stats": {
+        "plateAppearances": 5,
+        "atBats": 4,
+        "hits": 2,
+        "doubles": 1,
+        "triples": 0,
+        "homeRuns": 0,
+        "walks": 1,
+        "strikeouts": 1,
+        "hitByPitch": 0,
+        "sacrificeFlies": 0,
+        "stolenBases": 0
+      }
+    },
+    {
+      "entity": "battingGame",
+      "key": "batting-3",
+      "player": "person-3",
+      "team": "fall-team-1",
+      "game": "game-1",
+      "stats": {
+        "plateAppearances": 5,
+        "atBats": 4,
+        "hits": 2,
+        "doubles": 1,
+        "triples": 0,
+        "homeRuns": 0,
+        "walks": 1,
+        "strikeouts": 1,
+        "hitByPitch": 0,
+        "sacrificeFlies": 0,
+        "stolenBases": 0
+      }
+    },
+    {
+      "entity": "pitchingGame",
+      "key": "pitching-2",
+      "player": "person-2",
+      "team": "fall-team-2",
+      "game": "game-1",
+      "stats": {
+        "outsRecorded": 19,
+        "battersFaced": 24,
+        "hitsAllowed": 4,
+        "earnedRuns": 1,
+        "walks": 1,
+        "strikeouts": 7,
+        "homeRunsAllowed": 0
+      }
+    },
+    {
+      "entity": "pitchingGame",
+      "key": "pitching-3",
+      "player": "person-3",
+      "team": "fall-team-1",
+      "game": "game-1",
+      "stats": {
+        "outsRecorded": 19,
+        "battersFaced": 24,
+        "hitsAllowed": 4,
+        "earnedRuns": 1,
+        "walks": 1,
+        "strikeouts": 7,
+        "homeRunsAllowed": 0
+      }
+    }
+  ]
+}

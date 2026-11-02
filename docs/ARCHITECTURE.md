@@ -62,3 +62,11 @@ Player anchor navigation covers Overview, Stats, Development, Trends, and News. 
 ## Operations and data safety
 
 The seed requires explicit development opt-in and a fresh disposable database if the legacy NCAA demo is present. It refuses to relabel those old records or overwrite their historical statistics. New fixtures preserve the original 18 player UUIDs and existing team routes where applicable. Repeating the new seed is transactional and does not duplicate records. DB commands read injected shell variables; the app remains usable without PostgreSQL. `updatedAt` defaults on insert and is maintained on Drizzle ORM updates; direct SQL writers must maintain it themselves.
+
+## Ingestion worker boundary
+
+The source adapter/normalization/plan/transactional sink boundary now lives under `src/ingestion`, separately from all routes and UI repository code. An isolated fictional AFL source exercises organizations, teams, stable player mappings, roster observations, confirmed dated memberships, and two-way game statistics. Additive migration 0002 supplies provenance and reconciliation metadata; the core entity schema is unchanged. See [INGESTION.md](INGESTION.md) for supported behavior, safety properties, official-source investigation limits, and test commands. No real UI data source was selected automatically.
+
+## Live-source-capable AFL worker
+
+The ingestion contract now also has an MLBStatsApiSource for local execution, a centralized JSON client/config, source-specific normalization, and a stored-game statistics repository. UI routes and the demo repository do not import it. Live data uses the same stable UUID mapping and canonical entities as the preserved fixture pipeline. Live normalization may quarantine independent records (holding malformed boxscores coherently) without disabling unrelated data. Additive migration 0003 supports real schedule metadata, optional person/counting fields, and completeness-aware official-date aggregation. See INGESTION.md for the first local command, endpoint coverage, current organization versus historical affiliation semantics, dry-run guarantees, and supported rolling windows.

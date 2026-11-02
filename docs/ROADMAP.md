@@ -8,9 +8,13 @@ Implemented: player-first discovery, Prospect Priority/Pure Performance demo mod
 
 Determine permitted APIs, public datasets, licensed feeds, and external-link options. Verify licensing, coverage, field definitions, historical availability, rate limits, and redistribution rights. Evaluate organization/affiliate/AFL identifiers and player identity coverage. Do not assume access to FanGraphs or Baseball Savant proprietary data.
 
+The project owner verified local Stats API access and AFL identifiers (league 119, sport 17, season 2026). A local live-source-capable adapter is implemented and tested using synthetic native-shaped responses. Actual source verification runs locally; this cloud task intentionally makes no connectivity probe.
+
 ## Phase 3 — Real game/season ingestion and identity resolution
 
-Build provider contracts, Zod validation, normalized external-ID mappings, provenance, idempotent writes, and reconciliation workflows. Preserve assignments, parent-organization history, two-way roles, and separate regular/fall-team statistics. Quarantine ambiguous identities and test incremental updates. Select an explicit database repository only after validation.
+Infrastructure implemented with fictional fixtures: adapter contracts, Zod validation, separate external-ID mappings, provenance, atomic idempotent game writes, quarantine, and correction/ownership checks. The local MLB adapter now supports discovery, rosters, schedule and completed boxscores. Synthetic contract and database tests pass; real local dry-run validation, additional response variants, provider season comparisons, and production reconciliation remain. Preserve assignments, parent-organization history, two-way roles, and separate regular/fall-team statistics. Quarantine ambiguous identities and test incremental updates. Select an explicit database repository only after validation.
+
+Stored-game rolling aggregation is implemented for 7D/14D/30D/season and custom inclusive dates, scoped by league and season. It remains disconnected from the UI.
 
 ## Phase 4 — Real recent-performance discovery
 

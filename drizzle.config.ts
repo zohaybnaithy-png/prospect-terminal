@@ -2,7 +2,7 @@ import { defineConfig } from "drizzle-kit";
 // SQL generation is offline. Only migration/push operations need credentials.
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/db/schema.ts",
+  schema: ["./src/db/schema.ts", "./src/db/ingestion-schema.ts"],
   out: "./drizzle",
   ...(process.env.DATABASE_URL
     ? { dbCredentials: { url: process.env.DATABASE_URL } }
