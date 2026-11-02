@@ -7,6 +7,7 @@ import type {
 } from "./contracts";
 import { buildPlan, fingerprint } from "./plan";
 export interface IngestionReport {
+  notices?: NormalizedBatch["notices"];
   provider: string;
   snapshotKey: string;
   contentHash: string;
@@ -46,12 +47,17 @@ export async function ingest(
     snapshot.adapterVersion !== adapter.version
   )
     throw new Error("Source identity/version mismatch");
+  const normalized = adapter.normalize(snapshot);
+  const notices = normalized.notices?.length
+    ? { notices: normalized.notices }
+    : {};
   if (sink && options?.dryRun && sink.preview)
-    return sink.preview(snapshot, adapter.normalize(snapshot));
+    return { ...(await sink.preview(snapshot, normalized)), ...notices };
   if (sink && !options?.dryRun)
-    return sink.apply(snapshot, adapter.normalize(snapshot));
-  const batch = buildPlan(adapter.normalize(snapshot));
+    return { ...(await sink.apply(snapshot, normalized)), ...notices };
+  const batch = buildPlan(normalized);
   return {
+    ...notices,
     provider: snapshot.provider,
     snapshotKey: snapshot.key,
     contentHash: fingerprint(snapshot.payload),

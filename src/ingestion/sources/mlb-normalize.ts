@@ -3,6 +3,7 @@ import { recordSchema, recordKey } from "../contracts";
 import type {
   IngestionRecord,
   IngestionIssue,
+  IngestionNotice,
   NormalizedBatch,
 } from "../contracts";
 import { AFL } from "./mlb-config";
@@ -108,6 +109,7 @@ export function gameStatus(status: {
   throw new Error("Unrecognized game status");
 }
 export class MlbNormalizer {
+  readonly notices: IngestionNotice[] = [];
   readonly records = new Map<string, IngestionRecord>();
   readonly issues: IngestionIssue[] = [];
   issue(key: string, message: string) {
@@ -166,6 +168,7 @@ export class MlbNormalizer {
   result(): NormalizedBatch {
     return {
       records: [...this.records.values()],
+      ...(this.notices.length ? { notices: this.notices } : {}),
       issues: this.issues,
       quarantinePolicy: "records",
     };

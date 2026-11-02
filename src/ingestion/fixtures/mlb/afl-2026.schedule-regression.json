@@ -1,0 +1,3901 @@
+{
+  "note": "Reduced from user-supplied local Stats API recording; actual schedule identifiers, linkage, status, opponents, dates and venue preserved. Team list derived from club participants (not a recorded team discovery response). Boxscores in tests remain synthetic.",
+  "url": "https://statsapi.mlb.com/api/v1/schedule?season=2026&leagueId=119&sportId=17&startDate=2026-01-01&endDate=2026-12-31",
+  "teams": [
+    {
+      "id": 454,
+      "name": "Glendale Desert Dogs",
+      "link": "/api/v1/teams/454"
+    },
+    {
+      "id": 527,
+      "name": "Salt River Rafters",
+      "link": "/api/v1/teams/527"
+    },
+    {
+      "id": 544,
+      "name": "Scottsdale Scorpions",
+      "link": "/api/v1/teams/544"
+    },
+    {
+      "id": 542,
+      "name": "Surprise Saguaros",
+      "link": "/api/v1/teams/542"
+    },
+    {
+      "id": 490,
+      "name": "Peoria Javelinas",
+      "link": "/api/v1/teams/490"
+    },
+    {
+      "id": 555,
+      "name": "Mesa Solar Sox",
+      "link": "/api/v1/teams/555"
+    }
+  ],
+  "body": {
+    "dates": [
+      {
+        "date": "2026-10-03",
+        "games": [
+          {
+            "gamePk": 867729,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-03T19:30:00Z",
+            "officialDate": "2026-10-03",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 9
+              }
+            }
+          },
+          {
+            "gamePk": 867732,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-03T22:30:00Z",
+            "officialDate": "2026-10-03",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 3
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 9
+              }
+            }
+          },
+          {
+            "gamePk": 867731,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-04T01:30:00Z",
+            "officialDate": "2026-10-03",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 6
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-04",
+        "games": [
+          {
+            "gamePk": 867730,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-04T20:30:00Z",
+            "officialDate": "2026-10-04",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 5
+              }
+            }
+          },
+          {
+            "gamePk": 867728,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-05T00:00:00Z",
+            "officialDate": "2026-10-04",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 6
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 4
+              }
+            }
+          },
+          {
+            "gamePk": 867716,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-05T00:00:00Z",
+            "officialDate": "2026-10-04",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-05",
+        "games": [
+          {
+            "gamePk": 867727,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-05T20:30:00Z",
+            "officialDate": "2026-10-05",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 10
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 7
+              }
+            }
+          },
+          {
+            "gamePk": 867725,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-06T01:30:00Z",
+            "officialDate": "2026-10-05",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 8
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 7
+              }
+            }
+          },
+          {
+            "gamePk": 867726,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-06T01:30:00Z",
+            "officialDate": "2026-10-05",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "FT",
+              "startTimeTBD": false,
+              "reason": "Tied",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 6
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 6
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-06",
+        "games": [
+          {
+            "gamePk": 867724,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-06T20:30:00Z",
+            "officialDate": "2026-10-06",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 2
+              }
+            }
+          },
+          {
+            "gamePk": 867723,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-07T01:30:00Z",
+            "officialDate": "2026-10-06",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 3
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 4
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-07",
+        "games": [
+          {
+            "gamePk": 867722,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-08T01:30:00Z",
+            "officialDate": "2026-10-07",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-08",
+        "games": [
+          {
+            "gamePk": 867721,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-08T20:30:00Z",
+            "officialDate": "2026-10-08",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 10
+              }
+            }
+          },
+          {
+            "gamePk": 867720,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-08T20:30:00Z",
+            "officialDate": "2026-10-08",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 3
+              }
+            }
+          },
+          {
+            "gamePk": 867719,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-09T01:30:00Z",
+            "officialDate": "2026-10-08",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-09",
+        "games": [
+          {
+            "gamePk": 867718,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-09T20:30:00Z",
+            "officialDate": "2026-10-09",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 13
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 9
+              }
+            }
+          },
+          {
+            "gamePk": 867704,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-09T20:30:00Z",
+            "officialDate": "2026-10-09",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 10
+              }
+            }
+          },
+          {
+            "gamePk": 867717,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-09T20:30:00Z",
+            "officialDate": "2026-10-09",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 11
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 10
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-10",
+        "games": [
+          {
+            "gamePk": 867705,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-10T18:30:00Z",
+            "officialDate": "2026-10-10",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2501,
+              "name": "Kino Veterans Memorial Stadium",
+              "link": "/api/v1/venues/2501"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 3
+              }
+            }
+          },
+          {
+            "gamePk": 867706,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-10T21:30:00Z",
+            "officialDate": "2026-10-10",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2501,
+              "name": "Kino Veterans Memorial Stadium",
+              "link": "/api/v1/venues/2501"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 10
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-11",
+        "games": [
+          {
+            "gamePk": 867707,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-12T00:00:00Z",
+            "officialDate": "2026-10-11",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 4
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-12",
+        "games": [
+          {
+            "gamePk": 867708,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-12T20:30:00Z",
+            "officialDate": "2026-10-12",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Completed Early",
+              "statusCode": "FR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 6
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 2
+              }
+            }
+          },
+          {
+            "gamePk": 867710,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-13T01:30:00Z",
+            "officialDate": "2026-10-14",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "D",
+              "detailedState": "Postponed",
+              "statusCode": "DI",
+              "startTimeTBD": false,
+              "reason": "Inclement Weather",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "rescheduleDate": "2026-10-14T20:30:00Z",
+            "rescheduleGameDate": "2026-10-14",
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867709,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-13T01:30:00Z",
+            "officialDate": "2026-10-14",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "D",
+              "detailedState": "Postponed",
+              "statusCode": "DI",
+              "startTimeTBD": false,
+              "reason": "Inclement Weather",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "rescheduleDate": "2026-10-14T20:30:00Z",
+            "rescheduleGameDate": "2026-10-14",
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-13",
+        "games": [
+          {
+            "gamePk": 867711,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-13T20:30:00Z",
+            "officialDate": "2026-10-13",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 6
+              }
+            }
+          },
+          {
+            "gamePk": 867712,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-14T01:30:00Z",
+            "officialDate": "2026-10-13",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 13
+              }
+            }
+          },
+          {
+            "gamePk": 867713,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-14T01:30:00Z",
+            "officialDate": "2026-10-13",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "D",
+              "detailedState": "Postponed",
+              "statusCode": "DP",
+              "startTimeTBD": false,
+              "reason": "Power",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-14",
+        "games": [
+          {
+            "gamePk": 867710,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-14T20:30:00Z",
+            "officialDate": "2026-10-14",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "rescheduledFrom": "2026-10-13T01:30:00Z",
+            "rescheduledFromDate": "2026-10-12",
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 9
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 8
+              }
+            }
+          },
+          {
+            "gamePk": 867709,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-14T20:30:00Z",
+            "officialDate": "2026-10-14",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3834,
+              "name": "Goodyear Ballpark",
+              "link": "/api/v1/venues/3834"
+            },
+            "rescheduledFrom": "2026-10-13T01:30:00Z",
+            "rescheduledFromDate": "2026-10-12",
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-15",
+        "games": [
+          {
+            "gamePk": 867714,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-15T20:30:00Z",
+            "officialDate": "2026-10-15",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 8
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 17
+              }
+            }
+          },
+          {
+            "gamePk": 867703,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-16T01:30:00Z",
+            "officialDate": "2026-10-15",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 8
+              }
+            }
+          },
+          {
+            "gamePk": 867715,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-16T01:30:00Z",
+            "officialDate": "2026-10-15",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Completed Early",
+              "statusCode": "FO",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 9
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 14
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-16",
+        "games": [
+          {
+            "gamePk": 867696,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-16T20:30:00Z",
+            "officialDate": "2026-10-16",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 10
+              }
+            }
+          },
+          {
+            "gamePk": 867697,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-16T20:30:00Z",
+            "officialDate": "2026-10-16",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 12
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 5
+              }
+            }
+          },
+          {
+            "gamePk": 867695,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-17T01:30:00Z",
+            "officialDate": "2026-10-16",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 1
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-17",
+        "games": [
+          {
+            "gamePk": 867694,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-17T19:30:00Z",
+            "officialDate": "2026-10-17",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3834,
+              "name": "Goodyear Ballpark",
+              "link": "/api/v1/venues/3834"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 5
+              }
+            }
+          },
+          {
+            "gamePk": 867693,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-17T22:30:00Z",
+            "officialDate": "2026-10-17",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3834,
+              "name": "Goodyear Ballpark",
+              "link": "/api/v1/venues/3834"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 1
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 2
+              }
+            }
+          },
+          {
+            "gamePk": 867702,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-18T01:30:00Z",
+            "officialDate": "2026-10-17",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3834,
+              "name": "Goodyear Ballpark",
+              "link": "/api/v1/venues/3834"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 10
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-19",
+        "games": [
+          {
+            "gamePk": 867701,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-19T20:30:00Z",
+            "officialDate": "2026-10-19",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 1
+              }
+            }
+          },
+          {
+            "gamePk": 867700,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-19T20:30:00Z",
+            "officialDate": "2026-10-19",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 7
+              }
+            }
+          },
+          {
+            "gamePk": 867699,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-20T01:30:00Z",
+            "officialDate": "2026-10-19",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 5
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-20",
+        "games": [
+          {
+            "gamePk": 867698,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-20T20:30:00Z",
+            "officialDate": "2026-10-20",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 11
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 10
+              }
+            }
+          },
+          {
+            "gamePk": 867690,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-20T20:30:00Z",
+            "officialDate": "2026-10-20",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 3
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 10
+              }
+            }
+          },
+          {
+            "gamePk": 867689,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-21T01:30:00Z",
+            "officialDate": "2026-10-20",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 9
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 6
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-21",
+        "games": [
+          {
+            "gamePk": 867688,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-21T20:30:00Z",
+            "officialDate": "2026-10-21",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Completed Early",
+              "statusCode": "FR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 3
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 0
+              }
+            }
+          },
+          {
+            "gamePk": 867692,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-21T20:30:00Z",
+            "officialDate": "2026-10-21",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 7
+              }
+            }
+          },
+          {
+            "gamePk": 867691,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-22T01:30:00Z",
+            "officialDate": "2026-10-21",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 9
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-22",
+        "games": [
+          {
+            "gamePk": 867682,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-22T20:30:00Z",
+            "officialDate": "2026-10-22",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 12
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 11
+              }
+            }
+          },
+          {
+            "gamePk": 867683,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-22T20:30:00Z",
+            "officialDate": "2026-10-22",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 8
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 15
+              }
+            }
+          },
+          {
+            "gamePk": 867681,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-23T01:30:00Z",
+            "officialDate": "2026-10-22",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 10
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-24",
+        "games": [
+          {
+            "gamePk": 867684,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-24T19:30:00Z",
+            "officialDate": "2026-10-24",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 7
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 3
+              }
+            }
+          },
+          {
+            "gamePk": 867685,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-24T22:30:00Z",
+            "officialDate": "2026-10-24",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 3
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 5
+              }
+            }
+          },
+          {
+            "gamePk": 867686,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-25T01:30:00Z",
+            "officialDate": "2026-10-24",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 4
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-26",
+        "games": [
+          {
+            "gamePk": 867676,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-26T20:30:00Z",
+            "officialDate": "2026-10-26",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 20
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 4
+              }
+            }
+          },
+          {
+            "gamePk": 867677,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-26T20:30:00Z",
+            "officialDate": "2026-10-26",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 10
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 7
+              }
+            }
+          },
+          {
+            "gamePk": 867687,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-26T20:30:00Z",
+            "officialDate": "2026-10-26",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 12
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 13
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-27",
+        "games": [
+          {
+            "gamePk": 867680,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-27T20:30:00Z",
+            "officialDate": "2026-10-27",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 1
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 0
+              }
+            }
+          },
+          {
+            "gamePk": 867675,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-27T20:30:00Z",
+            "officialDate": "2026-10-27",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 11
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 3
+              }
+            }
+          },
+          {
+            "gamePk": 867679,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-27T20:30:00Z",
+            "officialDate": "2026-10-27",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 6
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 11
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-28",
+        "games": [
+          {
+            "gamePk": 867678,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-28T20:30:00Z",
+            "officialDate": "2026-10-28",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 11
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 9
+              }
+            }
+          },
+          {
+            "gamePk": 867669,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-28T20:30:00Z",
+            "officialDate": "2026-10-28",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 13
+              }
+            }
+          },
+          {
+            "gamePk": 867674,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-29T01:30:00Z",
+            "officialDate": "2026-10-28",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 0
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 4
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-29",
+        "games": [
+          {
+            "gamePk": 867668,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-29T20:30:00Z",
+            "officialDate": "2026-10-29",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 10
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 13
+              }
+            }
+          },
+          {
+            "gamePk": 867672,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-30T01:30:00Z",
+            "officialDate": "2026-10-29",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 17
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 5
+              }
+            }
+          },
+          {
+            "gamePk": 867673,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-30T01:30:00Z",
+            "officialDate": "2026-10-29",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 5
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 21
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-30",
+        "games": [
+          {
+            "gamePk": 867671,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-30T20:30:00Z",
+            "officialDate": "2026-10-30",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "C",
+              "detailedState": "Cancelled",
+              "statusCode": "CR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867670,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-30T20:30:00Z",
+            "officialDate": "2026-10-30",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "C",
+              "detailedState": "Cancelled",
+              "statusCode": "CR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867659,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-31T01:30:00Z",
+            "officialDate": "2026-10-30",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "C",
+              "detailedState": "Cancelled",
+              "statusCode": "CR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-10-31",
+        "games": [
+          {
+            "gamePk": 867658,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-31T19:30:00Z",
+            "officialDate": "2026-10-31",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                },
+                "score": 9
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                },
+                "score": 8
+              }
+            }
+          },
+          {
+            "gamePk": 867666,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-31T22:00:00Z",
+            "officialDate": "2026-10-31",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Completed Early",
+              "statusCode": "FR",
+              "startTimeTBD": false,
+              "reason": "Rain",
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                },
+                "score": 2
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                },
+                "score": 11
+              }
+            }
+          },
+          {
+            "gamePk": 867667,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-10-31T22:00:00Z",
+            "officialDate": "2026-10-31",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                },
+                "score": 4
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                },
+                "score": 5
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-02",
+        "games": [
+          {
+            "gamePk": 867665,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-02T20:30:00Z",
+            "officialDate": "2026-11-02",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867664,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-02T20:30:00Z",
+            "officialDate": "2026-11-02",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867663,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-03T01:30:00Z",
+            "officialDate": "2026-11-02",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-03",
+        "games": [
+          {
+            "gamePk": 867662,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-03T20:30:00Z",
+            "officialDate": "2026-11-03",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867660,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-04T01:30:00Z",
+            "officialDate": "2026-11-03",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867661,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-04T01:30:00Z",
+            "officialDate": "2026-11-03",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-04",
+        "games": [
+          {
+            "gamePk": 867657,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-04T20:30:00Z",
+            "officialDate": "2026-11-04",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867656,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-05T01:30:00Z",
+            "officialDate": "2026-11-04",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867655,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-05T01:30:00Z",
+            "officialDate": "2026-11-04",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-05",
+        "games": [
+          {
+            "gamePk": 867654,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-05T20:30:00Z",
+            "officialDate": "2026-11-05",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867653,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-06T01:30:00Z",
+            "officialDate": "2026-11-05",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867647,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-06T01:30:00Z",
+            "officialDate": "2026-11-05",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-06",
+        "games": [
+          {
+            "gamePk": 867652,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-06T20:30:00Z",
+            "officialDate": "2026-11-06",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867650,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-07T01:30:00Z",
+            "officialDate": "2026-11-06",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867651,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-07T01:30:00Z",
+            "officialDate": "2026-11-06",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2532,
+              "name": "Scottsdale Stadium",
+              "link": "/api/v1/venues/2532"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-08",
+        "games": [
+          {
+            "gamePk": 867649,
+            "gameType": "A",
+            "season": "2026",
+            "gameDate": "2026-11-09T01:00:00Z",
+            "officialDate": "2026-11-08",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 1311,
+                  "name": "National League Fall Stars",
+                  "link": "/api/v1/teams/1311"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 1310,
+                  "name": "American League Fall Stars",
+                  "link": "/api/v1/teams/1310"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-10",
+        "games": [
+          {
+            "gamePk": 867644,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-10T20:30:00Z",
+            "officialDate": "2026-11-10",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2603,
+              "name": "Surprise Stadium",
+              "link": "/api/v1/venues/2603"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867648,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-10T20:30:00Z",
+            "officialDate": "2026-11-10",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867637,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-11T01:30:00Z",
+            "officialDate": "2026-11-10",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4249,
+              "name": "Salt River Fields at Talking Stick",
+              "link": "/api/v1/venues/4249"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-11",
+        "games": [
+          {
+            "gamePk": 867646,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-11T20:30:00Z",
+            "officialDate": "2026-11-11",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 490,
+                  "name": "Peoria Javelinas",
+                  "link": "/api/v1/teams/490"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 542,
+                  "name": "Surprise Saguaros",
+                  "link": "/api/v1/teams/542"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867645,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-11T20:30:00Z",
+            "officialDate": "2026-11-11",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 555,
+                  "name": "Mesa Solar Sox",
+                  "link": "/api/v1/teams/555"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 527,
+                  "name": "Salt River Rafters",
+                  "link": "/api/v1/teams/527"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867643,
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-11-11T22:30:00Z",
+            "officialDate": "2026-11-11",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 3809,
+              "name": "Camelback Ranch",
+              "link": "/api/v1/venues/3809"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 454,
+                  "name": "Glendale Desert Dogs",
+                  "link": "/api/v1/teams/454"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 544,
+                  "name": "Scottsdale Scorpions",
+                  "link": "/api/v1/teams/544"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-12",
+        "games": [
+          {
+            "gamePk": 867642,
+            "gameType": "D",
+            "season": "2026",
+            "gameDate": "2026-11-12T20:30:00Z",
+            "officialDate": "2026-11-12",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867641,
+            "gameType": "D",
+            "season": "2026",
+            "gameDate": "2026-11-13T01:30:00Z",
+            "officialDate": "2026-11-12",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 4629,
+              "name": "Sloan Park",
+              "link": "/api/v1/venues/4629"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-13",
+        "games": [
+          {
+            "gamePk": 867640,
+            "gameType": "L",
+            "season": "2026",
+            "gameDate": "2026-11-13T20:30:00Z",
+            "officialDate": "2026-11-13",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              }
+            }
+          },
+          {
+            "gamePk": 867639,
+            "gameType": "L",
+            "season": "2026",
+            "gameDate": "2026-11-14T01:30:00Z",
+            "officialDate": "2026-11-13",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "date": "2026-11-14",
+        "games": [
+          {
+            "gamePk": 867638,
+            "gameType": "W",
+            "season": "2026",
+            "gameDate": "2026-11-15T01:00:00Z",
+            "officialDate": "2026-11-14",
+            "status": {
+              "abstractGameState": "Preview",
+              "codedGameState": "S",
+              "detailedState": "Scheduled",
+              "statusCode": "S",
+              "startTimeTBD": false,
+              "abstractGameCode": "P"
+            },
+            "venue": {
+              "id": 2530,
+              "name": "Peoria Stadium",
+              "link": "/api/v1/venues/2530"
+            },
+            "teams": {
+              "home": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              },
+              "away": {
+                "team": {
+                  "id": 55,
+                  "name": "To Be Determined",
+                  "link": "/api/v1/teams/55"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

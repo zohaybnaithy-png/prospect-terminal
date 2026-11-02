@@ -222,6 +222,7 @@ export function buildPlan(
       return recordKey(a).localeCompare(recordKey(b));
     }),
     issues,
+    ...(batch.notices?.length ? { notices: batch.notices } : {}),
     ...(batch.quarantinePolicy
       ? { quarantinePolicy: batch.quarantinePolicy }
       : {}),

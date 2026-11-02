@@ -194,7 +194,17 @@ export interface IngestionIssue {
     | "invalid-snapshot";
   message: string;
 }
+export interface IngestionNotice {
+  recordKey: string;
+  reason:
+    | "reconciled-reschedule"
+    | "excluded-exhibition"
+    | "deferred-participants"
+    | "outside-scope";
+  message: string;
+}
 export interface NormalizedBatch {
+  notices?: IngestionNotice[];
   quarantinePolicy?: "records";
   records: IngestionRecord[];
   issues: IngestionIssue[];

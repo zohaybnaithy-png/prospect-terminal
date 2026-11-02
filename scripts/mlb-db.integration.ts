@@ -6,7 +6,11 @@ import { PostgresIngestionSink } from "../src/ingestion/postgres-sink";
 import { MLBStatsApiSource } from "../src/ingestion/sources/mlb-stats-api";
 import { ingest } from "../src/ingestion/runner";
 import { GameStatisticsRepository } from "../src/statistics/repository";
-import { syntheticMlb, mockMlbFetch } from "./mlb-test-support";
+import {
+  recordedScheduleFetch,
+  syntheticMlb,
+  mockMlbFetch,
+} from "./mlb-test-support";
 test("MLB source offline PostgreSQL workflow", async (t) => {
   const url = process.env.MLB_TEST_DATABASE_URL;
   if (!url || new URL(url).pathname !== "/prospect_mlb_test")
@@ -196,6 +200,81 @@ test("MLB source offline PostgreSQL workflow", async (t) => {
         await ingest(source(data, "2026-10-30T12:00:00Z"), sink);
         assert.equal(await count("player_batting_games"), 3);
         assert.equal(await count("games"), 3);
+      },
+    );
+    await t.test(
+      "recorded weather reschedules persist one complete game each and replay safely with transparent special-game notices",
+      async () => {
+        const recordedSource = () =>
+          new MLBStatsApiSource(
+            { season: 2026, mode: "games" },
+            {
+              fetcher: recordedScheduleFetch().fetcher,
+              sleep: async () => {},
+              clock: () => new Date("2026-11-01T12:00:00Z"),
+            },
+          );
+        const preview = await ingest(recordedSource(), sink, { dryRun: true });
+        assert.equal(preview.status, "dry-run");
+        assert.equal(preview.issues, 0);
+        assert.equal(preview.notices!.length, 8);
+        assert.equal(await count("games"), 3);
+        const first = await ingest(recordedSource(), sink);
+        assert.equal(first.status, "applied");
+        assert.equal(first.issues, 0);
+        const before = await c.query(
+          "SELECT id,game_id,player_id,team_id FROM player_batting_games ORDER BY id",
+        );
+        for (const external of ["867710", "867709"]) {
+          const gameId = await id("game", external);
+          const row = (
+            await c.query(
+              "SELECT starts_at,official_date::text,status,venue,boxscore_complete FROM games WHERE id=$1",
+              [gameId],
+            )
+          ).rows[0];
+          assert.equal(row.starts_at.toISOString(), "2026-10-14T20:30:00.000Z");
+          assert.equal(row.official_date, "2026-10-14");
+          assert.equal(row.status, "final");
+          assert.equal(row.boxscore_complete, true);
+          assert.equal(
+            (
+              await c.query(
+                "SELECT count(*)::int AS n FROM player_batting_games WHERE game_id=$1",
+                [gameId],
+              )
+            ).rows[0].n,
+            2,
+          );
+          assert.equal(
+            (
+              await c.query(
+                "SELECT count(*)::int AS n FROM player_pitching_games WHERE game_id=$1",
+                [gameId],
+              )
+            ).rows[0].n,
+            2,
+          );
+        }
+        const replay = await ingest(recordedSource(), sink);
+        assert.equal(replay.changed, 0);
+        assert.deepEqual(
+          (
+            await c.query(
+              "SELECT id,game_id,player_id,team_id FROM player_batting_games ORDER BY id",
+            )
+          ).rows,
+          before.rows,
+        );
+        assert.equal(await count("games"), 93);
+        assert.equal(
+          (
+            await c.query(
+              "SELECT count(*)::int AS n FROM source_identities WHERE entity_kind='game' AND external_id IN ('867649','867642','867641','867640','867639','867638')",
+            )
+          ).rows[0].n,
+          0,
+        );
       },
     );
   } finally {

@@ -7,6 +7,8 @@ import type {
   IngestionRecord,
 } from "../contracts";
 import { recordSchema, recordKey } from "../contracts";
+import { selectAflSchedule, normalizedGame } from "./mlb-schedule";
+import type { ScheduleGame } from "./mlb-schedule";
 import { MlbClient } from "./mlb-client";
 import { AFL, MLB_SOURCE_ID, validateMlbOptions } from "./mlb-config";
 import type { MlbOptions } from "./mlb-config";
@@ -47,48 +49,13 @@ const rosterEntry = z.object({
     .object({ code: z.string().optional(), description: z.string().optional() })
     .optional(),
 });
-const scheduleGame = z.object({
-  gamePk: apiId,
-  gameDate: z.iso.datetime({ offset: true }),
-  officialDate: z.iso.date().optional(),
-  season: z.union([z.string(), z.number()]).optional(),
-  leagueId: apiId.optional(),
-  status: z.object({
-    abstractGameState: z.string().optional(),
-    detailedState: z.string().optional(),
-    codedGameState: z.string().optional(),
-  }),
-  teams: z.object({
-    home: z.object({
-      team: z.object({ id: apiId }),
-      score: z.number().int().nonnegative().optional(),
-    }),
-    away: z.object({
-      team: z.object({ id: apiId }),
-      score: z.number().int().nonnegative().optional(),
-    }),
-  }),
-  venue: z.object({ name: z.string() }).optional(),
-});
-function scheduleRows(body: unknown): { raw: unknown; date: string }[] {
-  const dates = z
-    .object({
-      dates: z
-        .array(z.object({ date: z.iso.date(), games: z.array(z.unknown()) }))
-        .max(400),
-    })
-    .parse(body);
-  return dates.dates.flatMap((d) =>
-    d.games.map((raw) => ({ raw, date: d.date })),
-  );
-}
 const chunks = <T>(values: T[], size: number) =>
   Array.from({ length: Math.ceil(values.length / size) }, (_, i) =>
     values.slice(i * size, (i + 1) * size),
   );
 export class MLBStatsApiSource implements SourceAdapter {
   readonly id = MLB_SOURCE_ID;
-  readonly version = "1";
+  readonly version = "2";
   readonly options: MlbOptions;
   private client: MlbClient;
   private capturing = false;
@@ -197,36 +164,21 @@ export class MLBStatsApiSource implements SourceAdapter {
           endDate: o.to ?? `${o.season}-12-31`,
           teamId: o.team,
         });
-        for (const { raw, date } of scheduleRows(schedule)) {
-          const g = scheduleGame.safeParse(raw);
-          if (!g.success) continue;
-          const officialDate = g.data.officialDate ?? date;
-          if (
-            Number(officialDate.slice(0, 4)) !== o.season ||
-            (o.from && officialDate < o.from) ||
-            (o.to && officialDate > o.to) ||
-            (o.team &&
-              ![g.data.teams.home.team.id, g.data.teams.away.team.id].includes(
-                o.team,
-              )) ||
-            (g.data.season !== undefined &&
-              String(g.data.season) !== String(o.season))
-          )
-            continue;
+        const selected = selectAflSchedule(
+          schedule,
+          new Set(discovered.map((t) => t.id)),
+          o,
+        );
+        for (const { game: g } of selected.games.values()) {
           try {
-            if (gameStatus(g.data.status) !== "final") continue;
-            if (
-              !discovered.some((t) => t.id === g.data.teams.home.team.id) ||
-              !discovered.some((t) => t.id === g.data.teams.away.team.id)
-            )
-              continue;
+            if (gameStatus(g.status) !== "final") continue;
             boxes.push({
-              id: g.data.gamePk,
-              body: await this.client.get(`game/${g.data.gamePk}/boxscore`),
+              id: g.gamePk,
+              body: await this.client.get(`game/${g.gamePk}/boxscore`),
             });
           } catch (error) {
             boxes.push({
-              id: g.data.gamePk,
+              id: g.gamePk,
               error:
                 error instanceof Error
                   ? error.message
@@ -448,67 +400,20 @@ export class MLBStatsApiSource implements SourceAdapter {
       }
     }
     if (p.scheduleError) n.issue("schedule", p.scheduleError);
-    const games = new Map<number, z.infer<typeof scheduleGame>>();
-    if (p.schedule)
-      try {
-        for (const { raw, date } of scheduleRows(p.schedule)) {
-          const parsed = scheduleGame.safeParse(raw);
-          if (!parsed.success) {
-            n.issue("schedule", "Malformed game record");
-            continue;
-          }
-          const g = parsed.data;
-          try {
-            if (
-              (g.season !== undefined &&
-                String(g.season) !== String(p.options.season)) ||
-              (g.leagueId !== undefined && g.leagueId !== AFL.leagueId) ||
-              !teams.has(g.teams.home.team.id) ||
-              !teams.has(g.teams.away.team.id)
-            )
-              throw new Error("Game outside AFL scope");
-            const status = gameStatus(g.status);
-            const officialDate = g.officialDate ?? date;
-            if (Number(officialDate.slice(0, 4)) !== p.options.season)
-              throw new Error("Official date outside selected season");
-            if (
-              (p.options.from && officialDate < p.options.from) ||
-              (p.options.to && officialDate > p.options.to) ||
-              (p.options.team &&
-                ![g.teams.home.team.id, g.teams.away.team.id].includes(
-                  p.options.team,
-                ))
-            )
-              continue;
-            games.set(g.gamePk, g);
-            n.add({
-              kind: "game",
-              externalId: String(g.gamePk),
-              season: `afl-${p.options.season}`,
-              league: "119",
-              officialDate,
-              homeTeam: String(g.teams.home.team.id),
-              awayTeam: String(g.teams.away.team.id),
-              startsAt: g.gameDate,
-              status,
-              ...(g.teams.home.score !== undefined
-                ? { homeScore: g.teams.home.score }
-                : {}),
-              ...(g.teams.away.score !== undefined
-                ? { awayScore: g.teams.away.score }
-                : {}),
-              ...(g.venue ? { venue: g.venue.name } : {}),
-            });
-          } catch (error) {
-            n.issue(
-              `game:${g.gamePk}`,
-              error instanceof Error ? error.message : "Invalid game",
-            );
-          }
-        }
-      } catch {
-        n.issue("schedule", "Malformed schedule envelope");
+    const games = new Map<number, ScheduleGame>();
+    if (p.schedule) {
+      const selected = selectAflSchedule(
+        p.schedule,
+        new Set(teams.keys()),
+        p.options,
+      );
+      n.issues.push(...selected.issues);
+      n.notices.push(...selected.notices);
+      for (const [id, { game, date }] of selected.games) {
+        if (n.add(normalizedGame(game, date, p.options.season)))
+          games.set(id, game);
       }
+    }
     for (const part of p.boxes) {
       if (part.error) {
         n.issue(`boxscore:${part.id}`, part.error);

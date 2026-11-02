@@ -44,3 +44,47 @@ export function mockMlbFetch(data = syntheticMlb()) {
     },
   };
 }
+
+// Real schedule, paired ONLY with synthetic player/counting-stat responses.
+import { gameStatus } from "../src/ingestion/sources/mlb-normalize";
+import recorded from "../src/ingestion/fixtures/mlb/afl-2026.schedule-regression.json";
+export const recordedSchedule = () => structuredClone(recorded.body);
+export const recordedClubIds = new Set(recorded.teams.map((t) => t.id));
+export function recordedScheduleFetch(schedule: unknown = recordedSchedule()) {
+  const base = mockMlbFetch();
+  const urls: string[] = [];
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      headers: { "content-type": "application/json" },
+    });
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = new URL(String(input));
+    urls.push(url.href);
+    if (url.pathname.endsWith("/schedule")) return json(schedule);
+    if (url.pathname.endsWith("/teams") && url.searchParams.has("leagueIds"))
+      return json({
+        teams: recorded.teams.map((t, i) => ({
+          ...t,
+          abbreviation: `T${i}`,
+          league: { id: 119 },
+          sport: { id: 17 },
+        })),
+      });
+    const match = url.pathname.match(/\/game\/(\d+)\/boxscore$/);
+    if (match) {
+      const rows = recorded.body.dates.flatMap((d) => d.games);
+      const game = rows.find(
+        (g) =>
+          g.gamePk === Number(match[1]) && gameStatus(g.status) === "final",
+      );
+      if (!game)
+        throw new Error("No completed recorded game for synthetic boxscore");
+      const box = syntheticMlb().boxes["8001"];
+      box.teams.home.team.id = game.teams.home.team.id;
+      box.teams.away.team.id = game.teams.away.team.id;
+      return json(box);
+    }
+    return base.fetcher(input, init);
+  };
+  return { fetcher, urls };
+}
