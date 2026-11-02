@@ -84,7 +84,7 @@ export function TopProspects({ catalog }: { catalog: Catalog }) {
     <section className="top-prospects" aria-labelledby="top-prospects-title">
       <div className="home-section-heading">
         <h2 id="top-prospects-title">Top Prospects</h2>
-        <span>Grade</span>
+        <span>Demo Grade</span>
       </div>
       <ol className="top-prospect-list">
         {players.map((p, i) => (
@@ -92,9 +92,9 @@ export function TopProspects({ catalog }: { catalog: Catalog }) {
             <span className="list-rank">{i + 1}</span>
             <PlayerLink player={p} />
             <OrganizationLink
-              organization={catalog.organizations.find(
-                (o) => o.id === p.organizationId,
-              )!}
+              organization={
+                catalog.organizations.find((o) => o.id === p.organizationId)!
+              }
             />
             <strong>{p.grade}</strong>
           </li>
@@ -102,7 +102,7 @@ export function TopProspects({ catalog }: { catalog: Catalog }) {
       </ol>
       <div className="widget-bottom">
         <Link href="/players">All prospects →</Link>
-        <span>Illustrative ratings</span>
+        <span>Fictional placeholder · no Grade model yet</span>
       </div>
     </section>
   );
@@ -133,9 +133,11 @@ export function RecentCallups({ catalog }: { catalog: Catalog }) {
               <div>
                 <PlayerLink player={player} />
                 <OrganizationLink
-                  organization={catalog.organizations.find(
-                    (o) => o.id === player.organizationId,
-                  )!}
+                  organization={
+                    catalog.organizations.find(
+                      (o) => o.id === player.organizationId,
+                    )!
+                  }
                 />
               </div>
               <span>

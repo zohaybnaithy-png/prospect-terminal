@@ -6,7 +6,7 @@ A **MiLB-first, player-first discovery and development platform** built around �
 
 The MiLB-first foundation now has a light, editorial baseball front page: a compact game strip, two lead stories, visual highlight previews, Trending Prospects, Top Prospects, and recorded fictional call-ups. Detailed research tables and filters remain on the inner pages. The shared navigation covers Home, Players, Organizations, Leagues, Data, Screener, and News. Player pages connect statistics, assignment history, trajectory, and related stories. `/teams` and existing team/player IDs remain available; `/market` redirects to the homepage.
 
-**All players, parent organizations, affiliates, statistics, stories, assignments, Grades, and Momentum values are fictional.** The preview contains 18 stable demo players (including a two-way player), three invented parent organizations, 13 teams, five affiliated levels, and an AFL-style context. It represents a fictional snapshot ending October 24, 2026, not a real baseball schedule or live feed. No real player or club is assigned fabricated statistics.
+**Real data (2026 Arizona Fall League):** the score strip, the homepage AFL Recent Performers widget, the `/players` directory, and AFL player profiles read ingested AFL data from PostgreSQL (see [Real AFL data in the UI](#real-afl-data-in-the-ui)). **Everything else below remains a fictional demo:** demo players, parent organizations, affiliates, statistics, stories, assignments, Grades, and Momentum values are fictional. The preview contains 18 stable demo players (including a two-way player), three invented parent organizations, 13 teams, five affiliated levels, and an AFL-style context. It represents a fictional snapshot ending October 24, 2026, not a real baseball schedule or live feed. No real player or club is assigned fabricated statistics.
 
 The homepage Trending Prospects widget uses the existing priority demo order with small 7D/14D/30D and level controls. Top Prospects is a separate illustrative overall-Grade list. Scores and editorial/media presentation fixtures live in `src/data/demo-home.ts`; they are never written to the database. Original local SVG baseball artwork stands in for approved imagery. Highlight links open explicit storyboard previews, not fake video players. The call-ups section reuses existing fictional affiliate promotions and their player-development links.
 
@@ -32,7 +32,21 @@ npm ci
 npm run dev
 ```
 
-The server uses port 3000. Demo rendering requires no `.env` file and no live database. Even when `DATABASE_URL` is present, the app deliberately uses the demo repository until an explicit production repository is implemented.
+The server uses port 3000. Demo content requires no `.env` file and no live database. Without `DATABASE_URL`, real-data sections render an explicit "not connected" state; they never fall back to fictional data.
+
+## Real AFL data in the UI
+
+`src/services/afl/` is the server-side read layer between the existing Drizzle schema and the pages:
+
+- `queries.ts` loads the AFL season once per request window inside a single `READ ONLY`, `REPEATABLE READ` transaction (PostgreSQL rejects any write; all reads see one consistent snapshot). League and season are resolved through `source_identities` (`mlb-stats-api`, league 119, season `afl-2026`); provider IDs never leave this file, and `players.external_ids` is not selected.
+- `read-model.ts` holds pure, unit-tested selectors (directory rows, recent performers, scoreboard, player profiles). Rates reuse `src/statistics/aggregate.ts`, windows reuse `windowBounds`, and only final games with complete box scores count — the same rules as `GameStatisticsRepository`. Windows end at the latest completed AFL game date, not the wall clock.
+- `index.ts` (`server-only`) reads `DATABASE_URL`, reuses a successful result for 60 seconds, and maps failures to `not-configured` / `empty` / `unavailable` states. Only a coarse error code is logged; connection details never reach logs or the browser.
+
+Player → AFL team / MLB organization comes from the latest `source_roster_observations` row (participation evidence, not dated transactions); a missing affiliation is shown as unresolved, never inferred. AFL team and organization links open the filtered player directory (`/players?team=…`, `/players?org=…`). Demo fixture IDs still render the fictional demo profile.
+
+Still demo/placeholder: news, highlights, call-ups, Top Prospects (Grade), Momentum, the trajectory chart, Prospect Priority/Pure Performance discovery (Screener, Data), and the organization/team/league pages. The AFL Recent Performers list is a descriptive raw-stat sort (OPS with a stated PA minimum; pitcher strikeouts), not a trend or ranking model. Because the score strip in the root layout reads request-time data, all routes render dynamically.
+
+Use a read-only database role for the app's `DATABASE_URL` where possible. `npm run test:afl:db` checks the read layer's SQL against a fresh, migrated, disposable `prospect_afl_read_test` database (`AFL_READ_TEST_DATABASE_URL`); never point it at Neon.
 
 ```sh
 npm run typecheck   # Generate Next.js route types, then tsc --noEmit
@@ -48,11 +62,11 @@ Use `PORT` for another server port. Tests cover the original foundation, fixture
 
 See [.env.example](.env.example). Never commit credentials.
 
-| Variable          | Purpose                                                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`    | PostgreSQL URL for database commands or future database-backed services; not required by the demo UI |
-| `ALLOW_DEMO_SEED` | Explicit `true` opt-in to seed a disposable development database                                     |
-| `PORT`            | Optional Next.js server port (default 3000)                                                          |
+| Variable          | Purpose                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`    | Server-side PostgreSQL URL. The app reads AFL data from it (read-only transactions); also used by database commands. Optional: without it, real-data sections show a "not connected" state |
+| `ALLOW_DEMO_SEED` | Explicit `true` opt-in to seed a disposable development database                                                                                                                           |
+| `PORT`            | Optional Next.js server port (default 3000)                                                                                                                                                |
 
 The lazy database client opens a pool only when requested. TLS behavior comes from provider-supported connection settings; verification is not disabled.
 

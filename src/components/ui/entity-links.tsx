@@ -5,7 +5,11 @@ import type {
   Organization,
   DevelopmentContext,
 } from "@/types/baseball";
-export const PlayerLink = ({ player }: { player: Player }) => (
+export const PlayerLink = ({
+  player,
+}: {
+  player: Pick<Player, "id" | "name">;
+}) => (
   <Link className="player-name" href={`/players/${player.id}`}>
     {player.name}
   </Link>
