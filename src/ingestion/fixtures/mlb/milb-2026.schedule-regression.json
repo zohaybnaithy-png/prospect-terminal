@@ -1,0 +1,1699 @@
+{
+ "description": "MiLB schedule reconciliation regression set. Groups marked 'verbatim' copy field values from the 2026 live read-only validation log (statsapi.mlb.com, 2026-11-03); the log did not capture their gamePks, so 7000xx placeholders are used. Other groups are constructed from patterns observed in that log (counts in docs/MILB-INGESTION.md) or are negative cases that must stay quarantined. Team IDs are real 2026 MiLB team IDs used only as opaque identifiers.",
+ "groups": [
+  {
+   "name": "AAA postponed -> doubleheader game 2 next day",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-03-29",
+    "startsAt": "2026-03-29T16:40:00.000Z",
+    "score": [
+     7,
+     3
+    ],
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-03-28",
+     {
+      "gamePk": 700001,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-03-28T17:05:00Z",
+      "officialDate": "2026-03-29",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-03-29T16:40:00Z",
+      "rescheduleGameDate": "2026-03-29"
+     }
+    ],
+    [
+     "2026-03-29",
+     {
+      "gamePk": 700001,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-03-29T16:40:00Z",
+      "officialDate": "2026-03-29",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 7
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-03-28T17:05:00Z",
+      "rescheduledFromDate": "2026-03-28"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "AAA postponed; makeup start is next UTC day",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-04-04",
+    "startsAt": "2026-04-05T00:10:00.000Z",
+    "score": [
+     1,
+     2
+    ],
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-01",
+     {
+      "gamePk": 700002,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-02T01:05:00Z",
+      "officialDate": "2026-04-04",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 529
+        }
+       },
+       "away": {
+        "team": {
+         "id": 4904
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 529"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-04-05T00:10:00Z",
+      "rescheduleGameDate": "2026-04-04"
+     }
+    ],
+    [
+     "2026-04-04",
+     {
+      "gamePk": 700002,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-05T00:10:00Z",
+      "officialDate": "2026-04-04",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 529
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 4904
+        },
+        "score": 2
+       }
+      },
+      "venue": {
+       "name": "Venue 529"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-04-02T01:05:00Z",
+      "rescheduledFromDate": "2026-04-01"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "AA postponed 24 days later",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-04-29",
+    "startsAt": "2026-04-29T21:10:00.000Z",
+    "score": [
+     5,
+     3
+    ],
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-05",
+     {
+      "gamePk": 700003,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-05T17:05:00Z",
+      "officialDate": "2026-04-29",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 463
+        }
+       },
+       "away": {
+        "team": {
+         "id": 505
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 463"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-04-29T21:10:00Z",
+      "rescheduleGameDate": "2026-04-29"
+     }
+    ],
+    [
+     "2026-04-29",
+     {
+      "gamePk": 700003,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-29T21:10:00Z",
+      "officialDate": "2026-04-29",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 463
+        },
+        "score": 5
+       },
+       "away": {
+        "team": {
+         "id": 505
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 463"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-04-05T17:05:00Z",
+      "rescheduledFromDate": "2026-04-05"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "High-A postponed -> cancelled",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "cancelled",
+    "officialDate": "2026-04-03",
+    "startsAt": "2026-04-03T22:15:00.000Z",
+    "score": null,
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-02",
+     {
+      "gamePk": 700004,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-02T23:40:00Z",
+      "officialDate": "2026-04-03",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 572
+        }
+       },
+       "away": {
+        "team": {
+         "id": 554
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 572"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-04-03T22:15:00Z",
+      "rescheduleGameDate": "2026-04-03"
+     }
+    ],
+    [
+     "2026-04-03",
+     {
+      "gamePk": 700004,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-03T22:15:00Z",
+      "officialDate": "2026-04-03",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Cancelled",
+       "codedGameState": "C"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 572
+        }
+       },
+       "away": {
+        "team": {
+         "id": 554
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 572"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-04-02T23:40:00Z",
+      "rescheduledFromDate": "2026-04-02"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "High-A postponed -> postponed -> final (chain; first officialDate already the final date)",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-06-05",
+    "startsAt": "2026-06-05T22:35:00.000Z",
+    "score": [
+     4,
+     3
+    ],
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-03",
+     {
+      "gamePk": 700005,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-03T23:05:00Z",
+      "officialDate": "2026-06-05",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-04-05T18:10:00Z",
+      "rescheduleGameDate": "2026-04-05"
+     }
+    ],
+    [
+     "2026-04-05",
+     {
+      "gamePk": 700005,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-05T18:10:00Z",
+      "officialDate": "2026-06-05",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduleDate": "2026-06-05T22:35:00Z",
+      "rescheduleGameDate": "2026-06-05",
+      "rescheduledFrom": "2026-04-03T23:05:00Z",
+      "rescheduledFromDate": "2026-04-03"
+     }
+    ],
+    [
+     "2026-06-05",
+     {
+      "gamePk": 700005,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-06-05T22:35:00Z",
+      "officialDate": "2026-06-05",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        },
+        "score": 4
+       },
+       "away": {
+        "team": {
+         "id": 565
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-04-05T18:10:00Z",
+      "rescheduledFromDate": "2026-04-05"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "Single-A suspended -> resumed (both rows Final, origin official date)",
+   "origin": "verbatim field values from the 2026 live validation log (gamePk placeholder)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-04-07",
+    "startsAt": "2026-04-07T22:10:00.000Z",
+    "score": [
+     6,
+     3
+    ],
+    "kinds": [
+     "resumption"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-07",
+     {
+      "gamePk": 700006,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-07T22:10:00Z",
+      "officialDate": "2026-04-07",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 6
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumeDate": "2026-04-09T20:00:00Z",
+      "resumeGameDate": "2026-04-09"
+     }
+    ],
+    [
+     "2026-04-09",
+     {
+      "gamePk": 700006,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-09T20:00:00Z",
+      "officialDate": "2026-04-07",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 6
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumedFrom": "2026-04-07T22:10:00Z",
+      "resumedFromDate": "2026-04-07"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "postponed x3 -> final",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-05-20",
+    "startsAt": "2026-05-20T17:05:00.000Z",
+    "score": [
+     2,
+     1
+    ],
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-05-01",
+     {
+      "gamePk": 700007,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-05-01T23:05:00Z",
+      "officialDate": "2026-05-20",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-05-02T23:05:00Z",
+      "rescheduleGameDate": "2026-05-02"
+     }
+    ],
+    [
+     "2026-05-02",
+     {
+      "gamePk": 700007,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-05-02T23:05:00Z",
+      "officialDate": "2026-05-20",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-05-03T17:05:00Z",
+      "rescheduleGameDate": "2026-05-03",
+      "rescheduledFrom": "2026-05-01T23:05:00Z",
+      "rescheduledFromDate": "2026-05-01"
+     }
+    ],
+    [
+     "2026-05-03",
+     {
+      "gamePk": 700007,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-05-03T17:05:00Z",
+      "officialDate": "2026-05-20",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-05-20T17:05:00Z",
+      "rescheduleGameDate": "2026-05-20",
+      "rescheduledFrom": "2026-05-02T23:05:00Z",
+      "rescheduledFromDate": "2026-05-02"
+     }
+    ],
+    [
+     "2026-05-20",
+     {
+      "gamePk": 700007,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-05-20T17:05:00Z",
+      "officialDate": "2026-05-20",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 2
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 1
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1,
+      "rescheduledFrom": "2026-05-03T17:05:00Z",
+      "rescheduledFromDate": "2026-05-03"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "postponed -> final (suspended) -> resumed final",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-04-11",
+    "startsAt": "2026-04-11T17:05:00.000Z",
+    "score": [
+     3,
+     2
+    ],
+    "kinds": [
+     "reschedule",
+     "resumption"
+    ]
+   },
+   "rows": [
+    [
+     "2026-04-10",
+     {
+      "gamePk": 700008,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-10T23:05:00Z",
+      "officialDate": "2026-04-11",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 463
+        }
+       },
+       "away": {
+        "team": {
+         "id": 505
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 463"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-04-11T17:05:00Z",
+      "rescheduleGameDate": "2026-04-11"
+     }
+    ],
+    [
+     "2026-04-11",
+     {
+      "gamePk": 700008,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-11T17:05:00Z",
+      "officialDate": "2026-04-11",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 463
+        },
+        "score": 3
+       },
+       "away": {
+        "team": {
+         "id": 505
+        },
+        "score": 2
+       }
+      },
+      "venue": {
+       "name": "Venue 463"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1,
+      "rescheduledFrom": "2026-04-10T23:05:00Z",
+      "rescheduledFromDate": "2026-04-10",
+      "resumeDate": "2026-04-12T18:00:00Z",
+      "resumeGameDate": "2026-04-12"
+     }
+    ],
+    [
+     "2026-04-12",
+     {
+      "gamePk": 700008,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-04-12T18:00:00Z",
+      "officialDate": "2026-04-11",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 463
+        },
+        "score": 3
+       },
+       "away": {
+        "team": {
+         "id": 505
+        },
+        "score": 2
+       }
+      },
+      "venue": {
+       "name": "Venue 463"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1,
+      "resumedFrom": "2026-04-11T17:05:00Z",
+      "resumedFromDate": "2026-04-11"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "completed early -> completed early (resumed)",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "status": "final",
+    "officialDate": "2026-06-10",
+    "startsAt": "2026-06-10T23:00:00.000Z",
+    "score": [
+     4,
+     4
+    ],
+    "kinds": [
+     "resumption"
+    ]
+   },
+   "rows": [
+    [
+     "2026-06-10",
+     {
+      "gamePk": 700009,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-06-10T23:00:00Z",
+      "officialDate": "2026-06-10",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Completed Early",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 4
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 4
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumeDate": "2026-06-11T22:00:00Z",
+      "resumeGameDate": "2026-06-11"
+     }
+    ],
+    [
+     "2026-06-11",
+     {
+      "gamePk": 700009,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-06-11T22:00:00Z",
+      "officialDate": "2026-06-10",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Completed Early",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 4
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 4
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumedFrom": "2026-06-10T23:00:00Z",
+      "resumedFromDate": "2026-06-10"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "postponed -> postponed, never played (terminal has no forward link)",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "status": "postponed",
+    "officialDate": "2026-08-21",
+    "startsAt": "2026-08-21T23:05:00.000Z",
+    "score": null,
+    "kinds": [
+     "reschedule"
+    ]
+   },
+   "rows": [
+    [
+     "2026-08-20",
+     {
+      "gamePk": 700010,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-08-20T23:05:00Z",
+      "officialDate": "2026-08-21",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-08-21T23:05:00Z",
+      "rescheduleGameDate": "2026-08-21"
+     }
+    ],
+    [
+     "2026-08-21",
+     {
+      "gamePk": 700010,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-08-21T23:05:00Z",
+      "officialDate": "2026-08-21",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduledFrom": "2026-08-20T23:05:00Z",
+      "rescheduledFromDate": "2026-08-20"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "postponed -> postponed whose last row still points forward (never made up)",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "notice": "superseded"
+   },
+   "rows": [
+    [
+     "2026-09-01",
+     {
+      "gamePk": 700011,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-09-01T23:05:00Z",
+      "officialDate": "2026-09-02",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-09-02T23:05:00Z",
+      "rescheduleGameDate": "2026-09-02"
+     }
+    ],
+    [
+     "2026-09-02",
+     {
+      "gamePk": 700011,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-09-02T23:05:00Z",
+      "officialDate": "2026-09-30",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-09-30T23:05:00Z",
+      "rescheduleGameDate": "2026-09-30",
+      "rescheduledFrom": "2026-09-01T23:05:00Z",
+      "rescheduledFromDate": "2026-09-01"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "game listed under a 2026 date that consistently belongs to 2027",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "notice": "declares season 2027"
+   },
+   "rows": [
+    [
+     "2026-05-22",
+     {
+      "gamePk": 700012,
+      "gameType": "R",
+      "season": "2027",
+      "gameDate": "2027-04-10T23:05:00Z",
+      "officialDate": "2027-04-10",
+      "status": {
+       "abstractGameState": "Preview",
+       "detailedState": "Scheduled",
+       "codedGameState": "S"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 550
+        }
+       },
+       "away": {
+        "team": {
+         "id": 565
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 550"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 2
+     }
+    ]
+   ]
+  },
+  {
+   "name": "final -> final without any linkage",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "single reciprocal linkage chain"
+   },
+   "rows": [
+    [
+     "2026-07-01",
+     {
+      "gamePk": 700013,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-01T23:05:00Z",
+      "officialDate": "2026-07-01",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1
+     }
+    ],
+    [
+     "2026-07-02",
+     {
+      "gamePk": 700013,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-02T23:05:00Z",
+      "officialDate": "2026-07-02",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 2
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1
+     }
+    ]
+   ]
+  },
+  {
+   "name": "resumed representations disagree on the final score",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "disagree on the final score"
+   },
+   "rows": [
+    [
+     "2026-07-03",
+     {
+      "gamePk": 700014,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-03T23:00:00Z",
+      "officialDate": "2026-07-03",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 6
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumeDate": "2026-07-04T20:00:00Z",
+      "resumeGameDate": "2026-07-04"
+     }
+    ],
+    [
+     "2026-07-04",
+     {
+      "gamePk": 700014,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-04T20:00:00Z",
+      "officialDate": "2026-07-03",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 7
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 3
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumedFrom": "2026-07-03T23:00:00Z",
+      "resumedFromDate": "2026-07-03"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "one postponed row linked by two different made-up games",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "Ambiguous schedule linkage"
+   },
+   "rows": [
+    [
+     "2026-07-05",
+     {
+      "gamePk": 700015,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-05T23:05:00Z",
+      "officialDate": "2026-07-06",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-07-06T17:05:00Z",
+      "rescheduleGameDate": "2026-07-06"
+     }
+    ],
+    [
+     "2026-07-06",
+     {
+      "gamePk": 700015,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-06T17:05:00Z",
+      "officialDate": "2026-07-06",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1,
+      "rescheduledFrom": "2026-07-05T23:05:00Z",
+      "rescheduledFromDate": "2026-07-05"
+     }
+    ],
+    [
+     "2026-07-06",
+     {
+      "gamePk": 700015,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-06T17:05:00Z",
+      "officialDate": "2026-07-06",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 0
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 1
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 2,
+      "rescheduledFrom": "2026-07-05T23:05:00Z",
+      "rescheduledFromDate": "2026-07-05"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "postponed row whose makeup does not point back",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "single reciprocal linkage chain"
+   },
+   "rows": [
+    [
+     "2026-07-07",
+     {
+      "gamePk": 700016,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-07T23:05:00Z",
+      "officialDate": "2026-07-08",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-07-08T17:05:00Z",
+      "rescheduleGameDate": "2026-07-08"
+     }
+    ],
+    [
+     "2026-07-08",
+     {
+      "gamePk": 700016,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-08T17:05:00Z",
+      "officialDate": "2026-07-08",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "Y",
+      "gameNumber": 1
+     }
+    ]
+   ]
+  },
+  {
+   "name": "resumption with a different official date",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "single reciprocal linkage chain"
+   },
+   "rows": [
+    [
+     "2026-07-09",
+     {
+      "gamePk": 700017,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-09T23:00:00Z",
+      "officialDate": "2026-07-09",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 2
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 1
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumeDate": "2026-07-10T20:00:00Z",
+      "resumeGameDate": "2026-07-10"
+     }
+    ],
+    [
+     "2026-07-10",
+     {
+      "gamePk": 700017,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-10T20:00:00Z",
+      "officialDate": "2026-07-10",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 2
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 1
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "resumedFrom": "2026-07-09T23:00:00Z",
+      "resumedFromDate": "2026-07-09"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "season field and official date disagree",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "season/date outside"
+   },
+   "rows": [
+    [
+     "2026-05-23",
+     {
+      "gamePk": 700018,
+      "gameType": "R",
+      "season": "2027",
+      "gameDate": "2026-05-23T23:05:00Z",
+      "officialDate": "2026-05-23",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 507
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 424
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 507"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1
+     }
+    ]
+   ]
+  },
+  {
+   "name": "conflicting gameType across representations",
+   "origin": "constructed from an observed live pattern (values illustrative)",
+   "expect": {
+    "quarantine": "Conflicting schedule gameType"
+   },
+   "rows": [
+    [
+     "2026-07-11",
+     {
+      "gamePk": 700019,
+      "gameType": "R",
+      "season": "2026",
+      "gameDate": "2026-07-11T23:05:00Z",
+      "officialDate": "2026-07-12",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Postponed",
+       "codedGameState": "D"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        }
+       },
+       "away": {
+        "team": {
+         "id": 531
+        }
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduleDate": "2026-07-12T23:05:00Z",
+      "rescheduleGameDate": "2026-07-12"
+     }
+    ],
+    [
+     "2026-07-12",
+     {
+      "gamePk": 700019,
+      "gameType": "S",
+      "season": "2026",
+      "gameDate": "2026-07-12T23:05:00Z",
+      "officialDate": "2026-07-12",
+      "status": {
+       "abstractGameState": "Final",
+       "detailedState": "Final",
+       "codedGameState": "F"
+      },
+      "teams": {
+       "home": {
+        "team": {
+         "id": 422
+        },
+        "score": 1
+       },
+       "away": {
+        "team": {
+         "id": 531
+        },
+        "score": 0
+       }
+      },
+      "venue": {
+       "name": "Venue 422"
+      },
+      "doubleHeader": "N",
+      "gameNumber": 1,
+      "rescheduledFrom": "2026-07-11T23:05:00Z",
+      "rescheduledFromDate": "2026-07-11"
+     }
+    ]
+   ]
+  }
+ ]
+}

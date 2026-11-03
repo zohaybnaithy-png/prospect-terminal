@@ -32,7 +32,7 @@ import {
 } from "./mlb-normalize";
 import {
   parseScheduleGroups,
-  reconcileScheduleGroup,
+  reconcileLinkedChain,
   type ScheduleGame,
   type ScheduleRow,
 } from "./mlb-schedule";
@@ -234,33 +234,68 @@ export function selectMilbSchedule(
         continue;
       }
       if (foreignSport) throw new Error("Contradictory sport context for a level game");
-      const { chosen, reconciled } = reconcileScheduleGroup(rows, identity, {
-        allowSuspensions: true,
-      });
-      const g = chosen.game;
-      const date = g.officialDate ?? chosen.date;
-      // A lone postponed row that already points to a later reschedule is superseded by that
-      // representation (which may fall in a different capture window). Never store it as the game.
+      // A game listed under this season's dates that consistently declares ANOTHER season (its
+      // season field and official date agree) belongs to that season's ingestion, not this one.
+      // Inconsistent season/date context still quarantines below.
+      const declared = new Set(rows.map((r) => (r.game.season === undefined ? "" : String(r.game.season))));
+      const [onlySeason] = [...declared];
       if (
-        gameStatus(g.status) === "postponed" &&
-        g.rescheduleGameDate &&
-        g.rescheduleGameDate !== date
+        declared.size === 1 &&
+        onlySeason &&
+        onlySeason !== String(options.season) &&
+        rows.every((r) => (r.game.officialDate ?? r.date).slice(0, 4) === onlySeason)
       ) {
         notices.push({
           recordKey: `game:${id}`,
           reason: "outside-scope",
-          message: `Postponed representation superseded by reschedule on ${g.rescheduleGameDate}`,
+          message: `Listed in the ${options.season} schedule but declares season ${onlySeason} (season and official date agree)`,
         });
         continue;
       }
-      if (reconciled)
+      const { chosen: current, reconciled } = reconcileLinkedChain(rows, identity);
+      // Only the resumption of a suspended game is in this capture (its origin date lies in an
+      // earlier window). Represent the game as the origin would: start = the reciprocal
+      // resumedFrom instant, same official date, this row's result; venue omitted so the
+      // origin's stored venue is never overwritten.
+      const resumptionOnly =
+        current.game.resumedFrom !== undefined &&
+        rows.every((r) => r.game.resumedFrom !== undefined);
+      const chosen: ScheduleRow = resumptionOnly
+        ? {
+            date: current.game.resumedFromDate ?? current.date,
+            game: { ...current.game, gameDate: current.game.resumedFrom!, venue: undefined },
+          }
+        : current;
+      const g = chosen.game;
+      const date = g.officialDate ?? chosen.date;
+      // A postponed current row that still points forward to a reschedule is superseded by that
+      // representation (in another capture window, or never played). Never store it as the
+      // game: a later re-run of this window must not overwrite the played game with "postponed".
+      if (
+        gameStatus(g.status) === "postponed" &&
+        (g.rescheduleDate !== undefined || g.rescheduleGameDate !== undefined)
+      ) {
+        notices.push({
+          recordKey: `game:${id}`,
+          reason: "outside-scope",
+          message: `Postponed representation superseded by reschedule on ${g.rescheduleGameDate ?? g.rescheduleDate}`,
+        });
+        continue;
+      }
+      if (reconciled?.length)
         notices.push({
           recordKey: `game:${id}`,
           reason: "reconciled-reschedule",
-          message:
-            reconciled === "suspension"
-              ? "Suspended representation reconciled to its resumed game"
-              : "Linked postponed representation reconciled to current game",
+          message: [
+            reconciled.includes("reschedule")
+              ? "Linked postponed representation(s) reconciled to current game"
+              : "",
+            reconciled.includes("resumption")
+              ? "Suspended game reconciled with its resumption (same official date)"
+              : "",
+          ]
+            .filter(Boolean)
+            .join("; "),
         });
       if (
         rows.some(
@@ -271,9 +306,12 @@ export function selectMilbSchedule(
         Number(date.slice(0, 4)) !== options.season
       )
         throw new Error("Game season/date outside selected MiLB season");
+      // In the window when its official date is, or (resumption-only) when the resumption
+      // itself was played in the window — so incremental runs complete resumed games.
+      const inWindow = (d: string) =>
+        (!options.from || d >= options.from) && (!options.to || d <= options.to);
       if (
-        (options.from && date < options.from) ||
-        (options.to && date > options.to) ||
+        !(inWindow(date) || (resumptionOnly && inWindow(current.date))) ||
         (options.team && !sides.includes(options.team))
       )
         continue;

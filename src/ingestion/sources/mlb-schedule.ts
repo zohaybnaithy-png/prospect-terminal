@@ -82,24 +82,6 @@ function linkedPostponement(old: Row, current: Row): boolean {
     b.rescheduledFromDate === old.date
   );
 }
-/** A suspended representation that explicitly points to its resumed (current) representation. */
-function linkedSuspension(old: Row, current: Row): boolean {
-  const a = old.game,
-    b = current.game;
-  return (
-    /suspend/i.test(a.status.detailedState ?? "") &&
-    !/suspend/i.test(b.status.detailedState ?? "") &&
-    a.gameType === b.gameType &&
-    a.season === b.season &&
-    a.teams.home.team.id === b.teams.home.team.id &&
-    a.teams.away.team.id === b.teams.away.team.id &&
-    a.resumeGameDate !== undefined &&
-    a.resumeGameDate === current.date &&
-    b.resumedFromDate !== undefined &&
-    b.resumedFromDate === old.date
-  );
-}
-
 /**
  * Parses a schedule envelope into per-gamePk groups. Malformed rows block their gamePk (it is
  * never partially selected) and are reported.
@@ -142,16 +124,39 @@ export function parseScheduleGroups(body: unknown) {
 }
 
 /**
- * Chooses the single current representation of one gamePk. Identical representations collapse;
- * differing ones are accepted only when every superseded row is a postponed row with reciprocal
- * reschedule linkage (or, when enabled, a suspended row with reciprocal resume linkage) to one
- * unique current row. Anything else throws so the caller quarantines the game. Never last-row-wins.
+ * AFL policy: chooses the single current representation of one gamePk. Identical
+ * representations collapse; differing ones are accepted only when every superseded row is a
+ * postponed row with reciprocal reschedule linkage DIRECTLY to one unique current row. Anything
+ * else throws so the caller quarantines the game. Never last-row-wins. (Unchanged AFL behavior;
+ * MiLB uses reconcileLinkedChain below.)
  */
 export function reconcileScheduleGroup(
   rows: Row[],
   identity: (row: Row) => unknown,
-  { allowSuspensions = false }: { allowSuspensions?: boolean } = {},
-): { chosen: Row; reconciled: "reschedule" | "suspension" | null } {
+): { chosen: Row; reconciled: "reschedule" | null } {
+  assertConsistentContext(rows);
+  const key = (r: Row) => fingerprint(identity(r));
+  if (new Set(rows.map(key)).size <= 1) return { chosen: rows[0], reconciled: null };
+  const active = rows.filter((r) => gameStatus(r.game.status) !== "postponed");
+  if (!active.length || new Set(active.map(key)).size !== 1)
+    throw new Error(
+      "Conflicting schedule representations without a unique current game",
+    );
+  const chosen = active[0];
+  if (
+    rows.some(
+      (r) =>
+        gameStatus(r.game.status) === "postponed" &&
+        !active.some((a) => linkedPostponement(r, a)),
+    )
+  )
+    throw new Error(
+      "Conflicting schedule representations lack reciprocal reschedule linkage",
+    );
+  return { chosen, reconciled: "reschedule" };
+}
+
+function assertConsistentContext(rows: Row[]) {
   for (const field of ["gameType", "season", "leagueId", "sportId"] as const) {
     const values = new Set(
       rows
@@ -161,31 +166,157 @@ export function reconcileScheduleGroup(
     );
     if (values.size > 1) throw new Error(`Conflicting schedule ${field} context`);
   }
+}
+
+const instant = (value: string | undefined) =>
+  value === undefined ? Number.NaN : Date.parse(value);
+const sameMatchup = (a: ScheduleGame, b: ScheduleGame) =>
+  a.teams.home.team.id === b.teams.home.team.id &&
+  a.teams.away.team.id === b.teams.away.team.id;
+
+/**
+ * Reschedule edge from → to: `from` is postponed and BOTH rows point at each other —
+ * from.rescheduleDate is to's start, to.rescheduledFrom is from's start, to.rescheduledFromDate
+ * is from's schedule date, and from.rescheduleGameDate (when present) names to's schedule date
+ * or official date. Intermediate postponed rows of a chain are valid targets (live MiLB data:
+ * Postponed → Postponed → Final, where the first row's officialDate is already the final date).
+ */
+export function rescheduleEdge(from: Row, to: Row): boolean {
+  const a = from.game,
+    b = to.game;
+  return (
+    gameStatus(a.status) === "postponed" &&
+    sameMatchup(a, b) &&
+    a.rescheduleDate !== undefined &&
+    b.rescheduledFrom !== undefined &&
+    instant(a.rescheduleDate) === instant(b.gameDate) &&
+    instant(b.rescheduledFrom) === instant(a.gameDate) &&
+    b.rescheduledFromDate === from.date &&
+    (a.rescheduleGameDate === undefined ||
+      a.rescheduleGameDate === to.date ||
+      a.rescheduleGameDate === b.officialDate)
+  );
+}
+
+/**
+ * Resumption edge from → to: a started game (not postponed/cancelled) continued on a later
+ * date under the same gamePk. Reciprocal: from.resumeDate is to's start, to.resumedFrom is
+ * from's start, to.resumedFromDate is from's schedule date, from.resumeGameDate (when present)
+ * is to's schedule date, and both rows carry the SAME official date (a resumed game keeps the
+ * date it began). Live MiLB shape: the origin row already reads Final once the game is done.
+ */
+export function resumeEdge(from: Row, to: Row): boolean {
+  const a = from.game,
+    b = to.game;
+  const sa = gameStatus(a.status),
+    sb = gameStatus(b.status);
+  return (
+    sa !== "postponed" &&
+    sa !== "cancelled" &&
+    sb !== "postponed" &&
+    sb !== "cancelled" &&
+    sameMatchup(a, b) &&
+    a.resumeDate !== undefined &&
+    b.resumedFrom !== undefined &&
+    instant(a.resumeDate) === instant(b.gameDate) &&
+    instant(b.resumedFrom) === instant(a.gameDate) &&
+    b.resumedFromDate === from.date &&
+    (a.resumeGameDate === undefined || a.resumeGameDate === to.date) &&
+    (a.officialDate ?? from.date) === (b.officialDate ?? from.date)
+  );
+}
+
+export type ReconciliationKind = "reschedule" | "resumption";
+
+/**
+ * MiLB policy: reconciles every representation of one gamePk through explicit reciprocal links.
+ *
+ * Rows must form exactly ONE chain covering all of them (after collapsing identical rows):
+ *   Postponed* → (played | cancelled) → resumed*      or      Postponed+ (never played)
+ * where every arrow is a reschedule or resumption edge. Each row has at most one successor and
+ * one predecessor; branches, cycles, unlinked rows, or resumed rows disagreeing on the result
+ * throw (the caller quarantines the game). The current game is the first non-postponed row
+ * (start time, venue, official date of the game as it began) with the outcome (status, scores)
+ * of the chain's last row; if nothing was played, the last postponed row.
+ */
+export function reconcileLinkedChain(
+  rows: Row[],
+  identity: (row: Row) => unknown,
+): { chosen: Row; reconciled: ReconciliationKind[] | null } {
+  assertConsistentContext(rows);
+  // Exact duplicate listings (same date bucket, same row) carry no extra information.
+  const unique = [...new Map(rows.map((r) => [fingerprint(r), r])).values()];
   const key = (r: Row) => fingerprint(identity(r));
-  if (new Set(rows.map(key)).size <= 1) return { chosen: rows[0], reconciled: null };
-  const superseded = (r: Row) =>
-    gameStatus(r.game.status) === "postponed" ||
-    (allowSuspensions && /suspend/i.test(r.game.status.detailedState ?? ""));
-  const active = rows.filter((r) => !superseded(r));
-  if (!active.length || new Set(active.map(key)).size !== 1)
-    throw new Error(
-      "Conflicting schedule representations without a unique current game",
-    );
-  const chosen = active[0];
-  let suspension = false;
-  for (const r of rows.filter(superseded)) {
-    if (gameStatus(r.game.status) === "postponed") {
-      if (!active.some((a) => linkedPostponement(r, a)))
-        throw new Error(
-          "Conflicting schedule representations lack reciprocal reschedule linkage",
-        );
-    } else if (!active.some((a) => linkedSuspension(r, a)))
-      throw new Error(
-        "Suspended representation lacks reciprocal resume linkage",
-      );
-    else suspension = true;
+  if (new Set(unique.map(key)).size <= 1) return { chosen: unique[0], reconciled: null };
+
+  const next = new Map<Row, { to: Row; kind: ReconciliationKind }>();
+  const predecessors = new Map<Row, number>();
+  for (const from of unique) {
+    const targets: { to: Row; kind: ReconciliationKind }[] = [];
+    for (const to of unique) {
+      if (to === from) continue;
+      if (rescheduleEdge(from, to)) targets.push({ to, kind: "reschedule" });
+      else if (resumeEdge(from, to)) targets.push({ to, kind: "resumption" });
+    }
+    if (targets.length > 1)
+      throw new Error("Ambiguous schedule linkage: a representation links to several others");
+    if (targets.length) {
+      next.set(from, targets[0]);
+      predecessors.set(targets[0].to, (predecessors.get(targets[0].to) ?? 0) + 1);
+    }
   }
-  return { chosen, reconciled: suspension ? "suspension" : "reschedule" };
+  const starts = unique.filter((r) => !predecessors.get(r));
+  if (
+    starts.length !== 1 ||
+    [...predecessors.values()].some((n) => n > 1)
+  )
+    throw new Error(
+      "Conflicting schedule representations without a single reciprocal linkage chain",
+    );
+  const chain: Row[] = [];
+  const kinds = new Set<ReconciliationKind>();
+  for (let r: Row | undefined = starts[0]; r; r = next.get(r)?.to) {
+    if (chain.includes(r)) throw new Error("Cyclic schedule linkage");
+    const edge = next.get(r);
+    if (edge) kinds.add(edge.kind);
+    chain.push(r);
+  }
+  if (chain.length !== unique.length)
+    throw new Error(
+      "Conflicting schedule representations without a single reciprocal linkage chain",
+    );
+
+  const firstPlayed = chain.findIndex((r) => gameStatus(r.game.status) !== "postponed");
+  if (firstPlayed === -1)
+    return { chosen: chain[chain.length - 1], reconciled: [...kinds].sort() };
+  const origin = chain[firstPlayed];
+  const terminal = chain[chain.length - 1];
+  if (origin === terminal) return { chosen: origin, reconciled: [...kinds].sort() };
+  // Every resumed representation that reports a final result must report the same one.
+  const final = gameStatus(terminal.game.status) === "final";
+  for (const r of chain.slice(firstPlayed))
+    if (
+      gameStatus(r.game.status) === "final" &&
+      final &&
+      (r.game.teams.home.score !== terminal.game.teams.home.score ||
+        r.game.teams.away.score !== terminal.game.teams.away.score)
+    )
+      throw new Error("Resumed game representations disagree on the final score");
+  const outcome = final ? terminal.game : origin.game;
+  return {
+    chosen: {
+      date: origin.date,
+      game: {
+        ...origin.game,
+        status: outcome.status,
+        teams: {
+          home: { ...origin.game.teams.home, score: outcome.teams.home.score },
+          away: { ...origin.game.teams.away, score: outcome.teams.away.score },
+        },
+      },
+    },
+    reconciled: [...kinds].sort(),
+  };
 }
 
 /** One shared selection for boxscore fetching and normalization. No last-row-wins policy. */

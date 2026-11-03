@@ -307,17 +307,18 @@ export function buildMilbFixture(): MilbFixture {
       ["2026-05-02", game(G.dh1, "2026-05-02", T.aaa2, T.aaa1, final, { doubleHeader: "S", gameNumber: 1 })],
       ["2026-05-02", game(G.dh2, "2026-05-02", T.aaa2, T.aaa1, final, { doubleHeader: "S", gameNumber: 2, gameDate: "2026-05-03T02:10:00Z" })],
       ["2026-05-03", game(G.interleague, "2026-05-03", T.aaa3, T.aaa1)],
-      // Postponed on 05-04, played 05-05 (reciprocal linkage, same gamePk).
-      ["2026-05-04", game(G.rescheduled, "2026-05-04", T.aaa1, T.aaa2,
+      // Postponed on 05-04, made up 05-05 as game 2 of a doubleheader (live shape: the postponed
+      // row's officialDate already reads the makeup date; reciprocal reschedule fields).
+      ["2026-05-04", game(G.rescheduled, "2026-05-05", T.aaa1, T.aaa2,
         { abstractGameState: "Final", detailedState: "Postponed", codedGameState: "D" },
-        { gameDate: "2026-05-04T23:05:00Z", officialDate: "2026-05-04", rescheduleDate: "2026-05-05T23:05:00Z", rescheduleGameDate: "2026-05-05", teams: { home: { team: { id: T.aaa1 } }, away: { team: { id: T.aaa2 } } } })],
+        { gameDate: "2026-05-04T23:05:00Z", doubleHeader: "N", gameNumber: 1, rescheduleDate: "2026-05-05T23:05:00Z", rescheduleGameDate: "2026-05-05", teams: { home: { team: { id: T.aaa1 } }, away: { team: { id: T.aaa2 } } } })],
       ["2026-05-05", game(G.rescheduled, "2026-05-05", T.aaa1, T.aaa2, final,
-        { rescheduledFrom: "2026-05-04T23:05:00Z", rescheduledFromDate: "2026-05-04" })],
-      // Suspended on 05-06, resumed and completed 05-07.
-      ["2026-05-06", game(G.suspended, "2026-05-06", T.aaa2, T.aaa1,
-        { abstractGameState: "Live", detailedState: "Suspended: Rain", codedGameState: "U" },
-        { resumeDate: "2026-05-07T18:05:00Z", resumeGameDate: "2026-05-07", teams: { home: { team: { id: T.aaa2 } }, away: { team: { id: T.aaa1 } } } })],
-      ["2026-05-07", game(G.suspended, "2026-05-07", T.aaa2, T.aaa1, final,
+        { doubleHeader: "Y", gameNumber: 2, rescheduledFrom: "2026-05-04T23:05:00Z", rescheduledFromDate: "2026-05-04" })],
+      // Suspended 05-06, resumed and completed 05-07 (live shape: the origin row reads Final once
+      // complete; the resumption row keeps the ORIGIN official date).
+      ["2026-05-06", game(G.suspended, "2026-05-06", T.aaa2, T.aaa1, final,
+        { resumeDate: "2026-05-07T18:05:00Z", resumeGameDate: "2026-05-07" })],
+      ["2026-05-07", game(G.suspended, "2026-05-06", T.aaa2, T.aaa1, final,
         { gameDate: "2026-05-07T18:05:00Z", resumedFrom: "2026-05-06T23:05:00Z", resumedFromDate: "2026-05-06" })],
       ["2026-05-08", game(G.cancelled, "2026-05-08", T.aaa1, T.aaa3,
         { abstractGameState: "Final", detailedState: "Cancelled", codedGameState: "C" })],

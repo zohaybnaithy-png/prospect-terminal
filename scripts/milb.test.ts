@@ -247,9 +247,12 @@ describe("schedule handling", () => {
       { date: "2026-05-05", status: "final", home: 5 },
     );
     assert.equal(mock.count(new RegExp(`game/${G.rescheduled}/boxscore`)), 1);
-    // Suspended 05-06 → resumed and completed 05-07.
-    assert.equal(game(G.suspended)!.officialDate, "2026-05-07");
+    // Suspended 05-06 → resumed and completed 05-07: one game, official date and start time of
+    // the day it began, final result.
+    assert.equal(game(G.suspended)!.officialDate, "2026-05-06");
+    assert.equal(game(G.suspended)!.startsAt, "2026-05-06T23:05:00.000Z");
     assert.equal(game(G.suspended)!.status, "final");
+    assert.equal(mock.count(new RegExp(`game/${G.suspended}/boxscore`)), 1);
     // Cancelled/scheduled games are stored with their status but never fetch boxscores.
     assert.equal(game(G.cancelled)!.status, "cancelled");
     assert.equal(game(G.scheduled)!.status, "scheduled");

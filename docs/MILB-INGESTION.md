@@ -67,8 +67,22 @@ npm run ingest:milb -- --season=2026 --rosters-only --apply
 
 ## Edge cases
 
-- **Postponed → rescheduled (same gamePk):** reconciled via reciprocal `rescheduleDate`/`rescheduledFrom` linkage (the shared AFL logic). A chunk that only sees the postponed row, whose reschedule falls in another window, defers it (notice). The game is never stored as postponed and later overwritten.
-- **Suspended → resumed (same gamePk):** reconciled via reciprocal `resumeGameDate`/`resumedFromDate`. This is MiLB-only; the AFL path is unchanged.
+- **Schedule reconciliation (MiLB chain policy, `reconcileLinkedChain`).** All representations of one gamePk must form **one chain of explicit reciprocal links**: `Postponed* → (played | cancelled) → resumed*`, or `Postponed+` for a game never played.
+  - *Reschedule edge:* the postponed row's `rescheduleDate` equals the next row's start, that row's `rescheduledFrom` equals the postponed start and its `rescheduledFromDate` equals the postponed row's date, and `rescheduleGameDate` (when present) names the next row's date or official date. Intermediate postponed rows are valid: live data shows P→P→F where the first row's official date is already the final date.
+  - *Resumption edge:* a started game (live origin rows already read *Final*, sometimes *Completed Early*) has `resumeDate` equal to the next row's start, and the next row's `resumedFrom`/`resumedFromDate` point back. Both rows keep the **same official date** (the day the game began).
+  - *Result:* the current game is the first non-postponed row (start time, venue, official date) with the outcome (status, score) of the chain's last row. Rows may arrive in any order; exact duplicate listings collapse.
+  - *Still quarantined:* unlinked or one-way rows, branches (one row linked by two others), cycles, resumed rows that disagree on the final score, resumptions with a different official date, and conflicting gameType/season context.
+  - The AFL keeps its original pairwise policy (`reconcileScheduleGroup`), unchanged.
+- **Chunk safety:** a postponed current row that still points forward (`rescheduleDate`/`rescheduleGameDate`) is never stored; a notice is written instead, so re-running an earlier window cannot overwrite the played game with "postponed". A window that contains only a resumption stores the game as its origin would: start = `resumedFrom`, the origin's official date, the final result, venue omitted. Incremental runs therefore complete games resumed after the lookback.
+- **Foreign season:** a game listed under this season's dates whose season field and official date consistently name another season gets an `outside-scope` notice; it belongs to that season's ingestion. If season and date disagree, it stays quarantined.
+- **Live 2026 validation (2026-11-03), 89 schedule issues before this policy:**
+  - 66 Final→Final and 1 Completed Early→Completed Early (resumed suspended games);
+  - 16 postponement chains, all of which failed the old direct-link rule: 13 P→P→F (AAA 1, AA 5, High-A 3, Single-A 4) and 3 P→P→P→F (AAA 1, High-A 2);
+  - 4 P→F→F (makeup later suspended and resumed);
+  - 1 P→P (never played);
+  - 1 season/date (gamePk 864127, High-A).
+
+  Regression shapes are in `src/ingestion/fixtures/mlb/milb-2026.schedule-regression.json`.
 - **Doubleheaders:** distinct gamePks, so both games are stored, each with its own start time.
 - **Cancelled:** stored as `cancelled`, no boxscore.
 - **Exhibition and other non-selected game types:** excluded with an `outside-scope` notice.
@@ -109,7 +123,8 @@ Before the first real apply, on a machine with Stats API access:
 
 ## Known limitations
 
-- Not verified against the live API from this environment: league IDs/names, the `league` endpoint's response shape, MiLB status strings (e.g. "Completed Early"), and suspended-game fields. Unknown statuses quarantine the game.
+- Verified live on 2026-11-03 (read-only): 11 leagues, 120 teams, 30 organizations, rosters, status strings (Final, Postponed, Cancelled, Completed Early, Scheduled), and box-score field shapes. Unknown statuses still quarantine the game.
+- A game suspended **twice** and seen only through its middle resumption row gets that row's back-link as its start time until a window containing the origin is re-run.
 - `teams.organization_id` is a single latest value. Re-ingesting an older season after a newer one rewrites it from that season's capture; per-season affiliation history lives on roster observations.
 - Roster observations accumulate per capture (≈ players × teams). Prefer `--roster-type=active` for frequent runs.
 - No transaction feed: promotion dates are not known; observations are capture-time evidence.
