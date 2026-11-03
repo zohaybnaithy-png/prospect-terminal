@@ -29,11 +29,11 @@ export function AflRecentPerformers({
   const [role, setRole] = useState<Role>("hitters");
   const players = sets[window][role];
   return (
-    <section className="trending-widget" aria-labelledby="trending-title">
+    <section className="home-panel" aria-labelledby="performers-title">
       <div className="home-section-heading">
-        <h2 id="trending-title">AFL Recent Performers</h2>
+        <h2 id="performers-title">Recent Leaders</h2>
       </div>
-      <div className="trending-controls">
+      <div className="panel-controls">
         <div
           className="button-group"
           role="group"
@@ -90,7 +90,7 @@ export function AflRecentPerformers({
         </p>
       )}
       <div className="widget-bottom">
-        <Link href="/players">All AFL players →</Link>
+        <Link href="/players">Full directory →</Link>
         <span>
           {role === "hitters"
             ? `By OPS, min. ${minPa[window]} PA`

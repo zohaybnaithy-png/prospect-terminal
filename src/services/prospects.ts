@@ -1,3 +1,4 @@
+/** Fictional demo fixture access for tests and the dev seed only; not used by user-facing routes. */
 import {
   news,
   players,

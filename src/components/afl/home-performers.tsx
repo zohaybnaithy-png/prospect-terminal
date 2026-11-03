@@ -13,9 +13,9 @@ import {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <section className="trending-widget" aria-labelledby="trending-title">
+    <section className="home-panel" aria-labelledby="performers-title">
       <div className="home-section-heading">
-        <h2 id="trending-title">AFL Recent Performers</h2>
+        <h2 id="performers-title">Recent Leaders</h2>
       </div>
       {children}
     </section>
