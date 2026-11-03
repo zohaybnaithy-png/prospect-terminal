@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prospectRepository } from "@/services/prospects";
 import { getAflData } from "@/services/afl";
 import { playerProfile } from "@/services/afl/read-model";
+import { playerAnalyticsView } from "@/analytics/views";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { AflPlayerProfileView } from "@/components/player/afl-profile";
 import { DemoPlayerProfile } from "@/components/player/demo-profile";
@@ -49,7 +50,13 @@ export default async function PlayerPage({
     case "demo":
       return <DemoPlayerProfile id={id} />;
     case "afl":
-      return <AflPlayerProfileView profile={r.profile} snapshot={r.snapshot} />;
+      return (
+        <AflPlayerProfileView
+          profile={r.profile}
+          snapshot={r.snapshot}
+          analytics={playerAnalyticsView(r.snapshot, id)}
+        />
+      );
     case "unavailable":
       return (
         <>
