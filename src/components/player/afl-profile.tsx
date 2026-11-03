@@ -29,7 +29,7 @@ const windows = ["7d", "14d", "30d", "season"] as const;
 const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
 
 /**
- * Real AFL player profile. Momentum comes from the provisional analytics model (clearly labeled);
+ * Real AFL player profile. Momentum comes from the V1 analytics model (src/analytics);
  * Prospect Grade remains an explicit placeholder because no Grade formula exists.
  */
 export function AflPlayerProfileView({
@@ -107,8 +107,7 @@ export function AflPlayerProfileView({
           })}
           <span className="small-muted">
             Momentum = change vs. the player&apos;s own earlier AFL games (0 =
-            performing like their baseline) · provisional{" "}
-            {analytics.model.label} model, not final · Grade not modeled
+            performing like their baseline) · Prospect Grade not modeled
           </span>
         </div>
       </header>
@@ -173,7 +172,6 @@ export function AflPlayerProfileView({
           <SectionTitle title="What changed?" />
           <WhatChanged
             roles={analytics.roles.map(({ role, momentum }) => ({ role, momentum }))}
-            modelLabel={analytics.model.label}
           />
         </section>
       )}

@@ -69,9 +69,8 @@ export async function MarketDashboard() {
             AFL Recent Performers and the score strip use real 2026 Arizona Fall
             League game data (MLB Stats API, development use). News, highlights,
             call-ups and Top Prospects Grades are fictional demo placeholders
-            (snapshot {DEMO_AS_OF}); no Prospect Grade model exists yet, and
-            AFL Momentum (Trends, player profiles) is a provisional model under
-            review.
+            (snapshot {DEMO_AS_OF}); no Prospect Grade model exists yet. AFL
+            Momentum on Trends and player profiles uses real AFL games.
           </p>
         </aside>
       </div>

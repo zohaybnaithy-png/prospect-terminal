@@ -143,13 +143,28 @@ export function reliability(
 }
 
 export type ConfidenceLevel = "low" | "medium" | "high";
+/**
+ * User-facing confidence: how much data supports the signal. Classifies the score's own
+ * reliability (display only — the score is shrunk by reliability either way) and requires a
+ * minimum sample on both sides of the comparison per level.
+ */
 export function confidenceLevel(
+  role: Role,
   r: number,
+  recentOpportunities: number,
+  baselineOpportunities: number,
   settings: MomentumSettings,
 ): ConfidenceLevel {
-  if (r >= settings.reliability.levels.high) return "high";
-  if (r >= settings.reliability.levels.medium) return "medium";
+  const c = settings.confidence;
+  const smaller = Math.min(recentOpportunities, baselineOpportunities);
+  if (r >= c.levels.high && smaller >= c.minSample.high[role]) return "high";
+  if (r >= c.levels.medium && smaller >= c.minSample.medium[role]) return "medium";
   return "low";
+}
+
+/** Effective sample of a recent-vs-baseline comparison (exposed for reporting). */
+export function effectiveSample(recent: number, baseline: number) {
+  return recent > 0 && baseline > 0 ? (recent * baseline) / (recent + baseline) : 0;
 }
 
 /** Bounded mapping of a combined standardized change to the ±100 display scale. */

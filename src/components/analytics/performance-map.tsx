@@ -40,7 +40,14 @@ const QUADRANTS = [
  * Performance × Momentum. x = AFL season percentile of one selectable statistic; y = Momentum.
  * Quadrant names are descriptive UI categories, not scouting judgments.
  */
-export function PerformanceMap({ sets, modelLabel }: { sets: MapSets; modelLabel: string }) {
+export function PerformanceMap({
+  sets,
+  comparable,
+}: {
+  sets: MapSets;
+  /** Players with a valid comparison per role/window; 0 = window unavailable. */
+  comparable: Record<Role, Record<MomentumWindow, number>>;
+}) {
   const router = useRouter();
   const [role, setRole] = useState<Role>("hitter");
   const [window, setWindow] = useState<MomentumWindow>("14d");
@@ -119,12 +126,16 @@ export function PerformanceMap({ sets, modelLabel }: { sets: MapSets; modelLabel
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="empty-state">No players qualify for this window yet.</p>
+        <p className="empty-state">
+          {comparable[role][window] === 0
+            ? `${MOMENTUM_WINDOWS[window].short} unavailable — no player has enough AFL games before this window to compare with yet. No change is estimated.`
+            : "No players meet the sample minimums for this window yet."}
+        </p>
       )}
       <p className="table-note">
         {points.length} qualified players. x is the player&apos;s AFL percentile
         for one season statistic (not a composite performance model); y is{" "}
-        {MOMENTUM_WINDOWS[window].short} Momentum from the provisional {modelLabel} model.
+        {MOMENTUM_WINDOWS[window].short} Momentum.
         Quadrant names are descriptive categories, not scouting conclusions.
       </p>
     </section>
@@ -144,7 +155,9 @@ function MapTooltip({ active, payload, xMetric }: { active?: boolean; payload?: 
         {metricDefinition(xMetric).label} {formatMetric(xMetric, p.xValue)} · {Math.round(p.x)} pctl
       </div>
       <div>
-        Momentum {signedText(p.y)} · {p.confidence} confidence · {p.persistenceLevel} persistence
+        Momentum {signedText(p.y)} · Confidence {p.confidence} · Persistence {p.persistenceLevel}
+      </div>
+      <div className="small-muted">{p.persistenceLabel}
       </div>
       <div>
         {metricDefinition(p.keyMetric).label} {formatMetric(p.keyMetric, p.keyBefore)} → {formatMetric(p.keyMetric, p.keyNow)}

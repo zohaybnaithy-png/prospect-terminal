@@ -36,7 +36,7 @@ function EntryTable({ title, entries }: { title: string; entries: ComparisonEntr
                   <td className="numeric">{e.rawScore === null ? "—" : signedText(e.rawScore)}</td>
                   <td className="numeric" title={e.confidence}>{e.reliability.toFixed(2)}</td>
                   <td className="numeric">{e.sample.recent}/{e.sample.baseline} {e.sample.unit}</td>
-                  <td>{e.persistence.level} · {e.persistence.state} · {e.persistence.trendLengthDays}d</td>
+                  <td>{e.persistence.level} · {e.persistence.label} · {e.persistence.trendLengthDays}d</td>
                   <td className="small-muted">
                     {e.contributions.map((c) => `${c.label} ${signedText(c.points, 1)}`).join(" · ")}
                   </td>
@@ -55,7 +55,7 @@ function EntryTable({ title, entries }: { title: string; entries: ComparisonEntr
   );
 }
 
-/** Development review output: candidate Momentum weightings side by side. No winner is chosen. */
+/** Development review output: Momentum weightings side by side (Balanced = V1 default). */
 export function ModelComparisonView({ cmp }: { cmp: ModelComparison }) {
   return (
     <>

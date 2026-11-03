@@ -2,11 +2,8 @@
 import { useState } from "react";
 import {
   COMPONENTS_BY_ROLE,
-  MODEL_IDS,
-  MOMENTUM_MODELS,
   MOMENTUM_WINDOWS,
   MOMENTUM_WINDOW_IDS,
-  type ModelId,
   type MomentumWindow,
   type Role,
 } from "@/analytics/config";
@@ -16,7 +13,14 @@ import { formatMetric, metricDefinition } from "@/analytics/metrics";
 import type { RiserSets } from "@/analytics/views";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
-import { LevelMeter, MomentumValue, persistenceText } from "./momentum-parts";
+import {
+  CONFIDENCE_HELP,
+  ConfidenceMeter,
+  MomentumValue,
+  PERSISTENCE_HELP,
+  PersistenceMeter,
+  persistenceText,
+} from "./momentum-parts";
 
 /** Biggest Risers / Fallers: ranked by change relative to each player's own AFL baseline. */
 export function RisersFallers({
@@ -24,21 +28,19 @@ export function RisersFallers({
   minRecent,
   minBaseline,
   minMagnitude,
-  defaultModel,
 }: {
   sets: RiserSets;
   minRecent: Record<Role, Record<MomentumWindow, number>>;
   minBaseline: Record<Role, number>;
   minMagnitude: number;
-  defaultModel: ModelId;
 }) {
   const [window, setWindow] = useState<MomentumWindow>("14d");
   const [role, setRole] = useState<Role>("hitter");
   const [category, setCategory] = useState<RiserCategory>("overall");
-  const [model, setModel] = useState<ModelId>(defaultModel);
   const cats: RiserCategory[] = ["overall", ...COMPONENTS_BY_ROLE[role]];
   const cat = cats.includes(category) ? category : "overall";
-  const data = sets[model][role][window][cat] ?? { risers: [], fallers: [] };
+  const data = sets.lists[role][window][cat] ?? { risers: [], fallers: [] };
+  const unavailable = sets.comparable[role][window] === 0;
   const unit = role === "hitter" ? "PA" : "BF";
   return (
     <section className="explorer" aria-label="Biggest risers and fallers">
@@ -68,29 +70,27 @@ export function RisersFallers({
             </button>
           ))}
         </div>
-        <label className="filter-group">
-          <span>Candidate model</span>
-          <select value={model} onChange={(e) => setModel(e.target.value as ModelId)}>
-            {MODEL_IDS.map((id) => (
-              <option key={id} value={id}>
-                {MOMENTUM_MODELS[id].label}
-                {id === defaultModel ? " (provisional)" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
-      <div className="riser-columns">
-        <RankList title="Risers" entries={data.risers} cat={cat} />
-        <RankList title="Fallers" entries={data.fallers} cat={cat} />
-      </div>
+      {unavailable ? (
+        <p className="empty-state" aria-live="polite">
+          {MOMENTUM_WINDOWS[window].short} unavailable — no{" "}
+          {role === "hitter" ? "hitter" : "pitcher"} has enough AFL games
+          before this window to compare with yet. No change is estimated.
+        </p>
+      ) : (
+        <div className="riser-columns">
+          <RankList title="Risers" entries={data.risers} cat={cat} />
+          <RankList title="Fallers" entries={data.fallers} cat={cat} />
+        </div>
+      )}
       <p className="table-note">
         Min. {minRecent[role][window]} {unit} in the window and {minBaseline[role]} {unit} before it;
         changes smaller than ±{minMagnitude} are not listed.
         {cat === "overall"
           ? " Ranked by Momentum (shrunk for sample size and persistence)."
           : ` Ranked by the ${COMPONENT_LABELS[cat].label.toLowerCase()} change (${COMPONENT_LABELS[cat].summary}), shrunk for sample size.`}{" "}
-        Candidate weightings are under review; none is final.
+        <span title={CONFIDENCE_HELP}>Confidence: how much data supports the signal.</span>{" "}
+        <span title={PERSISTENCE_HELP}>Persistence: how consistently and how long the direction has continued.</span>
       </p>
     </section>
   );
@@ -117,11 +117,18 @@ function RankList({ title, entries, cat }: { title: string; entries: RankedEntry
                   {metricDefinition(e.keyMetric).label} {formatMetric(e.keyMetric, e.keyBefore)} →{" "}
                   {formatMetric(e.keyMetric, e.keyNow)} · {e.sample.recent}/{e.sample.baseline} {e.sample.unit}
                   {" · "}
-                  {persistenceText({ state: e.persistenceState, trendLengthDays: e.trendLengthDays })}
+                  {persistenceText({
+                    state: e.persistenceState,
+                    direction: e.persistenceDirection,
+                    trendLengthDays: e.trendLengthDays,
+                  })}
                 </div>
                 <div className="rank-meta">
-                  <LevelMeter level={e.confidence} label="Conf." />
-                  <LevelMeter level={e.persistenceLevel} label="Persist." />
+                  <ConfidenceMeter
+                    level={e.confidence}
+                    detail={`${e.sample.recent} recent vs ${e.sample.baseline} earlier ${e.sample.unit}.`}
+                  />
+                  <PersistenceMeter level={e.persistenceLevel} />
                 </div>
               </div>
               <span className="trend-value neutral">

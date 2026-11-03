@@ -94,7 +94,8 @@ export function DevelopmentTimeline({
         </div>
       ) : (
         <p className="empty-state">
-          Not enough earlier AFL games to chart a {MOMENTUM_WINDOWS[window].short} change yet.
+          {MOMENTUM_WINDOWS[window].short} unavailable — not enough earlier AFL
+          games before this window to compare with. No change is estimated.
         </p>
       )}
       <p className="table-note">
@@ -124,8 +125,9 @@ function TimelineTooltip({
       <strong>{shortDate(p.date)}</strong>
       <div>
         Momentum {p.score === null ? "—" : signedText(p.score)}
-        {p.score !== null && ` · ${p.confidence} confidence`}
+        {p.score !== null && ` · Confidence ${p.confidence}`}
       </div>
+      {p.score !== null && <div>{p.persistenceLabel}</div>}
       <div>
         Recent {keyLabel} {formatMetric(keyMetric, p.keyRecent)} · baseline{" "}
         {formatMetric(keyMetric, p.keyBaseline)}

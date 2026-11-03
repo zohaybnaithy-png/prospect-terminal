@@ -15,7 +15,7 @@ function table(title: string, entries: ComparisonEntry[]) {
   );
   entries.forEach((e, i) =>
     lines.push(
-      `| ${i + 1} | ${e.name} | ${e.team?.abbreviation ?? "—"} | ${signed(e.score)} | ${e.rawScore === null ? "—" : signed(e.rawScore)} | ${e.reliability.toFixed(2)} (${e.confidence}) | ${e.sample.recent}/${e.sample.baseline} ${e.sample.unit} | ${e.persistence.level}, ${e.persistence.state}, ${e.persistence.trendLengthDays}d | ${e.contributions.map((c) => `${c.label} ${signed(c.points, 1)}`).join("; ")} | ${e.metrics.map((m) => `${m.label} ${formatMetric(m.metric, m.before)}→${formatMetric(m.metric, m.now)} (${formatMetricChange(m.metric, m.delta)})`).join("; ")} |`,
+      `| ${i + 1} | ${e.name} | ${e.team?.abbreviation ?? "—"} | ${signed(e.score)} | ${e.rawScore === null ? "—" : signed(e.rawScore)} | ${e.reliability.toFixed(2)} (${e.confidence}) | ${e.sample.recent}/${e.sample.baseline} ${e.sample.unit} | ${e.persistence.level} — ${e.persistence.label}, ${e.persistence.trendLengthDays}d | ${e.contributions.map((c) => `${c.label} ${signed(c.points, 1)}`).join("; ")} | ${e.metrics.map((m) => `${m.label} ${formatMetric(m.metric, m.before)}→${formatMetric(m.metric, m.now)} (${formatMetricChange(m.metric, m.delta)})`).join("; ")} |`,
     ),
   );
   return [...lines, ""];
@@ -30,9 +30,20 @@ export function renderComparisonMarkdown(
     "",
     `Source: ${source}. As of: ${cmp.asOf ?? "no completed games"}. Qualified: ${cmp.qualified.hitter} hitters, ${cmp.qualified.pitcher} pitchers.`,
     "",
-    "No candidate is final. Settings: " +
+    "Balanced is the V1 default; the other configurations are for comparison only. Settings: " +
       `zDivisor ${MOMENTUM_SETTINGS.scoring.zDivisor}, normalization ${MOMENTUM_SETTINGS.normalization.method}, ` +
       `reliability k ${JSON.stringify(MOMENTUM_SETTINGS.reliability.k)}, persistence floor ${MOMENTUM_SETTINGS.persistence.multiplierFloor}.`,
+    "",
+    "## Sample sizes and confidence (all players with a valid comparison)",
+    "",
+    "| Role | Players | Recent [min, p25, med, p75, max] | Earlier | Effective | Low / Medium / High |",
+    "|---|---:|---|---|---|---|",
+    ...(["hitter", "pitcher"] as const).map((r) => {
+      const d = cmp.samples[r];
+      return `| ${r} | ${d.players} | ${d.recent.join(", ")} | ${d.baseline.join(", ")} | ${d.effective.join(", ")} | ${d.confidence.low} / ${d.confidence.medium} / ${d.confidence.high} |`;
+    }),
+    "",
+    `Confidence thresholds: reliability ≥ ${MOMENTUM_SETTINGS.confidence.levels.medium} and ≥ ${JSON.stringify(MOMENTUM_SETTINGS.confidence.minSample.medium)} on both sides for Medium; ≥ ${MOMENTUM_SETTINGS.confidence.levels.high} and ≥ ${JSON.stringify(MOMENTUM_SETTINGS.confidence.minSample.high)} on both sides for High.`,
     "",
     "## Agreement",
     "",

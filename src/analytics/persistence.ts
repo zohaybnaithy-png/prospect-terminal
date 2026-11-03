@@ -128,12 +128,41 @@ export function trendPersistence(
   };
 }
 
-export const PERSISTENCE_STATE_LABELS: Record<PersistenceState, string> = {
-  insufficient: "Not enough data",
-  neutral: "No clear trend",
-  emerging: "Recent only",
-  strengthening: "Strengthening",
-  sustained: "Sustained",
-  fading: "Fading",
-  reversed: "Reversed",
+/**
+ * Direction-aware, user-facing persistence wording. A declining trend never reuses words that
+ * could read as improvement ("strengthening" alone), so the direction is always explicit.
+ * `direction` is the direction of the CURRENT signal.
+ */
+export const PERSISTENCE_LABELS: Record<
+  PersistenceState,
+  { up: string; down: string; flat: string }
+> = {
+  insufficient: { up: "Not enough data", down: "Not enough data", flat: "Not enough data" },
+  neutral: { up: "No clear trend", down: "No clear trend", flat: "No clear trend" },
+  emerging: { up: "New upward move", down: "New downward move", flat: "No clear trend" },
+  strengthening: {
+    up: "Strengthening upward trend",
+    down: "Deepening decline",
+    flat: "No clear trend",
+  },
+  sustained: { up: "Sustained upward trend", down: "Sustained decline", flat: "No clear trend" },
+  fading: { up: "Fading improvement", down: "Easing decline", flat: "No clear trend" },
+  reversed: {
+    up: "Reversed — now rising",
+    down: "Reversed — now declining",
+    flat: "No clear trend",
+  },
 };
+
+export function persistenceLabel(
+  p: Pick<PersistenceResult, "state" | "direction">,
+): string {
+  const key = p.direction > 0 ? "up" : p.direction < 0 ? "down" : "flat";
+  return PERSISTENCE_LABELS[p.state][key];
+}
+
+/** Concise definitions used for tooltips / help text. */
+export const PERSISTENCE_HELP =
+  "Persistence = how consistently and how long the direction has continued across rolling windows.";
+export const CONFIDENCE_HELP =
+  "Confidence = how much data supports the signal (recent vs. earlier AFL plate appearances or batters faced).";

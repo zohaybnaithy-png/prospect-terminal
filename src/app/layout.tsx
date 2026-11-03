@@ -27,8 +27,8 @@ export default function RootLayout({
         </Suspense>
         <div className="demo-ribbon">
           <strong>AFL 2026</strong> Scores, the AFL player directory, player
-          profiles and Trends use real ingested Arizona Fall League data; AFL
-          Momentum is a provisional model under review. News, highlights,
+          profiles and Trends (including AFL Momentum) use real ingested Arizona
+          Fall League data. News, highlights,
           call-ups, Prospect Grades, demo-player Momentum and the fictional
           organizations are demo placeholders.
         </div>

@@ -30,6 +30,7 @@ import {
   combineComponents,
   componentChanges,
   confidenceLevel,
+  effectiveSample,
   momentumBand,
   reliability as reliabilityOf,
   zToScore,
@@ -52,7 +53,12 @@ import {
   type RolePopulation,
   type ScaleTable,
 } from "./population";
-import { trendPersistence, type Checkpoint, type PersistenceResult } from "./persistence";
+import {
+  persistenceLabel,
+  trendPersistence,
+  type Checkpoint,
+  type PersistenceResult,
+} from "./persistence";
 import { explainMomentum, COMPONENT_LABELS } from "./explain";
 import { addDays, daysBetween, mean, percentileRank, round } from "./stats";
 import {
@@ -78,8 +84,10 @@ export const CHANGE_STATUS_LABELS: Record<ChangeStatus, string> = {
   "no-games": "No completed AFL games yet",
   "no-recent": "No games in this window",
   "insufficient-recent": "Too few recent opportunities",
-  "no-baseline": "No earlier AFL games to compare with",
-  "insufficient-baseline": "Too few earlier AFL opportunities",
+  "no-baseline":
+    "Unavailable — no earlier AFL games before this window to compare with",
+  "insufficient-baseline":
+    "Unavailable — too few earlier AFL games before this window to compare with",
   "no-data": "No comparable statistics",
 };
 
@@ -347,7 +355,13 @@ export function momentum(
       snap.components.flatMap((c) => c.metrics).find((m) => m.metric === id) ??
       metricRowFor(id, snap, ctx, window),
   );
-  const confidence = confidenceLevel(snap.reliability, settings);
+  const confidence = confidenceLevel(
+    role,
+    snap.reliability,
+    snap.recentOpportunities,
+    snap.baselineOpportunities,
+    settings,
+  );
   const result: MomentumResult = {
     playerId,
     role,
@@ -436,6 +450,8 @@ export interface TimelinePoint {
   reliability: number;
   confidence: ConfidenceLevel;
   persistenceState: PersistenceResult["state"];
+  /** Direction-aware persistence wording (e.g. "Sustained decline"). */
+  persistenceLabel: string;
   keyRecent: number | null;
   keyBaseline: number | null;
   recentOpportunities: number;
@@ -481,6 +497,7 @@ export function playerTimeline(
             reliability: m.reliability,
             confidence: m.confidence,
             persistenceState: m.persistence.state,
+            persistenceLabel: persistenceLabel(m.persistence),
             keyRecent: metricValue(keyMetric, snap.recent),
             keyBaseline: metricValue(keyMetric, snap.baseline),
             recentOpportunities: snap.recentOpportunities,
@@ -626,6 +643,9 @@ export interface RankedEntry extends PlayerIdentity {
   confidence: ConfidenceLevel;
   persistenceLevel: PersistenceResult["level"];
   persistenceState: PersistenceResult["state"];
+  persistenceDirection: PersistenceResult["direction"];
+  /** Direction-aware persistence wording (e.g. "Deepening decline"). */
+  persistenceLabel: string;
   trendLengthDays: number;
   sample: MomentumResult["sample"];
   keyMetric: string;
@@ -660,6 +680,8 @@ function ranked(
     confidence: m.confidence,
     persistenceLevel: m.persistence.level,
     persistenceState: m.persistence.state,
+    persistenceDirection: m.persistence.direction,
+    persistenceLabel: persistenceLabel(m.persistence),
     trendLengthDays: m.persistence.trendLengthDays,
     sample: m.sample,
     keyMetric: key,
@@ -719,6 +741,7 @@ export interface MapPoint extends PlayerIdentity {
   y: number;
   confidence: ConfidenceLevel;
   persistenceLevel: PersistenceResult["level"];
+  persistenceLabel: string;
   quadrant: Quadrant;
   keyMetric: string;
   keyBefore: number | null;
@@ -759,6 +782,7 @@ export function performanceMap(
         y: m.score!,
         confidence: m.confidence,
         persistenceLevel: m.persistence.level,
+        persistenceLabel: persistenceLabel(m.persistence),
         quadrant: quadrantOf(x, m.score!),
         keyMetric: r.keyMetric,
         keyBefore: r.keyBefore,
@@ -781,8 +805,8 @@ export interface ComparisonEntry extends PlayerIdentity {
   sample: MomentumResult["sample"];
   persistence: Pick<
     PersistenceResult,
-    "state" | "level" | "score" | "trendLengthDays" | "runLength"
-  >;
+    "state" | "level" | "score" | "trendLengthDays" | "runLength" | "direction"
+  > & { label: string };
   contributions: { component: ComponentId; label: string; points: number; z: number }[];
   metrics: { metric: string; label: string; before: number | null; now: number | null; delta: number | null }[];
 }
@@ -796,8 +820,53 @@ export interface ModelComparison {
     hitters: { top: ComparisonEntry[]; bottom: ComparisonEntry[] };
     pitchers: { top: ComparisonEntry[]; bottom: ComparisonEntry[] };
   }[];
+  /** Sample-size distribution of every player with a valid comparison (V1 model). */
+  samples: Record<Role, SampleDistribution>;
   /** Spearman rank correlation of scores between each model pair, per role. */
   agreement: { a: ModelId; b: ModelId; role: Role; spearman: number | null; topOverlap: number }[];
+}
+
+export interface SampleDistribution {
+  players: number;
+  /** [min, p25, median, p75, max] */
+  recent: number[];
+  baseline: number[];
+  effective: number[];
+  confidence: Record<ConfidenceLevel, number>;
+}
+
+function quantiles(xs: number[]) {
+  if (!xs.length) return [];
+  const s = [...xs].sort((a, b) => a - b);
+  const q = (p: number) => {
+    const i = (s.length - 1) * p,
+      lo = Math.floor(i),
+      hi = Math.ceil(i);
+    return round(s[lo] + (s[hi] - s[lo]) * (i - lo), 1);
+  };
+  return [0, 0.25, 0.5, 0.75, 1].map(q);
+}
+
+/** Recent / earlier / effective sample quantiles and confidence counts for one window. */
+export function sampleDistribution(
+  ctx: AnalyticsContext,
+  role: Role,
+  window: MomentumWindow,
+  modelId: ModelId = "balanced",
+): SampleDistribution {
+  const ids = role === "hitter" ? ctx.ds.batting.keys() : ctx.ds.pitching.keys();
+  const ok = [...ids]
+    .map((id) => momentum(ctx, id, role, window, modelId))
+    .filter((m) => m.status === "ok");
+  const confidence: Record<ConfidenceLevel, number> = { low: 0, medium: 0, high: 0 };
+  for (const m of ok) confidence[m.confidence]++;
+  return {
+    players: ok.length,
+    recent: quantiles(ok.map((m) => m.sample.recent)),
+    baseline: quantiles(ok.map((m) => m.sample.baseline)),
+    effective: quantiles(ok.map((m) => effectiveSample(m.sample.recent, m.sample.baseline))),
+    confidence,
+  };
 }
 
 function comparisonEntry(ctx: AnalyticsContext, m: MomentumResult): ComparisonEntry {
@@ -810,6 +879,8 @@ function comparisonEntry(ctx: AnalyticsContext, m: MomentumResult): ComparisonEn
     sample: m.sample,
     persistence: {
       state: m.persistence.state,
+      direction: m.persistence.direction,
+      label: persistenceLabel(m.persistence),
       level: m.persistence.level,
       score: round(m.persistence.score, 2),
       trendLengthDays: m.persistence.trendLengthDays,
@@ -915,6 +986,10 @@ export function compareModels(
     window,
     asOf: ctx.ds.asOf,
     qualified: { hitter: anyModel.hitter.length, pitcher: anyModel.pitcher.length },
+    samples: {
+      hitter: sampleDistribution(ctx, "hitter", window),
+      pitcher: sampleDistribution(ctx, "pitcher", window),
+    },
     models: MODEL_IDS.map((id) => ({
       model: MOMENTUM_MODELS[id],
       hitters: topBottom(lists[id].hitter),

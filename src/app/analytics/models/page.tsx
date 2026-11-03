@@ -30,7 +30,7 @@ export default function ModelsPage({ searchParams }: { searchParams: SearchParam
       <PageHeading
         eyebrow="Development review"
         title="Momentum model comparison"
-        description="Candidate Momentum weightings run over the same ingested AFL data, for a baseball sanity check before any final weighting is chosen. No candidate is final."
+        description="Momentum weightings run over the same ingested AFL data. Balanced is the V1 default used across the site; Production-heavy and Skills-heavy are kept here for comparison only."
       />
       <Suspense fallback={<p className="empty-state" aria-busy="true">Running candidate models…</p>}>
         <Comparison searchParams={searchParams} />

@@ -5,8 +5,9 @@
  * Momentum framework lives here. Calculation modules receive these values as parameters and UI
  * components never hardcode them.
  *
- * IMPORTANT: none of the candidate models below is the final Momentum formula. They exist so the
- * candidates can be compared on real AFL data; the final weighting is a human decision.
+ * Balanced is the approved V1 Momentum weighting (chosen after reviewing the real 2026 AFL
+ * comparison). The production-heavy and skills-heavy configurations remain only for the
+ * development model-comparison tooling.
  */
 
 export type Role = "hitter" | "pitcher";
@@ -85,7 +86,7 @@ export interface MomentumModel {
   pitcher: Record<PitcherComponent, number>;
 }
 
-/** Candidate weightings to compare. Weights are renormalized over available components. */
+/** Weightings (Balanced = V1 default). Weights are renormalized over available components. */
 export const MOMENTUM_MODELS: Record<ModelId, MomentumModel> = {
   "production-heavy": {
     id: "production-heavy",
@@ -129,11 +130,8 @@ export const MOMENTUM_MODELS: Record<ModelId, MomentumModel> = {
 };
 export const MODEL_IDS = Object.keys(MOMENTUM_MODELS) as ModelId[];
 
-/**
- * The candidate shown on player pages and discovery views until a final model is approved.
- * PROVISIONAL — awaiting human review of the model comparison output.
- */
-export const PROVISIONAL_DISPLAY_MODEL: ModelId = "balanced";
+/** The V1 Momentum model shown everywhere outside the development comparison tooling. */
+export const DEFAULT_MOMENTUM_MODEL: ModelId = "balanced";
 
 export interface MomentumSettings {
   scoring: {
@@ -159,8 +157,16 @@ export interface MomentumSettings {
      * recent-vs-baseline comparison: n = recent·baseline / (recent + baseline).
      */
     k: Record<Role, number>;
-    /** Reliability thresholds for the Low / Medium / High confidence label. */
+  };
+  /**
+   * User-facing Low / Medium / High confidence label. This classifies the SAME reliability used
+   * for score shrinkage (it never changes the score). Each level needs a reliability floor AND
+   * a minimum sample on BOTH sides (recent and earlier), so a large sample on one side cannot
+   * lift a tiny sample on the other.
+   */
+  confidence: {
     levels: { medium: number; high: number };
+    minSample: { medium: Record<Role, number>; high: Record<Role, number> };
   };
   sample: {
     /** Hard floors: below these the change is not computed at all (no baseline to compare). */
@@ -206,7 +212,21 @@ export const MOMENTUM_SETTINGS: MomentumSettings = {
   },
   reliability: {
     k: { hitter: 25, pitcher: 25 },
-    levels: { medium: 0.4, high: 0.6 },
+  },
+  /*
+   * Calibrated for AFL-sized samples (see docs/ANALYTICS.md). With k = 25:
+   *   reliability 0.25 ⇔ effective sample ≈ 8.3  (e.g. 15 recent vs 20 earlier PA)
+   *   reliability 0.44 ⇔ effective sample ≈ 19.6 (e.g. 40 vs 40, 33 vs 50)
+   * Low    = genuinely tiny: fewer than ~4 games on either side of the comparison.
+   * Medium = a normal AFL 14D sample (≈25–40 recent PA/BF against a similar baseline).
+   * High   = ~10 games of near-everyday play on BOTH sides; rare for relievers.
+   */
+  confidence: {
+    levels: { medium: 0.25, high: 0.44 },
+    minSample: {
+      medium: { hitter: 15, pitcher: 12 },
+      high: { hitter: 30, pitcher: 25 },
+    },
   },
   sample: {
     minRecent: { hitter: 5, pitcher: 5 },

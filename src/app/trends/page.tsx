@@ -6,11 +6,7 @@ import { getAflData } from "@/services/afl";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { RisersFallers } from "@/components/analytics/risers-fallers";
 import { PerformanceMap } from "@/components/analytics/performance-map";
-import {
-  MOMENTUM_MODELS,
-  MOMENTUM_SETTINGS,
-  PROVISIONAL_DISPLAY_MODEL,
-} from "@/analytics/config";
+import { MOMENTUM_SETTINGS } from "@/analytics/config";
 import { analyticsContextFor, mapSets, riserSets } from "@/analytics/views";
 import { shortDate } from "@/lib/format";
 import { analyticsDebugEnabled } from "@/analytics/debug";
@@ -43,14 +39,14 @@ async function Trends() {
   const ctx = analyticsContextFor(data.snapshot);
   if (!ctx.ds.asOf)
     return <p className="empty-state">No completed AFL games have been ingested.</p>;
-  const model = MOMENTUM_MODELS[PROVISIONAL_DISPLAY_MODEL];
+  const risers = riserSets(data.snapshot);
   return (
     <div className="trends-stack">
       <p className="table-note">
-        Through {shortDate(ctx.ds.asOf)} (latest completed AFL game). Momentum
-        weightings are candidates under review; the default view uses the
-        provisional {model.label} model. Windows longer than the AFL games
-        played so far have no earlier baseline and show no change.
+        Through {shortDate(ctx.ds.asOf)} (latest completed AFL game). A window
+        is shown as unavailable when players have no earlier AFL games before it
+        to compare with (often 30D in the short AFL season); no change is
+        estimated then.
         {analyticsDebugEnabled() && (
           <>
             {" "}
@@ -59,13 +55,12 @@ async function Trends() {
         )}
       </p>
       <RisersFallers
-        sets={riserSets(data.snapshot)}
+        sets={risers}
         minRecent={MOMENTUM_SETTINGS.sample.leaderboardMinRecent}
         minBaseline={MOMENTUM_SETTINGS.sample.leaderboardMinBaseline}
         minMagnitude={MOMENTUM_SETTINGS.sample.leaderboardMinMagnitude}
-        defaultModel={PROVISIONAL_DISPLAY_MODEL}
       />
-      <PerformanceMap sets={mapSets(data.snapshot)} modelLabel={model.label} />
+      <PerformanceMap sets={mapSets(data.snapshot)} comparable={risers.comparable} />
     </div>
   );
 }

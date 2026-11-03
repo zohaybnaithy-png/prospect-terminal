@@ -4,7 +4,11 @@
  */
 import type { ConfidenceLevel } from "@/analytics/momentum";
 import type { PersistenceResult } from "@/analytics/persistence";
-import { PERSISTENCE_STATE_LABELS } from "@/analytics/persistence";
+import {
+  CONFIDENCE_HELP,
+  PERSISTENCE_HELP,
+  persistenceLabel,
+} from "@/analytics/persistence";
 import type { Contribution, MomentumResult } from "@/analytics/engine";
 
 const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
@@ -59,26 +63,55 @@ export function LevelMeter({
 }
 
 export function persistenceText(
-  p: Pick<PersistenceResult, "state" | "trendLengthDays">,
+  p: Pick<PersistenceResult, "state" | "direction" | "trendLengthDays">,
 ) {
-  if (p.state === "insufficient" || p.state === "neutral")
-    return PERSISTENCE_STATE_LABELS[p.state];
-  return `${PERSISTENCE_STATE_LABELS[p.state]} · ${p.trendLengthDays} days`;
+  const label = persistenceLabel(p);
+  if (p.state === "insufficient" || p.state === "neutral") return label;
+  return `${label} · ${p.trendLengthDays} days`;
 }
+
+/** Labeled meters with the shared help text as tooltips. */
+export function PersistenceMeter({
+  level,
+  detail,
+}: {
+  level: ConfidenceLevel;
+  detail?: string;
+}) {
+  return (
+    <LevelMeter
+      level={level}
+      label="Persistence"
+      title={detail ? `${PERSISTENCE_HELP} ${detail}` : PERSISTENCE_HELP}
+    />
+  );
+}
+export function ConfidenceMeter({
+  level,
+  detail,
+}: {
+  level: ConfidenceLevel;
+  detail?: string;
+}) {
+  return (
+    <LevelMeter
+      level={level}
+      label="Confidence"
+      title={detail ? `${CONFIDENCE_HELP} ${detail}` : CONFIDENCE_HELP}
+    />
+  );
+}
+
+export { CONFIDENCE_HELP, PERSISTENCE_HELP };
 
 export function MomentumMeta({ m }: { m: MomentumResult }) {
   return (
     <span className="momentum-meta">
-      <LevelMeter
-        level={m.persistence.level}
-        label="Persistence"
-        title="How consistently the change has held across rolling windows"
-      />
+      <PersistenceMeter level={m.persistence.level} />
       <span className="small-muted">{persistenceText(m.persistence)}</span>
-      <LevelMeter
+      <ConfidenceMeter
         level={m.confidence}
-        label="Confidence"
-        title={`Sample reliability ${m.reliability.toFixed(2)}: ${m.sample.recent} recent ${m.sample.unit} vs ${m.sample.baseline} earlier ${m.sample.unit}`}
+        detail={`${m.sample.recent} recent vs ${m.sample.baseline} earlier ${m.sample.unit}; reliability ${m.reliability.toFixed(2)}.`}
       />
     </span>
   );
@@ -127,14 +160,18 @@ export function Decomposition({ m }: { m: MomentumResult }) {
             </tr>
           ))}
           <tr>
-            <th scope="row">Persistence</th>
+            <th scope="row" title={PERSISTENCE_HELP}>
+              Persistence
+            </th>
             <td colSpan={3} className="small-muted">
               {CONFIDENCE_LABEL[m.persistence.level]} — {persistenceText(m.persistence)}{" "}
               (×{m.persistence.multiplier.toFixed(2)})
             </td>
           </tr>
           <tr>
-            <th scope="row">Confidence</th>
+            <th scope="row" title={CONFIDENCE_HELP}>
+              Confidence
+            </th>
             <td colSpan={3} className="small-muted">
               {CONFIDENCE_LABEL[m.confidence]} — {m.sample.recent} recent vs{" "}
               {m.sample.baseline} earlier {m.sample.unit} (reliability{" "}

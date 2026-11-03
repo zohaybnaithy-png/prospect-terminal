@@ -11,7 +11,11 @@ import {
   MAP_PERFORMANCE_METRICS,
   WHAT_CHANGED_METRICS,
   KEY_METRIC,
-  PROVISIONAL_DISPLAY_MODEL,
+  DEFAULT_MOMENTUM_MODEL,
+  PERSISTENCE_LABELS,
+  persistenceLabel,
+  effectiveSample,
+  sampleDistribution,
   type MomentumSettings,
   addDays,
   buildDataset,
@@ -86,7 +90,7 @@ describe("configuration", () => {
         assert.ok(Object.values(w).every((x) => x >= 0));
       }
     }
-    assert.ok(MODEL_IDS.includes(PROVISIONAL_DISPLAY_MODEL));
+    assert.equal(DEFAULT_MOMENTUM_MODEL, "balanced", "Balanced is the approved V1 model");
   });
 
   test("candidate models genuinely differ", () => {
@@ -301,17 +305,90 @@ describe("sample-size reliability", () => {
     assert.ok(reliability("hitter", 40, 10, S) < reliability("hitter", 40, 80, S));
   });
   test("confidence labels follow the configured thresholds", () => {
-    assert.equal(confidenceLevel(0.1, S), "low");
-    assert.equal(confidenceLevel(S.reliability.levels.medium, S), "medium");
-    assert.equal(confidenceLevel(S.reliability.levels.high, S), "high");
-    const strict = withSettings((s) => (s.reliability.levels = { medium: 0.8, high: 0.9 }));
-    assert.equal(confidenceLevel(0.6, strict), "low");
+    const c = S.confidence;
+    assert.equal(confidenceLevel("hitter", 0.1, 40, 40, S), "low");
+    assert.equal(confidenceLevel("hitter", c.levels.medium, 40, 40, S), "medium");
+    assert.equal(confidenceLevel("hitter", c.levels.high, 40, 40, S), "high");
+    const strict = withSettings((s) => (s.confidence.levels = { medium: 0.8, high: 0.9 }));
+    assert.equal(confidenceLevel("hitter", 0.6, 40, 40, strict), "low");
+  });
+
+  test("AFL calibration: tiny samples Low, normal AFL samples Medium, High is hard", () => {
+    const label = (role: "hitter" | "pitcher", recent: number, baseline: number) =>
+      confidenceLevel(role, reliability(role, recent, baseline, S), recent, baseline, S);
+    // Genuinely tiny: a couple of games recently, or almost no earlier games.
+    assert.equal(label("hitter", 8, 60), "low");
+    assert.equal(label("hitter", 12, 80), "low", "below the recent-PA floor despite a big baseline");
+    assert.equal(label("hitter", 30, 8), "low");
+    assert.equal(label("hitter", 60, 12), "low", "almost no earlier games");
+    assert.equal(label("pitcher", 6, 40), "low");
+    // Normal AFL 14D samples (≈25–40 recent PA/BF against a similar baseline): Medium.
+    for (const [r, b] of [[25, 25], [30, 30], [35, 28], [40, 35], [28, 40]])
+      assert.equal(label("hitter", r, b), "medium", `${r}/${b} PA`);
+    assert.equal(label("pitcher", 25, 30), "medium");
+    assert.equal(label("pitcher", 15, 25), "medium", "a typical reliever");
+    // High needs near-everyday samples on both sides.
+    assert.equal(label("hitter", 40, 40), "high");
+    assert.equal(label("hitter", 45, 60), "high");
+    assert.equal(label("hitter", 25, 200), "medium", "High also needs ≥30 PA on each side");
+    assert.equal(label("hitter", 200, 25), "medium");
+    assert.equal(label("pitcher", 20, 100), "medium", "relievers rarely reach High");
+    assert.equal(label("pitcher", 40, 45), "high");
+  });
+
+  test("confidence is display-only: the score is still shrunk by reliability", () => {
+    const ctx = createAnalyticsContext(trajectorySnapshot());
+    const r = momentum(ctx, IDS.improver, "hitter", "14d", "balanced");
+    assert.ok(r.reliability > 0 && r.reliability < 1);
+    assert.equal(r.reliabilityAdjusted, Math.round(r.rawScore! * r.reliability * 10) / 10);
+    assert.equal(effectiveSample(50, 50), 25);
+    assert.equal(effectiveSample(0, 50), 0);
   });
   test("display mapping is bounded, odd and monotone", () => {
     assert.equal(zToScore(0, S), 0);
     assert.ok(zToScore(100, S) <= 100 && zToScore(-100, S) >= -100);
     assert.ok(Math.abs(zToScore(1, S) + zToScore(-1, S)) < 1e-12);
     assert.ok(zToScore(1, S) < zToScore(1.5, S));
+  });
+});
+
+describe("direction-aware persistence wording", () => {
+  test("declines never read as improvement", () => {
+    for (const state of ["emerging", "strengthening", "sustained", "fading", "reversed"] as const) {
+      const up = persistenceLabel({ state, direction: 1 });
+      const down = persistenceLabel({ state, direction: -1 });
+      assert.notEqual(up, down, state);
+      assert.match(up, /upward|improvement|rising/i, up);
+      assert.match(down, /decline|declining|downward/i, down);
+      assert.doesNotMatch(down, /upward|improv|rising|strengthening/i, down);
+    }
+  });
+  test("exact wording", () => {
+    assert.deepEqual(
+      Object.fromEntries(Object.entries(PERSISTENCE_LABELS).map(([k, v]) => [k, [v.up, v.down]])),
+      {
+        insufficient: ["Not enough data", "Not enough data"],
+        neutral: ["No clear trend", "No clear trend"],
+        emerging: ["New upward move", "New downward move"],
+        strengthening: ["Strengthening upward trend", "Deepening decline"],
+        sustained: ["Sustained upward trend", "Sustained decline"],
+        fading: ["Fading improvement", "Easing decline"],
+        reversed: ["Reversed — now rising", "Reversed — now declining"],
+      },
+    );
+    assert.equal(persistenceLabel({ state: "neutral", direction: 0 }), "No clear trend");
+  });
+  test("engine outputs carry the direction-aware label", () => {
+    const ctx = createAnalyticsContext(trajectorySnapshot());
+    const down = risersAndFallers(ctx, "hitter", "14d", "balanced", "overall", 50).fallers.find(
+      (f) => f.playerId === IDS.decliner,
+    )!;
+    assert.equal(down.persistenceDirection, -1);
+    assert.match(down.persistenceLabel, /decline/i);
+    const cmp = compareModels(ctx, "14d", 3);
+    for (const e of cmp.models[0].hitters.bottom) assert.doesNotMatch(e.persistence.label, /upward|improvement/);
+    const tl = playerTimeline(ctx, IDS.decliner, "hitter", "14d", "balanced");
+    assert.match(tl.points.at(-1)!.persistenceLabel, /decline/i);
   });
 });
 
@@ -515,7 +592,7 @@ describe("hitter Momentum on synthetic trajectories", () => {
     // The 30D window covers this whole 27-day season, so nobody has an earlier baseline.
     assert.equal(m(IDS.improver, "30d").status, "no-baseline");
     assert.equal(m(u(99999)).status, "no-recent");
-    assert.match(m(IDS.newcomer, "14d").explanation, /No earlier AFL games/);
+    assert.match(m(IDS.newcomer, "14d").explanation, /^Unavailable — no earlier AFL games/);
   });
 
   test("models are configuration: different weights give different scores", () => {
@@ -743,5 +820,37 @@ describe("incomplete windows", () => {
     assert.ok(r.sample.baseline > 0);
     const snapAt = changeSnapshot(ctx, u(80), "hitter", "7d", ctx.ds.asOf!);
     assert.equal(snapAt.recent, null);
+  });
+});
+
+describe("30D in a short season", () => {
+  const ctx = createAnalyticsContext(trajectorySnapshot());
+  test("no 30D score is fabricated without a valid earlier baseline; 7D/14D still work", () => {
+    for (const id of [IDS.improver, IDS.decliner, IDS.star]) {
+      const m30 = momentum(ctx, id, "hitter", "30d", "balanced");
+      assert.equal(m30.status, "no-baseline");
+      assert.equal(m30.score, null);
+      assert.equal(m30.band, null);
+      assert.deepEqual(m30.contributions, []);
+      assert.match(m30.explanation, /^Unavailable/);
+      assert.equal(momentum(ctx, id, "hitter", "7d", "balanced").status, "ok");
+      assert.equal(momentum(ctx, id, "hitter", "14d", "balanced").status, "ok");
+    }
+    assert.deepEqual(risersAndFallers(ctx, "hitter", "30d", "balanced"), { risers: [], fallers: [] });
+    assert.deepEqual(performanceMap(ctx, "hitter", "30d", "balanced", "ops"), []);
+    assert.ok(playerTimeline(ctx, IDS.improver, "hitter", "30d", "balanced").points.every((p) => p.score === null));
+  });
+  test("a valid 30D baseline (longer season) is scored normally", () => {
+    const long = createAnalyticsContext(trajectorySnapshot(45));
+    const m30 = momentum(long, IDS.improver, "hitter", "30d", "balanced");
+    assert.equal(m30.status, "ok");
+    assert.notEqual(m30.score, null);
+  });
+  test("sample distribution reports confidence counts", () => {
+    const d = sampleDistribution(ctx, "hitter", "14d");
+    assert.equal(d.confidence.low + d.confidence.medium + d.confidence.high, d.players);
+    assert.equal(d.recent.length, 5);
+    assert.equal(sampleDistribution(ctx, "hitter", "30d").players, 0);
+    assert.ok(compareModels(ctx, "14d").samples.pitcher.players > 0);
   });
 });

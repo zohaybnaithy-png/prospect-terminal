@@ -19,10 +19,8 @@ const ROLE_LABEL: Record<Role, string> = { hitter: "Hitting", pitcher: "Pitching
  */
 export function WhatChanged({
   roles,
-  modelLabel,
 }: {
   roles: { role: Role; momentum: Record<MomentumWindow, MomentumResult> }[];
-  modelLabel: string;
 }) {
   const [window, setWindow] = useState<MomentumWindow>("14d");
   return (
@@ -36,8 +34,7 @@ export function WhatChanged({
           ))}
         </div>
         <span className="small-muted">
-          {MOMENTUM_WINDOWS[window].label} vs. all earlier AFL games · Momentum
-          model: {modelLabel} (provisional)
+          {MOMENTUM_WINDOWS[window].label} vs. all earlier AFL games
         </span>
       </div>
       {roles.map(({ role, momentum }) => (

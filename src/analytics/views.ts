@@ -6,10 +6,9 @@ import type { AflSnapshot } from "@/services/afl/types";
 import {
   COMPONENTS_BY_ROLE,
   MAP_PERFORMANCE_METRICS,
-  MODEL_IDS,
   MOMENTUM_MODELS,
   MOMENTUM_WINDOW_IDS,
-  PROVISIONAL_DISPLAY_MODEL,
+  DEFAULT_MOMENTUM_MODEL,
   type ModelId,
   type MomentumWindow,
   type Role,
@@ -61,7 +60,7 @@ export interface PlayerAnalyticsView {
 export function playerAnalyticsView(
   snapshot: AflSnapshot,
   playerId: string,
-  modelId: ModelId = PROVISIONAL_DISPLAY_MODEL,
+  modelId: ModelId = DEFAULT_MOMENTUM_MODEL,
 ): PlayerAnalyticsView {
   const ctx = analyticsContextFor(snapshot);
   const player = snapshot.players.find((p) => p.id === playerId);
@@ -84,31 +83,51 @@ export function playerAnalyticsView(
   };
 }
 
-export type RiserSets = Record<
-  ModelId,
-  Record<
+export interface RiserSets {
+  lists: Record<
     Role,
     Record<
       MomentumWindow,
       Partial<Record<RiserCategory, { risers: RankedEntry[]; fallers: RankedEntry[] }>>
     >
-  >
->;
+  >;
+  /** Players with a valid recent-vs-earlier comparison; 0 means the window is unavailable. */
+  comparable: Record<Role, Record<MomentumWindow, number>>;
+}
 
-export function riserSets(snapshot: AflSnapshot, limit = 10): RiserSets {
+/** Risers / Fallers for the V1 model (alternative weightings live only in dev tooling). */
+export function riserSets(
+  snapshot: AflSnapshot,
+  limit = 10,
+  modelId: ModelId = DEFAULT_MOMENTUM_MODEL,
+): RiserSets {
   const ctx = analyticsContextFor(snapshot);
-  const out = {} as RiserSets;
-  for (const model of MODEL_IDS) {
-    out[model] = { hitter: {}, pitcher: {} } as RiserSets[ModelId];
-    for (const role of ["hitter", "pitcher"] as const)
-      for (const w of MOMENTUM_WINDOW_IDS) {
-        const sets: RiserSets[ModelId][Role][MomentumWindow] = {};
-        for (const cat of ["overall", ...COMPONENTS_BY_ROLE[role]] as RiserCategory[])
-          sets[cat] = risersAndFallers(ctx, role, w, model, cat, limit);
-        out[model][role][w] = sets;
-      }
-  }
+  const out: RiserSets = {
+    lists: { hitter: {}, pitcher: {} } as RiserSets["lists"],
+    comparable: { hitter: {}, pitcher: {} } as RiserSets["comparable"],
+  };
+  for (const role of ["hitter", "pitcher"] as const)
+    for (const w of MOMENTUM_WINDOW_IDS) {
+      const sets: RiserSets["lists"][Role][MomentumWindow] = {};
+      for (const cat of ["overall", ...COMPONENTS_BY_ROLE[role]] as RiserCategory[])
+        sets[cat] = risersAndFallers(ctx, role, w, modelId, cat, limit);
+      out.lists[role][w] = sets;
+      out.comparable[role][w] = comparableCount(ctx, role, w, modelId);
+    }
   return out;
+}
+
+/** Number of players in a role whose window has a valid earlier baseline. */
+export function comparableCount(
+  ctx: AnalyticsContext,
+  role: Role,
+  window: MomentumWindow,
+  modelId: ModelId = DEFAULT_MOMENTUM_MODEL,
+) {
+  const ids = role === "hitter" ? ctx.ds.batting.keys() : ctx.ds.pitching.keys();
+  let n = 0;
+  for (const id of ids) if (momentum(ctx, id, role, window, modelId).status === "ok") n++;
+  return n;
 }
 
 export interface MapPointView extends Omit<MapPoint, "x" | "xValue" | "quadrant"> {
@@ -117,10 +136,10 @@ export interface MapPointView extends Omit<MapPoint, "x" | "xValue" | "quadrant"
 }
 export type MapSets = Record<Role, Record<MomentumWindow, MapPointView[]>>;
 
-/** Map points for the provisional model with every selectable x-axis statistic attached. */
+/** Map points for the V1 model with every selectable x-axis statistic attached. */
 export function mapSets(
   snapshot: AflSnapshot,
-  modelId: ModelId = PROVISIONAL_DISPLAY_MODEL,
+  modelId: ModelId = DEFAULT_MOMENTUM_MODEL,
 ): MapSets {
   const ctx = analyticsContextFor(snapshot);
   const out = { hitter: {}, pitcher: {} } as MapSets;

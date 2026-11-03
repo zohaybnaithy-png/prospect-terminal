@@ -51,7 +51,7 @@ Expected clean live AFL snapshot (`afl:2026:all:season:end:all`): 2680 records, 
 
 Prospect Grade, Momentum, Prospect Priority, Pure Performance, P(MLB), Similarity, Breakout detection are planned but their formulas are **not** finalized. Do not invent or implement final versions without discussion.
 
-Momentum has a provisional, configurable framework in `src/analytics` (see `docs/ANALYTICS.md`) with three candidate weightings under human review; do not pick or hardcode a final model.
+Momentum V1 lives in `src/analytics` (see `docs/ANALYTICS.md`). Balanced is the approved V1 weighting (`DEFAULT_MOMENTUM_MODEL`); production-heavy and skills-heavy remain only in the development comparison tooling. Change weights, confidence thresholds or persistence rules only with discussion.
 
 ## UI / design (preserve)
 
