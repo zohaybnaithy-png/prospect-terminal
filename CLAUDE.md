@@ -51,6 +51,8 @@ Expected clean live AFL snapshot (`afl:2026:all:season:end:all`): 2680 records, 
 
 Prospect Grade, Momentum, Prospect Priority, Pure Performance, P(MLB), Similarity, Breakout detection are planned but their formulas are **not** finalized. Do not invent or implement final versions without discussion.
 
+Momentum has a provisional, configurable framework in `src/analytics` (see `docs/ANALYTICS.md`) with three candidate weightings under human review; do not pick or hardcode a final model.
+
 ## UI / design (preserve)
 
 Light, information-dense, Baseball Savant / FanGraphs-like: white background, charcoal text, thin gray borders, restrained teal accent, compact data typography, desktop-first. Avoid dark AI dashboards, gradients, neon/glow, glassmorphism, oversized cards, excess whitespace. Don't revert to dark mode or redesign unless asked. Logo is a stitched baseball circle, no tagline (`prospect-terminal-logo.png` at repo root, imported by `src/components/layout/header.tsx`). Homepage demo data is intentional until AFL data is wired in.

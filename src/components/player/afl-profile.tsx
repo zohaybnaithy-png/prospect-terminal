@@ -13,17 +13,33 @@ import {
   type AflPlayerProfile,
 } from "@/services/afl/read-model";
 import type { AflSnapshot } from "@/services/afl/types";
+import type { PlayerAnalyticsView } from "@/analytics/views";
 import { shortDate } from "@/lib/format";
+import {
+  Decomposition,
+  MomentumMeta,
+  MomentumValue,
+} from "@/components/analytics/momentum-parts";
+import { WhatChanged } from "@/components/analytics/what-changed";
+import { DevelopmentTimeline } from "@/components/analytics/development-timeline";
+import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
 
-/** Real AFL player profile. Unmodeled analytics are shown as explicit placeholders. */
+const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
+
+/**
+ * Real AFL player profile. Momentum comes from the provisional analytics model (clearly labeled);
+ * Prospect Grade remains an explicit placeholder because no Grade formula exists.
+ */
 export function AflPlayerProfileView({
   profile,
   snapshot,
+  analytics,
 }: {
   profile: AflPlayerProfile;
   snapshot: AflSnapshot;
+  analytics: PlayerAnalyticsView;
 }) {
   const { player, row, asOf } = profile;
   const hasBatting = profile.windows.season.batting !== null;
@@ -65,20 +81,42 @@ export function AflPlayerProfileView({
           {row.rosterStatus && <span>Roster: {row.rosterStatus}</span>}
         </div>
         <div className="profile-scores">
-          <span>
+          <span title="No Prospect Grade formula has been defined">
             Prospect Grade <strong className="placeholder-value">—</strong>
           </span>
-          <span>
-            Momentum <strong className="placeholder-value">—</strong>
-          </span>
+          {analytics.roles.map(({ role, momentum }) => {
+            const m = momentum["14d"];
+            return (
+              <details key={role} className="momentum-summary">
+                <summary>
+                  <span>
+                    {analytics.roles.length > 1 ? `${ROLE_LABEL[role]} ` : ""}
+                    Momentum (14D)
+                  </span>{" "}
+                  <MomentumValue score={m.score} large />
+                  {m.band && <span className="band-label">{m.band.label}</span>}
+                  {m.status === "ok" && <MomentumMeta m={m} />}
+                  <span className="why-link">Why?</span>
+                </summary>
+                <div className="momentum-popover">
+                  <p className="what-changed-explanation">{m.explanation}</p>
+                  <Decomposition m={m} />
+                </div>
+              </details>
+            );
+          })}
           <span className="small-muted">
-            Not yet modeled · no Grade or Momentum formula has been finalized
+            Momentum = change vs. the player&apos;s own earlier AFL games (0 =
+            performing like their baseline) · provisional{" "}
+            {analytics.model.label} model, not final · Grade not modeled
           </span>
         </div>
       </header>
       <nav className="profile-tabs" aria-label="Player sections">
         {[
           ["Stats", "stats"],
+          ["What changed?", "changes"],
+          ["Percentiles", "percentiles"],
           ["Game log", "game-log"],
           ["Development", "development"],
           ["Trends", "trends"],
@@ -130,6 +168,29 @@ export function AflPlayerProfileView({
           </>
         )}
       </section>
+      {analytics.roles.length > 0 && (
+        <section id="changes" className="page-section">
+          <SectionTitle title="What changed?" />
+          <WhatChanged
+            roles={analytics.roles.map(({ role, momentum }) => ({ role, momentum }))}
+            modelLabel={analytics.model.label}
+          />
+        </section>
+      )}
+      {analytics.roles.length > 0 && (
+        <section id="percentiles" className="page-section">
+          <SectionTitle title="AFL development fingerprint" />
+          <div className="fingerprint-grid">
+            {analytics.roles.map(({ role, fingerprint }) => (
+              <DevelopmentFingerprint
+                key={role}
+                fp={fingerprint}
+                label={`${ROLE_LABEL[role]} — AFL percentiles`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
       <section id="game-log" className="page-section">
         <SectionTitle title="Game log" />
         {!profile.gameLog.length && (
@@ -158,11 +219,20 @@ export function AflPlayerProfileView({
         <RosterHistoryTable rows={profile.rosterHistory} />
       </section>
       <section id="trends" className="page-section">
-        <SectionTitle title="Development trajectory" />
-        <p className="placeholder-panel">
-          Placeholder · the Grade/Momentum trajectory chart needs a defined
-          prospect model, which does not exist yet. No values are estimated.
-        </p>
+        <SectionTitle title="Development timeline" />
+        {analytics.roles.length ? (
+          analytics.roles.map(({ role, timelines }) => (
+            <DevelopmentTimeline
+              key={role}
+              timelines={timelines}
+              label={ROLE_LABEL[role]}
+            />
+          ))
+        ) : (
+          <p className="placeholder-panel">
+            No completed AFL games to chart for this player yet.
+          </p>
+        )}
       </section>
       <section id="news" className="page-section">
         <SectionTitle title="Player news" />

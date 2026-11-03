@@ -1558,3 +1558,336 @@ a.reset-button {
     margin-top: 18px;
   }
 }
+/* Analytics V1 (Momentum, What changed?, timeline, fingerprint, discovery). Same restrained palette. */
+.momentum-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.momentum-value.large {
+  font-size: 15px;
+}
+.momentum-value.up {
+  color: var(--positive);
+}
+.momentum-value.down {
+  color: var(--negative);
+}
+.momentum-value.flat {
+  color: var(--text);
+}
+.momentum-arrow {
+  margin-left: 2px;
+  font-size: 0.85em;
+}
+.band-label {
+  margin-left: 6px;
+  color: #586b6d;
+  font-size: 11px;
+}
+.momentum-meta,
+.rank-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-left: 10px;
+  font-size: 11px;
+}
+.rank-meta {
+  margin: 3px 0 0;
+}
+.level-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #586b6d;
+}
+.level-meter strong {
+  color: #2f4446;
+  font-weight: 600;
+  font-size: 11px;
+  margin: 0;
+}
+.level-bars {
+  display: inline-flex;
+  gap: 1px;
+}
+.level-bars i {
+  display: inline-block;
+  width: 5px;
+  height: 9px;
+  background: #dbe3e2;
+}
+.level-bars i.on {
+  background: #3d8587;
+}
+.momentum-summary > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.momentum-summary > summary::-webkit-details-marker {
+  display: none;
+}
+.why-link {
+  margin-left: 8px;
+  color: var(--link);
+  font-size: 11px;
+  text-decoration: underline dotted;
+}
+.momentum-popover {
+  margin-top: 8px;
+  max-width: 720px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.analytics-panel {
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.analytics-panel-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: #f5f7f7;
+}
+.score-chart > .analytics-panel-controls {
+  margin: -15px -15px 8px;
+}
+.what-changed {
+  padding: 11px 13px;
+}
+.what-changed + .what-changed {
+  border-top: 1px solid var(--border);
+}
+.what-changed .table-title {
+  margin-top: 0;
+}
+.what-changed-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.momentum-label {
+  color: #586b6d;
+  font-size: 12px;
+}
+.what-changed-explanation {
+  margin: 6px 0 9px;
+  color: #2f4446;
+  font-size: 12px;
+}
+.what-changed-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.compact-table td,
+.compact-table th {
+  height: auto;
+  padding: 5px 8px;
+}
+.compact-table tbody th {
+  position: static;
+  background: none;
+  border-bottom: 1px solid #e0e5e5;
+  font-weight: 600;
+  color: #344244;
+  font-size: 11px;
+}
+.change-arrow {
+  font-size: 8px;
+}
+.mini-heading {
+  margin-bottom: 5px;
+  color: #38585a;
+  font-size: 11px;
+  font-weight: 700;
+}
+.decomposition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.decomposition-table th {
+  width: 96px;
+  padding: 3px 8px 3px 0;
+  text-align: left;
+  font-weight: 600;
+  color: #344244;
+}
+.decomposition-table td {
+  padding: 3px 6px;
+}
+.decomposition-table td.numeric {
+  width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.decomp-bar-cell {
+  position: relative;
+  width: 38%;
+  min-width: 120px;
+  height: 14px;
+}
+.decomp-axis {
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  bottom: 1px;
+  width: 1px;
+  background: #aab9b7;
+}
+.decomp-bar {
+  position: absolute;
+  top: 3px;
+  height: 8px;
+}
+.decomp-bar.pos {
+  background: #3d8587;
+}
+.decomp-bar.neg {
+  background: #c27a76;
+}
+.chart-tooltip {
+  padding: 7px 9px;
+  border: 1px solid #bacac7;
+  background: #fff;
+  color: #2f4446;
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 280px;
+}
+.map-area {
+  height: 420px;
+  width: 100%;
+  padding: 6px 8px 0 0;
+}
+.fingerprint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 560px));
+  gap: 22px 40px;
+}
+.fingerprint .table-title {
+  margin-top: 0;
+}
+.fingerprint-list,
+.fingerprint-metrics {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fingerprint-list > li {
+  border-bottom: 1px solid #e0e5e5;
+}
+.fingerprint-list summary,
+.fingerprint-metrics li,
+.fp-row {
+  display: grid;
+  grid-template-columns: 150px minmax(80px, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.fingerprint-list summary {
+  cursor: pointer;
+  list-style: none;
+}
+.fingerprint-list summary::-webkit-details-marker {
+  display: none;
+}
+.fingerprint-list summary .fp-label::before {
+  content: "▸ ";
+  color: #7b8b89;
+  font-size: 10px;
+}
+.fingerprint-list details[open] summary .fp-label::before {
+  content: "▾ ";
+}
+.fingerprint-metrics li {
+  padding: 3px 0 3px 14px;
+  font-size: 11px;
+  color: #4b6263;
+}
+.fp-label {
+  font-weight: 600;
+}
+.fingerprint-metrics .fp-label {
+  font-weight: 400;
+}
+.fp-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pct-bar {
+  position: relative;
+  display: block;
+  height: 7px;
+  background: #edf2f1;
+}
+.pct-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #3d8587;
+}
+.trends-stack {
+  display: grid;
+  gap: 22px;
+}
+.riser-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+  padding: 0 13px;
+}
+.riser-title {
+  margin-top: 8px;
+}
+.rank-list li {
+  align-items: start;
+}
+.button-link {
+  border: 1px solid #b7c5c4;
+  padding: 6px 10px;
+  margin-left: -1px;
+  font-size: 11px;
+  color: #3f5859;
+  background: #fff;
+}
+.button-link[aria-current="page"] {
+  color: #fff;
+  background: #226c6e;
+  border-color: #226c6e;
+}
+.model-section h3 {
+  font-size: 18px;
+}
+@media (max-width: 760px) {
+  .what-changed-grid,
+  .riser-columns {
+    grid-template-columns: 1fr;
+  }
+  .momentum-meta {
+    margin-left: 0;
+  }
+  .decomposition-table .decomp-desc {
+    display: none;
+  }
+}
+.data-table td.positive {
+  color: var(--positive);
+}
+.data-table td.negative {
+  color: var(--negative);
+}

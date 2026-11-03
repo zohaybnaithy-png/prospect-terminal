@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 const links = [
   ["Home", "/"],
   ["Players", "/players"],
+  ["Trends", "/trends"],
   ["Organizations", "/organizations"],
   ["Leagues", "/leagues"],
   ["Data", "/data"],

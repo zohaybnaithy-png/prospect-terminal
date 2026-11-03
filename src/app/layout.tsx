@@ -26,10 +26,11 @@ export default function RootLayout({
           <ScoreStrip />
         </Suspense>
         <div className="demo-ribbon">
-          <strong>AFL 2026</strong> Scores, the AFL player directory and player
-          profiles use real ingested Arizona Fall League data. News, highlights,
-          call-ups, Prospect Grades, Momentum and the fictional organizations
-          are demo placeholders.
+          <strong>AFL 2026</strong> Scores, the AFL player directory, player
+          profiles and Trends use real ingested Arizona Fall League data; AFL
+          Momentum is a provisional model under review. News, highlights,
+          call-ups, Prospect Grades, demo-player Momentum and the fictional
+          organizations are demo placeholders.
         </div>
         <main id="main" className="main-shell">
           {children}

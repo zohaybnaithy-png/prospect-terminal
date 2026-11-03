@@ -14,6 +14,15 @@ import {
   playerProfile,
 } from "../src/services/afl/read-model";
 import { mockMlbFetch, syntheticMlb } from "./mlb-test-support";
+import {
+  MOMENTUM_WINDOW_IDS,
+  changeSnapshot,
+  compareModels,
+  createAnalyticsContext,
+  momentum,
+  playerRoles,
+} from "../src/analytics";
+import { mapSets, playerAnalyticsView, riserSets } from "../src/analytics/views";
 
 /**
  * Exercises the read layer's real SQL against a fresh, migrated, disposable database populated
@@ -113,6 +122,64 @@ test("AFL read layer against ingested PostgreSQL data", async (t) => {
           const profile = playerProfile(s, row.id)!;
           assert.equal(profile.player.name, row.name);
         }
+      },
+    );
+
+    await t.test(
+      "analytics windows match repository aggregates and views compute read-only",
+      async () => {
+        const s = (await loadAflSnapshot(db))!;
+        const counts = async () =>
+          (
+            await pool.query(
+              "select (select count(*) from player_batting_games) b, (select count(*) from player_pitching_games) p, (select count(*) from games) g",
+            )
+          ).rows[0];
+        const before = await counts();
+        const ctx = createAnalyticsContext(s);
+        const repo = new GameStatisticsRepository(db);
+        const asOf = ctx.ds.asOf!;
+        for (const player of s.players)
+          for (const role of playerRoles(ctx.ds, player.id))
+            for (const w of MOMENTUM_WINDOW_IDS) {
+              const snap = changeSnapshot(ctx, player.id, role, w, asOf);
+              for (const [range, sample] of [
+                [snap.ranges.recent, snap.recent],
+                [snap.ranges.baseline, snap.baseline],
+              ] as const) {
+                if (!range) continue;
+                const options = {
+                  season: 2026,
+                  leagueId: s.league.id,
+                  asOf,
+                  window: range,
+                };
+                if (role === "hitter") {
+                  const e = await repo.getPlayerBattingStats(player.id, options);
+                  assert.equal(
+                    sample && "plateAppearances" in sample ? sample.plateAppearances : 0,
+                    e.plateAppearances,
+                  );
+                } else {
+                  const e = await repo.getPlayerPitchingStats(player.id, options);
+                  assert.equal(
+                    sample && "battersFaced" in sample ? sample.battersFaced : 0,
+                    e.battersFaced,
+                  );
+                }
+              }
+              const m = momentum(ctx, player.id, role, w, "balanced");
+              assert.ok(m.score === null || Math.abs(m.score) <= 100);
+              assert.doesNotThrow(() => JSON.stringify(m));
+            }
+        for (const player of s.players)
+          assert.doesNotThrow(() =>
+            JSON.stringify(playerAnalyticsView(s, player.id)),
+          );
+        assert.doesNotThrow(() => JSON.stringify(riserSets(s)));
+        assert.doesNotThrow(() => JSON.stringify(mapSets(s)));
+        assert.equal(compareModels(ctx, "14d").models.length, 3);
+        assert.deepEqual(await counts(), before, "analytics never writes");
       },
     );
   } finally {

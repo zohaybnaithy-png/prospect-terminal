@@ -59,14 +59,21 @@ export function aflWindowBounds(s: AflSnapshot, window: AflWindow) {
 
 function completedGameDates(s: AflSnapshot, window: AflWindow) {
   const bounds = aflWindowBounds(s, window);
+  return bounds ? completedGameDatesInRange(s, bounds) : new Map<string, string>();
+}
+
+/** Completed-game id → official date for an inclusive date range (same inclusion rule). */
+export function completedGameDatesInRange(
+  s: AflSnapshot,
+  range: { from: string; to: string },
+) {
   const dates = new Map<string, string>();
-  if (!bounds) return dates;
   for (const g of completedGames(s))
-    if (g.date >= bounds.from && g.date <= bounds.to) dates.set(g.id, g.date);
+    if (g.date >= range.from && g.date <= range.to) dates.set(g.id, g.date);
   return dates;
 }
 
-function groupByPlayer<T extends { playerId: string; gameId: string }>(
+export function groupByPlayer<T extends { playerId: string; gameId: string }>(
   lines: T[],
   games: Map<string, string>,
 ) {
