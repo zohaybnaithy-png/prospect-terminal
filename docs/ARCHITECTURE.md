@@ -70,3 +70,7 @@ The source adapter/normalization/plan/transactional sink boundary now lives unde
 ## Live-source-capable AFL worker
 
 The ingestion contract now also has an MLBStatsApiSource for local execution, a centralized JSON client/config, source-specific normalization, and a stored-game statistics repository. UI routes and the demo repository do not import it. Live data uses the same stable UUID mapping and canonical entities as the preserved fixture pipeline. Live normalization may quarantine independent records (holding malformed boxscores coherently) without disabling unrelated data. Additive migration 0003 supports real schedule metadata, optional person/counting fields, and completeness-aware official-date aggregation. See INGESTION.md for the first local command, endpoint coverage, current organization versus historical affiliation semantics, dry-run guarantees, and supported rolling windows.
+
+## MiLB data foundation
+
+Triple-A, Double-A, High-A and Single-A reuse the AFL ingestion contract, provider namespace, planner and transactional sink (see [MILB-INGESTION.md](MILB-INGESTION.md)). Hierarchy: MLB organization (sportId 1) → affiliate team → level row per (sport, league) → MiLB season → games / roster observations / game lines → `src/statistics` aggregation → Analytics V1. `src/domain/levels.ts` is the framework-free level registry. `loadMilbLevelSnapshot` reads one level into the existing snapshot shape, so aggregation and analytics need no MiLB-specific code. No per-level tables and no migration were added.

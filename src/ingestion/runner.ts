@@ -38,6 +38,9 @@ export interface IngestionSink {
     batch: NormalizedBatch,
   ): Promise<IngestionReport>;
 }
+/** Capture identity: adapter-supplied manifest hash when present, else the full payload hash. */
+export const rawContentHashOf = (snapshot: SourceSnapshot) =>
+  snapshot.rawContentHash ?? fingerprint(snapshot.payload);
 export async function ingest(
   adapter: SourceAdapter,
   sink?: IngestionSink,
@@ -81,7 +84,7 @@ export async function ingest(
     provider: snapshot.provider,
     snapshotKey: snapshot.key,
     contentHash: normalizedFingerprint(normalized),
-    rawContentHash: fingerprint(snapshot.payload),
+    rawContentHash: rawContentHashOf(snapshot),
     status: batch.issues.length
       ? batch.quarantinePolicy === "records"
         ? "dry-run-with-quarantine"

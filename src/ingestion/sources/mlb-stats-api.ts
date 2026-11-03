@@ -1,12 +1,9 @@
 import { z } from "zod";
-import { fingerprint } from "../plan";
 import type {
   SourceAdapter,
   SourceSnapshot,
   NormalizedBatch,
-  IngestionRecord,
 } from "../contracts";
-import { recordSchema, recordKey } from "../contracts";
 import { selectAflSchedule, normalizedGame } from "./mlb-schedule";
 import type { ScheduleGame } from "./mlb-schedule";
 import { MlbClient } from "./mlb-client";
@@ -20,8 +17,7 @@ import {
   MlbNormalizer,
   foundationalRecords,
   gameStatus,
-  battingStats,
-  pitchingStats,
+  normalizeBoxscore,
 } from "./mlb-normalize";
 import type { ApiPerson } from "./mlb-normalize";
 interface Part {
@@ -344,7 +340,7 @@ export class MLBStatsApiSource implements SourceAdapter {
         documents: this.client.documents.map((d) => ({
           url: d.url,
           fetchedAt: d.fetchedAt,
-          contentHash: fingerprint(d.body),
+          contentHash: d.contentHash,
         })),
       },
       payload,
@@ -433,106 +429,11 @@ export class MLBStatsApiSource implements SourceAdapter {
       }
       const game = games.get(part.id);
       if (!game) continue;
-      try {
-        const box = z
-          .object({
-            teams: z.object({
-              home: z.object({
-                team: z.object({ id: apiId }),
-                players: z.record(z.string(), z.unknown()),
-              }),
-              away: z.object({
-                team: z.object({ id: apiId }),
-                players: z.record(z.string(), z.unknown()),
-              }),
-            }),
-          })
-          .parse(part.body);
-        if (
-          box.teams.home.team.id !== game.teams.home.team.id ||
-          box.teams.away.team.id !== game.teams.away.team.id
-        )
-          throw new Error("Boxscore teams disagree with schedule");
-        const lines: IngestionRecord[] = [];
-        const boxPeople: { person: ApiPerson; position?: string }[] = [];
-        let bad = false;
-        for (const side of [box.teams.home, box.teams.away])
-          for (const [key, raw] of Object.entries(side.players)) {
-            const entry = z
-              .object({
-                person: personSchema,
-                position: z.object({ abbreviation: z.string() }).optional(),
-                stats: z.object({
-                  batting: z.record(z.string(), z.unknown()).optional(),
-                  pitching: z.record(z.string(), z.unknown()).optional(),
-                }),
-              })
-              .safeParse(raw);
-            if (!entry.success) {
-              n.issue(
-                `boxscore:${part.id}:${key}`,
-                "Malformed boxscore player",
-              );
-              bad = true;
-              continue;
-            }
-            const row = entry.data;
-            boxPeople.push({
-              person: row.person,
-              position: row.position?.abbreviation,
-            });
-            for (const kind of ["battingGame", "pitchingGame"] as const) {
-              const stats =
-                kind === "battingGame" ? row.stats.batting : row.stats.pitching;
-              if (!stats || !Object.keys(stats).length) continue;
-              try {
-                const record = recordSchema.parse({
-                  kind,
-                  key: `${part.id}:${row.person.id}`,
-                  player: String(row.person.id),
-                  game: String(part.id),
-                  team: String(side.team.id),
-                  stats:
-                    kind === "battingGame"
-                      ? battingStats(stats)
-                      : pitchingStats(stats),
-                });
-                lines.push(record);
-              } catch {
-                n.issue(
-                  `${kind}:${part.id}:${row.person.id}`,
-                  "Incomplete or invalid game statistics; whole boxscore held for review",
-                );
-                bad = true;
-              }
-            }
-          }
-        for (const person of boxPeople)
-          if (!persons.has(person.person.id))
-            persons.set(person.person.id, person);
-        if (!bad) {
-          for (const line of lines) n.add(line);
-          n.add({
-            kind: "gameLineSet",
-            key: String(part.id),
-            game: String(part.id),
-            battingPlayers: lines
-              .filter((r) => r.kind === "battingGame")
-              .map((r) => ("player" in r ? r.player : ""))
-              .sort(),
-            pitchingPlayers: lines
-              .filter((r) => r.kind === "pitchingGame")
-              .map((r) => ("player" in r ? r.player : ""))
-              .sort(),
-            lineKeys: lines.map(recordKey).sort(),
-          });
-        }
-      } catch (error) {
-        n.issue(
-          `boxscore:${part.id}`,
-          error instanceof Error ? error.message : "Malformed boxscore",
-        );
-      }
+      for (const person of normalizeBoxscore(n, part.id, part.body, {
+        home: game.teams.home.team.id,
+        away: game.teams.away.team.id,
+      }))
+        if (!persons.has(person.person.id)) persons.set(person.person.id, person);
     }
     for (const body of p.people)
       try {

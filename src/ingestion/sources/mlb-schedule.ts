@@ -28,12 +28,20 @@ const scheduleGame = z.object({
   rescheduleGameDate: z.iso.date().optional(),
   rescheduledFrom: z.iso.datetime({ offset: true }).optional(),
   rescheduledFromDate: z.iso.date().optional(),
+  // Suspended games resumed on a later date keep their gamePk (MiLB).
+  resumeDate: z.iso.datetime({ offset: true }).optional(),
+  resumeGameDate: z.iso.date().optional(),
+  resumedFrom: z.iso.datetime({ offset: true }).optional(),
+  resumedFromDate: z.iso.date().optional(),
+  doubleHeader: z.string().optional(),
+  gameNumber: z.number().int().positive().optional(),
 });
 export type ScheduleGame = z.infer<typeof scheduleGame>;
-interface Row {
+export interface ScheduleRow {
   game: ScheduleGame;
   date: string;
 }
+type Row = ScheduleRow;
 export function normalizedGame(g: ScheduleGame, date: string, season: number) {
   return {
     kind: "game" as const,
@@ -74,16 +82,32 @@ function linkedPostponement(old: Row, current: Row): boolean {
     b.rescheduledFromDate === old.date
   );
 }
-/** One shared selection for boxscore fetching and normalization. No last-row-wins policy. */
-export function selectAflSchedule(
-  body: unknown,
-  teamIds: Set<number>,
-  options: MlbOptions,
-) {
-  const issues: IngestionIssue[] = [],
-    notices: IngestionNotice[] = [];
-  const games = new Map<number, Row>();
+/** A suspended representation that explicitly points to its resumed (current) representation. */
+function linkedSuspension(old: Row, current: Row): boolean {
+  const a = old.game,
+    b = current.game;
+  return (
+    /suspend/i.test(a.status.detailedState ?? "") &&
+    !/suspend/i.test(b.status.detailedState ?? "") &&
+    a.gameType === b.gameType &&
+    a.season === b.season &&
+    a.teams.home.team.id === b.teams.home.team.id &&
+    a.teams.away.team.id === b.teams.away.team.id &&
+    a.resumeGameDate !== undefined &&
+    a.resumeGameDate === current.date &&
+    b.resumedFromDate !== undefined &&
+    b.resumedFromDate === old.date
+  );
+}
+
+/**
+ * Parses a schedule envelope into per-gamePk groups. Malformed rows block their gamePk (it is
+ * never partially selected) and are reported.
+ */
+export function parseScheduleGroups(body: unknown) {
+  const issues: IngestionIssue[] = [];
   const groups = new Map<number, Row[]>();
+  const blocked = new Set<number>();
   const issue = (key: string, message: string) =>
     issues.push({ recordKey: key, code: "invalid-record", message });
   const envelope = z
@@ -95,9 +119,8 @@ export function selectAflSchedule(
     .safeParse(body);
   if (!envelope.success) {
     issue("schedule", "Malformed schedule envelope");
-    return { games, issues, notices };
+    return { groups, blocked, issues, valid: false };
   }
-  const blocked = new Set<number>();
   for (const d of envelope.data.dates)
     for (const raw of d.games) {
       const parsed = scheduleGame.safeParse(raw);
@@ -111,69 +134,85 @@ export function selectAflSchedule(
         continue;
       }
       const g = parsed.data;
-      groups.set(g.gamePk, [
-        ...(groups.get(g.gamePk) ?? []),
-        { game: g, date: d.date },
-      ]);
+      const list = groups.get(g.gamePk);
+      if (list) list.push({ game: g, date: d.date });
+      else groups.set(g.gamePk, [{ game: g, date: d.date }]);
     }
-  for (const [id, rows] of groups) {
-    if (blocked.has(id)) continue;
-    try {
-      for (const field of [
-        "gameType",
-        "season",
-        "leagueId",
-        "sportId",
-      ] as const) {
-        const values = new Set(
-          rows
-            .map((r) => r.game[field])
-            .filter((v) => v !== undefined)
-            .map(String),
+  return { groups, blocked, issues, valid: true };
+}
+
+/**
+ * Chooses the single current representation of one gamePk. Identical representations collapse;
+ * differing ones are accepted only when every superseded row is a postponed row with reciprocal
+ * reschedule linkage (or, when enabled, a suspended row with reciprocal resume linkage) to one
+ * unique current row. Anything else throws so the caller quarantines the game. Never last-row-wins.
+ */
+export function reconcileScheduleGroup(
+  rows: Row[],
+  identity: (row: Row) => unknown,
+  { allowSuspensions = false }: { allowSuspensions?: boolean } = {},
+): { chosen: Row; reconciled: "reschedule" | "suspension" | null } {
+  for (const field of ["gameType", "season", "leagueId", "sportId"] as const) {
+    const values = new Set(
+      rows
+        .map((r) => r.game[field])
+        .filter((v) => v !== undefined)
+        .map(String),
+    );
+    if (values.size > 1) throw new Error(`Conflicting schedule ${field} context`);
+  }
+  const key = (r: Row) => fingerprint(identity(r));
+  if (new Set(rows.map(key)).size <= 1) return { chosen: rows[0], reconciled: null };
+  const superseded = (r: Row) =>
+    gameStatus(r.game.status) === "postponed" ||
+    (allowSuspensions && /suspend/i.test(r.game.status.detailedState ?? ""));
+  const active = rows.filter((r) => !superseded(r));
+  if (!active.length || new Set(active.map(key)).size !== 1)
+    throw new Error(
+      "Conflicting schedule representations without a unique current game",
+    );
+  const chosen = active[0];
+  let suspension = false;
+  for (const r of rows.filter(superseded)) {
+    if (gameStatus(r.game.status) === "postponed") {
+      if (!active.some((a) => linkedPostponement(r, a)))
+        throw new Error(
+          "Conflicting schedule representations lack reciprocal reschedule linkage",
         );
-        if (values.size > 1)
-          throw new Error(`Conflicting schedule ${field} context`);
-      }
-      // Collapse equivalent normalized representations; retain their linkage evidence.
-      const active = rows.filter(
-        (r) => gameStatus(r.game.status) !== "postponed",
+    } else if (!active.some((a) => linkedSuspension(r, a)))
+      throw new Error(
+        "Suspended representation lacks reciprocal resume linkage",
       );
-      let chosen = rows[0];
-      if (
-        new Set(
-          rows.map((r) =>
-            fingerprint(normalizedGame(r.game, r.date, options.season)),
-          ),
-        ).size > 1
-      ) {
-        if (
-          !active.length ||
-          new Set(
-            active.map((r) =>
-              fingerprint(normalizedGame(r.game, r.date, options.season)),
-            ),
-          ).size !== 1
-        )
-          throw new Error(
-            "Conflicting schedule representations without a unique current game",
-          );
-        chosen = active[0];
-        if (
-          rows.some(
-            (r) =>
-              gameStatus(r.game.status) === "postponed" &&
-              !active.some((a) => linkedPostponement(r, a)),
-          )
-        )
-          throw new Error(
-            "Conflicting schedule representations lack reciprocal reschedule linkage",
-          );
+    else suspension = true;
+  }
+  return { chosen, reconciled: suspension ? "suspension" : "reschedule" };
+}
+
+/** One shared selection for boxscore fetching and normalization. No last-row-wins policy. */
+export function selectAflSchedule(
+  body: unknown,
+  teamIds: Set<number>,
+  options: MlbOptions,
+) {
+  const notices: IngestionNotice[] = [];
+  const games = new Map<number, Row>();
+  const parsed = parseScheduleGroups(body);
+  const issues = parsed.issues;
+  const issue = (key: string, message: string) =>
+    issues.push({ recordKey: key, code: "invalid-record", message });
+  if (!parsed.valid) return { games, issues, notices };
+  for (const [id, rows] of parsed.groups) {
+    if (parsed.blocked.has(id)) continue;
+    try {
+      const { chosen, reconciled } = reconcileScheduleGroup(rows, (r) =>
+        normalizedGame(r.game, r.date, options.season),
+      );
+      if (reconciled)
         notices.push({
           recordKey: `game:${id}`,
           reason: "reconciled-reschedule",
           message: "Linked postponed representation reconciled to current game",
         });
-      }
       const g = chosen.game,
         date = g.officialDate ?? chosen.date;
       const members = [g.teams.home.team.id, g.teams.away.team.id].map((t) =>

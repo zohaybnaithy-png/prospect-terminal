@@ -15,10 +15,12 @@
     "db:seed": "node --import tsx scripts/seed.ts",
     "ingest:afl": "node --import tsx scripts/ingest-afl.ts",
     "ingest:probe:afl": "node --use-env-proxy --import tsx scripts/probe-afl-source.ts",
+    "ingest:milb": "node --import tsx scripts/ingest-milb.ts",
     "analytics:compare": "node --import tsx scripts/analytics-compare.ts",
     "test:ingestion:db": "node --import tsx --test scripts/ingestion-db.integration.ts",
     "test:mlb:db": "node --import tsx --test scripts/mlb-db.integration.ts",
-    "test:afl:db": "node --import tsx --test scripts/afl-read.integration.ts"
+    "test:afl:db": "node --import tsx --test scripts/afl-read.integration.ts",
+    "test:milb:db": "node --import tsx --test scripts/milb-db.integration.ts"
   },
   "repository": {
     "type": "git",

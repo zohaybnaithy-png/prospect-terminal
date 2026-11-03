@@ -4,6 +4,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  like,
   max,
   min,
   or,
@@ -13,6 +14,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as core from "@/db/schema";
 import * as meta from "@/db/ingestion-schema";
 import { AFL, MLB_SOURCE_ID } from "@/ingestion/sources/mlb-config";
+import {
+  MILB_LEVELS,
+  milbLevelExternalIdPrefix,
+  milbSeasonExternalId,
+  type MilbLevelId,
+} from "@/domain/levels";
 import type { AflSnapshot } from "./types";
 
 type Database = NodePgDatabase<typeof core>;
@@ -74,19 +81,99 @@ export async function loadAflSnapshot(
           .where(eq(core.seasons.id, seasonId)),
       ]);
       if (!league || !seasonRow) return null;
-      return loadSeason(tx, league, seasonRow);
+      return loadSeason(tx, league, seasonRow, {
+        kind: "afl",
+        leagueIds: [league.id],
+        restrictRosterTeams: false,
+      });
     },
     { accessMode: "read only", isolationLevel: "repeatable read" },
   );
+}
+
+/**
+ * Loads one MiLB level (e.g. Triple-A: every league of sport 11) for a season into the same
+ * snapshot shape the AFL views, aggregation and Analytics V1 consume. Same read-only,
+ * repeatable-read transaction; level/season resolved through source_identities. `league` holds
+ * the level context (its first level row's UUID and the level label); `scope` lists the leagues.
+ * Returns null when the level/season has not been ingested.
+ */
+export async function loadMilbLevelSnapshot(
+  db: Database,
+  level: MilbLevelId,
+  season: number,
+): Promise<AflSnapshot | null> {
+  const def = MILB_LEVELS[level];
+  return db.transaction(
+    async (tx) => {
+      const si = meta.sourceIdentities;
+      const identities = await tx
+        .select({ kind: si.entityKind, externalId: si.externalId, internalId: si.internalId })
+        .from(si)
+        .where(
+          and(
+            eq(si.provider, MLB_SOURCE_ID),
+            or(
+              and(eq(si.entityKind, "season"), eq(si.externalId, milbSeasonExternalId(season))),
+              and(
+                eq(si.entityKind, "level"),
+                like(si.externalId, `${milbLevelExternalIdPrefix(def.sportId)}%`),
+              ),
+            ),
+          ),
+        );
+      const seasonId = identities.find((i) => i.kind === "season")?.internalId;
+      const levelIds = identities
+        .filter((i) => i.kind === "level")
+        .sort((a, b) => a.externalId.localeCompare(b.externalId))
+        .map((i) => i.internalId);
+      if (!seasonId || !levelIds.length) return null;
+      const [seasonRow] = await tx
+        .select({ id: core.seasons.id, year: core.seasons.year, name: core.seasons.name })
+        .from(core.seasons)
+        .where(eq(core.seasons.id, seasonId));
+      const levels = await tx
+        .select({ id: core.levels.id, leagueId: core.levels.leagueId })
+        .from(core.levels)
+        .where(inArray(core.levels.id, levelIds));
+      if (!seasonRow || !levels.length) return null;
+      return loadSeason(
+        tx,
+        { id: levelIds[0], name: def.label },
+        seasonRow,
+        {
+          kind: "milb-level",
+          level,
+          leagueIds: [...new Set(levels.map((l) => l.leagueId))].sort(),
+          restrictRosterTeams: true,
+        },
+      );
+    },
+    { accessMode: "read only", isolationLevel: "repeatable read" },
+  );
+}
+
+interface SeasonScope {
+  kind: "afl" | "milb-level";
+  level?: MilbLevelId;
+  leagueIds: string[];
+  /** Keep only roster observations on this scope's teams (a MiLB season spans all levels). */
+  restrictRosterTeams: boolean;
 }
 
 async function loadSeason(
   tx: ReadTx,
   league: AflSnapshot["league"],
   season: AflSnapshot["season"],
+  scope: SeasonScope,
 ): Promise<AflSnapshot> {
   const g = core.games;
-  const inSeason = and(eq(g.leagueId, league.id), eq(g.seasonId, season.id));
+  const inSeason = and(
+    scope.leagueIds.length === 1
+      ? eq(g.leagueId, scope.leagueIds[0])
+      : inArray(g.leagueId, scope.leagueIds),
+    eq(g.seasonId, season.id),
+  );
   const gameDate = sql<string>`coalesce(${g.officialDate}, (${g.startsAt} AT TIME ZONE 'UTC')::date)::text`;
 
   // A single pg connection serializes these; awaiting sequentially keeps that explicit.
@@ -107,6 +194,19 @@ async function loadSeason(
     .where(inSeason);
 
   const r = meta.sourceRosterObservations;
+  // Teams on this scope's levels (all clubs, even before their first game).
+  const leagueLevels = tx
+    .select({ id: core.levels.id })
+    .from(core.levels)
+    .where(
+      scope.leagueIds.length === 1
+        ? eq(core.levels.leagueId, scope.leagueIds[0])
+        : inArray(core.levels.leagueId, scope.leagueIds),
+    );
+  const scopeTeams = tx
+    .select({ id: core.teams.id })
+    .from(core.teams)
+    .where(inArray(core.teams.levelId, leagueLevels));
   const rosterStints = await tx
     .select({
       playerId: r.playerId,
@@ -117,7 +217,13 @@ async function loadSeason(
       lastObservedAt: max(r.observedAt),
     })
     .from(r)
-    .where(and(eq(r.provider, MLB_SOURCE_ID), eq(r.seasonId, season.id)))
+    .where(
+      and(
+        eq(r.provider, MLB_SOURCE_ID),
+        eq(r.seasonId, season.id),
+        scope.restrictRosterTeams ? inArray(r.teamId, scopeTeams) : undefined,
+      ),
+    )
     .groupBy(r.playerId, r.teamId, r.organizationId, r.rosterStatus);
 
   const b = core.playerBattingGames;
@@ -179,11 +285,7 @@ async function loadSeason(
     ),
   );
 
-  // All clubs on this league's levels (even before their first game), plus any referenced team.
-  const leagueLevels = tx
-    .select({ id: core.levels.id })
-    .from(core.levels)
-    .where(eq(core.levels.leagueId, league.id));
+  // All clubs on this scope's levels (even before their first game), plus any referenced team.
   const teams = await tx
     .select({
       id: core.teams.id,
@@ -246,6 +348,7 @@ async function loadSeason(
   return {
     league,
     season,
+    scope: { kind: scope.kind, ...(scope.level ? { level: scope.level } : {}), leagueIds: scope.leagueIds },
     teams,
     organizations,
     players,

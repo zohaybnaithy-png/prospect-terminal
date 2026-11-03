@@ -193,3 +193,152 @@ export function foundationalRecords(
     name: `Arizona Fall League ${season}`,
   });
 }
+
+/**
+ * Normalizes one completed-game boxscore into batting/pitching lines plus a gameLineSet.
+ * Shared by the AFL and MiLB adapters. Any malformed player or statistic holds the WHOLE
+ * boxscore (no lines, no line set) so a partial boxscore can never be marked complete.
+ * Returns the people seen (for player records); throws nothing — problems become issues.
+ */
+export function normalizeBoxscore(
+  n: MlbNormalizer,
+  gamePk: number,
+  body: unknown,
+  scheduled: { home: number; away: number },
+): { person: ApiPerson; position?: string }[] {
+  const boxPeople: { person: ApiPerson; position?: string }[] = [];
+  try {
+    const box = z
+      .object({
+        teams: z.object({
+          home: z.object({
+            team: z.object({ id: apiId }),
+            players: z.record(z.string(), z.unknown()),
+          }),
+          away: z.object({
+            team: z.object({ id: apiId }),
+            players: z.record(z.string(), z.unknown()),
+          }),
+        }),
+      })
+      .parse(body);
+    if (
+      box.teams.home.team.id !== scheduled.home ||
+      box.teams.away.team.id !== scheduled.away
+    )
+      throw new Error("Boxscore teams disagree with schedule");
+    const lines: IngestionRecord[] = [];
+    let bad = false;
+    for (const side of [box.teams.home, box.teams.away])
+      for (const [key, raw] of Object.entries(side.players)) {
+        const entry = z
+          .object({
+            person: personSchema,
+            position: z.object({ abbreviation: z.string() }).optional(),
+            stats: z.object({
+              batting: z.record(z.string(), z.unknown()).optional(),
+              pitching: z.record(z.string(), z.unknown()).optional(),
+            }),
+          })
+          .safeParse(raw);
+        if (!entry.success) {
+          n.issue(`boxscore:${gamePk}:${key}`, "Malformed boxscore player");
+          bad = true;
+          continue;
+        }
+        const row = entry.data;
+        boxPeople.push({ person: row.person, position: row.position?.abbreviation });
+        for (const kind of ["battingGame", "pitchingGame"] as const) {
+          const stats = kind === "battingGame" ? row.stats.batting : row.stats.pitching;
+          if (!stats || !Object.keys(stats).length) continue;
+          try {
+            lines.push(
+              recordSchema.parse({
+                kind,
+                key: `${gamePk}:${row.person.id}`,
+                player: String(row.person.id),
+                game: String(gamePk),
+                team: String(side.team.id),
+                stats: kind === "battingGame" ? battingStats(stats) : pitchingStats(stats),
+              }),
+            );
+          } catch {
+            n.issue(
+              `${kind}:${gamePk}:${row.person.id}`,
+              "Incomplete or invalid game statistics; whole boxscore held for review",
+            );
+            bad = true;
+          }
+        }
+      }
+    if (!bad) {
+      for (const line of lines) n.add(line);
+      n.add({
+        kind: "gameLineSet",
+        key: String(gamePk),
+        game: String(gamePk),
+        battingPlayers: lines
+          .filter((r) => r.kind === "battingGame")
+          .map((r) => ("player" in r ? r.player : ""))
+          .sort(),
+        pitchingPlayers: lines
+          .filter((r) => r.kind === "pitchingGame")
+          .map((r) => ("player" in r ? r.player : ""))
+          .sort(),
+        lineKeys: lines.map(recordKey).sort(),
+      });
+    }
+  } catch (error) {
+    n.issue(
+      `boxscore:${gamePk}`,
+      error instanceof Error ? error.message : "Malformed boxscore",
+    );
+  }
+  return boxPeople;
+}
+
+/**
+ * Minimal projection of a boxscore response: team IDs and per-player person/position/game stats.
+ * Large captures keep this instead of the full body (which also carries season stats, officials,
+ * notes …), cutting retained memory by an order of magnitude. Unknown shapes are returned as-is
+ * so normalization still reports them.
+ */
+export function projectBoxscore(body: unknown): unknown {
+  const side = z.object({
+    team: z.object({ id: z.unknown() }).passthrough(),
+    players: z.record(z.string(), z.unknown()),
+  });
+  const parsed = z
+    .object({ teams: z.object({ home: side, away: side }) })
+    .safeParse(body);
+  if (!parsed.success) return body;
+  const players = (record: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(record).map(([key, raw]) => {
+        if (!raw || typeof raw !== "object") return [key, raw];
+        const r = raw as Record<string, unknown>;
+        const stats = (r.stats ?? {}) as Record<string, unknown>;
+        return [
+          key,
+          {
+            person: r.person,
+            ...(r.position !== undefined ? { position: r.position } : {}),
+            stats:
+              r.stats === undefined
+                ? undefined
+                : {
+                    ...(stats.batting !== undefined ? { batting: stats.batting } : {}),
+                    ...(stats.pitching !== undefined ? { pitching: stats.pitching } : {}),
+                  },
+          },
+        ];
+      }),
+    );
+  const t = parsed.data.teams;
+  return {
+    teams: {
+      home: { team: { id: t.home.team.id }, players: players(t.home.players) },
+      away: { team: { id: t.away.team.id }, players: players(t.away.players) },
+    },
+  };
+}

@@ -183,6 +183,12 @@ export interface SourceSnapshot {
   sourceUrl: string;
   payload: unknown;
   storedPayload?: unknown;
+  /**
+   * Optional capture identity supplied by the adapter (e.g. a hash of the response manifest).
+   * Large captures use it so the runner never serializes the whole raw payload just to hash it.
+   * When absent, rawContentHash = fingerprint(payload).
+   */
+  rawContentHash?: string;
 }
 export interface IngestionIssue {
   recordKey: string;
@@ -200,7 +206,10 @@ export interface IngestionNotice {
     | "reconciled-reschedule"
     | "excluded-exhibition"
     | "deferred-participants"
-    | "outside-scope";
+    | "outside-scope"
+    | "reused-boxscores"
+    | "unresolved-affiliation"
+    | "discovery-fallback";
   message: string;
 }
 export interface NormalizedBatch {
@@ -225,6 +234,7 @@ export const snapshotSchema = z
     sourceUrl: z.string().max(500),
     payload: z.unknown(),
     storedPayload: z.unknown().optional(),
+    rawContentHash: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   })
   .strict();
 export const recordKey = (r: IngestionRecord) =>
