@@ -1,5 +1,7 @@
 # Light editorial homepage
 
+> **Historical.** This describes a previous demo-era phase. Showcase V1 removed the fictional homepage content, demo routes and demo profiles; see the README "Current status" section.
+
 This focused visual phase retains the MiLB-first product, stable players, organization/affiliate and AFL relationships, development timelines, detailed discovery modes, Data, and Screener. No backend contract, schema, migration, seed, scoring methodology, ingestion client, or application dependency changed.
 
 ## Front-page composition

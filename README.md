@@ -2,28 +2,37 @@
 
 A **MiLB-first, player-first discovery and development platform** built around “Who should I know about right now?” Discover a performer, understand the performance and development, then explore organization, affiliate, or league context. Organizations are useful context, not the gate to finding players.
 
-## Current development preview
+## Current status — Showcase V1
 
-The MiLB-first foundation now has a light, editorial baseball front page: a compact game strip, two lead stories, visual highlight previews, Trending Prospects, Top Prospects, and recorded fictional call-ups. Detailed research tables and filters remain on the inner pages. The shared navigation covers Home, Players, Organizations, Leagues, Data, Screener, and News. Player pages connect statistics, assignment history, trajectory, and related stories. `/teams` and existing team/player IDs remain available; `/market` redirects to the homepage.
+Prospect Terminal is a player-first prospect analytics product. The core loop is **Home → spot a trending prospect → Players (search/filter/sort) → Player profile (performance, trajectory, Momentum, recent games)**. Every number shown in the app comes from real ingested box scores; anything without a legitimate source shows an honest "not available" state instead of placeholder content.
 
-**Real data (2026 Arizona Fall League):** the score strip, the homepage AFL Recent Performers widget, the `/players` directory, and AFL player profiles read ingested AFL data from PostgreSQL (see [Real AFL data in the UI](#real-afl-data-in-the-ui)). **Everything else below remains a fictional demo:** demo players, parent organizations, affiliates, statistics, stories, assignments, Grades, and Momentum values are fictional. The preview contains 18 stable demo players (including a two-way player), three invented parent organizations, 13 teams, five affiliated levels, and an AFL-style context. It represents a fictional snapshot ending October 24, 2026, not a real baseball schedule or live feed. No real player or club is assigned fabricated statistics.
+| Route           | What it shows                                                                                                                                                                                                                                                            | Data            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| `/`             | Score strip, **Trending Prospects** (Momentum risers/cooling, hitters/pitchers, 7D/14D/30D), Latest Results (top box-score lines from the latest game date), Recent Leaders (OPS / strikeouts), MLB Top Prospects (unavailable state), Data Coverage                     | Real AFL        |
+| `/players`      | Scouting-style directory: search, level, team, organization, position, min PA/BF, stat window, sortable columns incl. Momentum; URL-shareable state                                                                                                                      | Real AFL        |
+| `/players/[id]` | Identity/bio, season + last-14-day stat strips, Momentum panel (value, band, confidence, persistence, 7D/14D/30D, decomposition), recent games, Momentum and recent-vs-earlier charts, What changed?, window splits, AFL percentiles, full game log, roster observations | Real AFL        |
+| `/trends`       | Biggest Risers & Fallers by component, Performance × Momentum map                                                                                                                                                                                                        | Real AFL        |
+| `/data`         | Coverage, level status, Momentum methodology, statistics glossary, metrics in development                                                                                                                                                                                | Real AFL + docs |
 
-The homepage Trending Prospects widget uses the existing priority demo order with small 7D/14D/30D and level controls. Top Prospects is a separate illustrative overall-Grade list. Scores and editorial/media presentation fixtures live in `src/data/demo-home.ts`; they are never written to the database. Original local SVG baseball artwork stands in for approved imagery. Highlight links open explicit storyboard previews, not fake video players. The call-ups section reuses existing fictional affiliate promotions and their player-development links.
+**Real data:** 2026 Arizona Fall League (MLB Stats API, development use): schedule/scores, rosters and MLB organization observations, player bio fields, and per-game batting/pitching lines. Stats count only final games with complete box scores. Without `DATABASE_URL` (or if the database is unreachable) every real-data section shows a not-connected / temporarily-unavailable notice in place; the layout stays intact and nothing falls back to fictional data.
 
-### Discovery modes and filters
+**Momentum:** V1 (Balanced weighting) from `src/analytics`, unchanged by Showcase V1 — see [docs/ANALYTICS.md](docs/ANALYTICS.md) and `/data#momentum`. It measures change vs. a player's own earlier games, with confidence (sample size) and persistence; it is not a talent grade or MLB projection.
 
-- On the detailed discovery pages, **Prospect Priority** is the default, with **All Levels + 14D + All players**. Its hand-authored demo order highlights higher-level performance and developmental context.
-- **Pure Performance** uses a different hand-authored order. A Single-A performer can lead ahead of AAA/AA players.
-- Levels/contexts: AAA, AA, High-A, Single-A, Rookie/Complex, and Arizona Fall League.
-- Timeframes: 7D, 14D, 30D, and Season. Each selects an explicit fictional statistical snapshot and its independently authored order. These windows are **not calculated from game logs**. Season means the current playing-team stint; affiliated and AFL stats are not combined.
-- All, Hitters, and Pitchers are supported; the two-way player appears in both role filters. Data has wider hitting/pitching tables. The Screener adds organization, team, position, age, Grade, and Momentum controls.
-- Column sorting orders the displayed raw statistic; it is separate from the selected demo discovery order. The `#` column preserves the selected fixture-order reference. Grade and Momentum are as-of-snapshot illustrative values, not recomputed by the timeframe control.
+**Not available yet (honest empty states, no formulas implemented):** MLB-wide top-prospect rankings (`src/services/rankings.ts` returns `unavailable`), Prospect Grade, P(MLB), breakout detection, similarity, news, highlights and call-ups. The former fictional demo routes (`/news`, `/highlights`, `/screener`, `/organizations`, `/teams`, `/leagues`, `/market`) were removed and redirect to the closest real page. The fictional fixtures in `src/data/demo.ts` remain only for automated tests and the opt-in dev seed; no route imports them.
 
-There is **no** Prospect Priority formula, Pure Performance formula, real Grade/Momentum algorithm, ML, scraping, external baseball integration, authentication, or payments. Real methodology follows legitimate data-source selection and ingestion.
+### MiLB levels (depends on PR #4)
+
+Affiliated MiLB ingestion (AAA, AA, High-A, Single-A) lives in the separate MiLB PR (#4) and is not duplicated here. The Players page is level-agnostic:
+
+- `src/services/players/levels.ts` — level registry (`aaa`, `aa`, `high-a`, `single-a`, `afl`). The Level filter lists all five; levels with no rows are disabled ("data pending") and `/data` shows them as pending.
+- `src/services/players/directory.ts` — the client-safe `PlayerDirectoryRow` contract (identity, level, team, organization, batting/pitching aggregates, per-role Momentum cell) plus filters and options.
+- `src/services/players/afl-adapter.ts` — maps the AFL read model onto that contract.
+
+Once PR #4 lands, add a sibling adapter that maps its normalized MiLB read model (players, teams/levels, game lines) onto `PlayerDirectoryRow` with the right `level`, and concatenate its rows with the AFL rows in `src/app/players/page.tsx`. Filters, sorting, the level menu and URL parameters need no changes. Momentum for MiLB players needs a matching analytics context over that read model (the engine takes an `AflSnapshot`-shaped input today), so that step should be done deliberately rather than by reusing AFL baselines.
 
 ## Stack and local setup
 
-Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, PostgreSQL/Drizzle, Recharts, Zod, and ESLint. No new application dependencies were needed for the redesign. The shared visual system uses white backgrounds, light-gray separators, restrained teal links, compact system sans-serif typography, and traditional baseball-stat tables. The homepage is editorial rather than a full leaderboard.
+Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, PostgreSQL/Drizzle, Recharts, Zod, and ESLint. The visual system is light and dense (Baseball Savant / FanGraphs-like): white backgrounds, thin gray borders, restrained teal accent, compact tables.
 
 Node.js 22+ and npm are required; Node 24 was used for validation. PostgreSQL is **optional** for the UI.
 
@@ -32,7 +41,7 @@ npm ci
 npm run dev
 ```
 
-The server uses port 3000. Demo content requires no `.env` file and no live database. Without `DATABASE_URL`, real-data sections render an explicit "not connected" state; they never fall back to fictional data.
+The server uses port 3000. Without `DATABASE_URL`, real-data sections render an explicit "not connected" state; they never fall back to fictional data.
 
 ## Real AFL data in the UI
 
@@ -42,9 +51,9 @@ The server uses port 3000. Demo content requires no `.env` file and no live data
 - `read-model.ts` holds pure, unit-tested selectors (directory rows, recent performers, scoreboard, player profiles). Rates reuse `src/statistics/aggregate.ts`, windows reuse `windowBounds`, and only final games with complete box scores count — the same rules as `GameStatisticsRepository`. Windows end at the latest completed AFL game date, not the wall clock.
 - `index.ts` (`server-only`) reads `DATABASE_URL`, reuses a successful result for 60 seconds, and maps failures to `not-configured` / `empty` / `unavailable` states. Only a coarse error code is logged; connection details never reach logs or the browser.
 
-Player → AFL team / MLB organization comes from the latest `source_roster_observations` row (participation evidence, not dated transactions); a missing affiliation is shown as unresolved, never inferred. AFL team and organization links open the filtered player directory (`/players?team=…`, `/players?org=…`). Demo fixture IDs still render the fictional demo profile.
+Player → AFL team / MLB organization comes from the latest `source_roster_observations` row (participation evidence, not dated transactions); a missing affiliation is shown as unresolved, never inferred. AFL team and organization links open the filtered player directory (`/players?team=…`, `/players?org=…`).
 
-Still demo/placeholder: news, highlights, call-ups, Top Prospects (Grade), Momentum, the trajectory chart, Prospect Priority/Pure Performance discovery (Screener, Data), and the organization/team/league pages. The AFL Recent Performers list is a descriptive raw-stat sort (OPS with a stated PA minimum; pitcher strikeouts), not a trend or ranking model. Because the score strip in the root layout reads request-time data, all routes render dynamically.
+Homepage view models live in `src/services/home.ts` (pure, tested). Recent Leaders and Latest Results are descriptive raw-stat sorts (stated in the UI), not ranking models. Because the score strip in the root layout reads request-time data, all routes render dynamically.
 
 Use a read-only database role for the app's `DATABASE_URL` where possible. `npm run test:afl:db` checks the read layer's SQL against a fresh, migrated, disposable `prospect_afl_read_test` database (`AFL_READ_TEST_DATABASE_URL`); never point it at Neon.
 
@@ -56,7 +65,7 @@ npm run build
 npm start
 ```
 
-Use `PORT` for another server port. Tests cover the original foundation, fixture integrity, all discovery orders, combined filters, window samples, two-way roles, AFL affiliation, stable IDs, and schema metadata.
+Use `PORT` for another server port. `npm test` covers ingestion, the AFL read model, analytics/Momentum, the Showcase view models (`scripts/showcase.test.ts`), and the fictional fixtures.
 
 ## Environment variables
 
@@ -98,30 +107,29 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 
 ## Important directories
 
-| Path                       | Responsibility                                                               |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| `src/app`                  | Server-rendered routes and shared layout                                     |
-| `src/components/discovery` | Compact shared discovery/filter experience                                   |
-| `src/components/ui`        | DataTable, entity links, headings, Grade/Momentum display                    |
-| `src/components/data`      | Statistical and affiliate tables                                             |
-| `src/components/market`    | Refactored home composition, player table, trajectory chart, news list       |
-| `src/data/demo.ts`         | Isolated fictional entities, windows, histories, and explicit ranking orders |
-| `src/services`             | Typed repository boundary and demo discovery selection                       |
-| `src/db`                   | Preserved Drizzle core, additive organization model, lazy PostgreSQL utility |
-| `scripts`                  | Opt-in seed and foundation/discovery tests                                   |
-| `docs`                     | Product, architecture, migration notes, roadmap, and review criteria         |
+| Path                     | Responsibility                                                           |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `src/app`                | Routes: `/`, `/players`, `/players/[id]`, `/trends`, `/data`             |
+| `src/components/home`    | Homepage panels (Trending Prospects, Latest Results, rankings, coverage) |
+| `src/components/players` | Player directory (client-side filters/sort over server-built rows)       |
+| `src/components/player`  | Player profile                                                           |
+| `src/services/afl`       | Server-only AFL read layer and pure selectors                            |
+| `src/services/players`   | Level registry, level-agnostic directory contract, AFL adapter           |
+| `src/services/home.ts`   | Homepage view models; `rankings.ts` is the top-prospects boundary        |
+| `src/analytics`          | Momentum V1 (unchanged)                                                  |
+| `src/ingestion`          | AFL ingestion worker                                                     |
+| `src/data/demo.ts`       | Fictional fixtures for tests / dev seed only — not used by any route     |
+| `scripts`                | CLIs and tests                                                           |
 
-## Deployment and next phase
+## Deployment
 
-The demo remains compatible with Vercel and needs no credentials. Database-backed operation requires a provider-supported pooled connection, reviewed migrations, and an explicitly selected repository implementation. Do not seed production.
+Use a read-only database role for the deployed app's `DATABASE_URL`. Do not seed production. Before any public or commercial launch, confirm MLB Stats API licensing.
 
-Next: research legitimate MiLB/AFL APIs, datasets, or licensed feeds, then define provider contracts and identity-resolution requirements. Do not start real ingestion or ranking methodology implicitly as part of this UI phase. NCAA/amateur coverage is a potential later expansion.
-
-See [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Product redesign review](docs/REDESIGN.md), and [Current visual design](docs/VISUAL-DESIGN.md).
+See [Architecture](docs/ARCHITECTURE.md), [Analytics](docs/ANALYTICS.md), [Ingestion](docs/INGESTION.md) and [Roadmap](docs/ROADMAP.md).
 
 ## AFL ingestion: local live source and offline fixtures
 
-The UI remains unchanged and demo-only. A separate worker now supports the MLB Stats API for **AFL 2026 (league 119, sport 17)**, plus the preserved offline fixture source. First local test:
+A separate worker supports the MLB Stats API for **AFL 2026 (league 119, sport 17)**, plus the preserved offline fixture source. First local test:
 
 ```sh
 npm run ingest:afl -- --source=live --season=2026 --dry-run
@@ -129,4 +137,4 @@ npm run ingest:afl -- --source=live --season=2026 --dry-run
 
 For real writes, export INGESTION_DATABASE_URL, migrate that database with `DATABASE_URL="$INGESTION_DATABASE_URL" npm run db:migrate`, then add `--apply`. Source discovery, rosters/organization observations, schedule, completed boxscores, raw game lines, and rolling-stat queries are implemented separately from web rendering. `--from`, `--to`, `--team`, `--games-only`, and `--rosters-only` support incremental work. Optional `--record-dir` preserves raw responses for debugging.
 
-The source adapter was tested offline against native-shaped synthetic fixtures, including PostgreSQL replay/correction and aggregation tests. The project owner verified local API access; this cloud task intentionally made no Stats API request. See [INGESTION.md](docs/INGESTION.md) for exact setup, formulas, source boundaries, additive migrations 0002/0003, and known limitations. Nothing automatically replaces the visible demo content or implements Momentum/rankings.
+The source adapter was tested offline against native-shaped synthetic fixtures, including PostgreSQL replay/correction and aggregation tests. The project owner verified local API access; this cloud task intentionally made no Stats API request. See [INGESTION.md](docs/INGESTION.md) for exact setup, formulas, source boundaries, additive migrations 0002/0003, and known limitations.
