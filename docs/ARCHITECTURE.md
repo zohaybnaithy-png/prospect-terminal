@@ -5,7 +5,8 @@
 Prospect Terminal is player-first: discovery → player → performance/trajectory → context. All user-facing routes read real data through the server-only `src/services/afl` layer (one cached, read-only snapshot per 60 s) and pure view-model functions:
 
 - `src/services/home.ts` — Trending Prospects (V1 risers/fallers + recent-window stat lines), Latest Results, coverage.
-- `src/services/players/` — level registry, the client-safe `PlayerDirectoryRow` contract, and the AFL adapter. A MiLB adapter (after PR #4) returns the same row shape.
+- `src/services/players/` — level registry (derived from `src/domain/levels.ts`), the client-safe `PlayerDirectoryRow` contract, and the level adapter used for the AFL and every MiLB level.
+- `src/services/competition/` — loads every level through `loadAflSnapshot` / `loadMilbLevelSnapshot` with per-level status; pure cross-level selectors (default level, coverage, player presence). Statistics and Momentum are always computed within one level.
 - `src/services/rankings.ts` — MLB-wide rankings boundary; returns `unavailable` until a legitimate source or approved model exists.
 - `src/analytics/views.ts` — Momentum view models (unchanged formulas).
 
