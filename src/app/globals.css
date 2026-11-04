@@ -2055,3 +2055,108 @@ a.reset-button {
     position: static;
   }
 }
+
+/* Level navigation and level context (MiLB + AFL integration) */
+.level-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.level-nav-label {
+  color: #536567;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.level-nav .button-link:first-child {
+  margin-left: 0;
+}
+.level-nav .button-link:hover:not([aria-current="page"]):not(.disabled) {
+  background: #e4eeec;
+  color: #1d5557;
+  text-decoration: none;
+}
+.button-link.disabled {
+  color: #a3adae;
+  background: #f6f8f8;
+  cursor: not-allowed;
+}
+.level-tag {
+  display: inline-block;
+  border: 1px solid #b7c5c4;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 15px;
+  color: #3f5859;
+  background: #fff;
+  white-space: nowrap;
+}
+.level-tag + .level-tag {
+  margin-left: 3px;
+}
+.level-also {
+  color: #657174;
+  font-size: 10px;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+.mixed-level-note {
+  border-left: 3px solid #b7c5c4;
+  padding: 4px 8px;
+  margin: 0 0 10px;
+  color: #4b5b5d;
+  background: #f6f8f8;
+  font-size: 12px;
+}
+.directory-more {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.directory-more button {
+  border: 1px solid #b7c5c4;
+  background: #fff;
+  color: #3f5859;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+.directory-more button:hover {
+  background: #e4eeec;
+}
+.coverage-levels {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.coverage-levels th,
+.coverage-levels td {
+  border-bottom: 1px solid var(--border);
+  padding: 4px 6px;
+  text-align: left;
+}
+.coverage-levels td.numeric,
+.coverage-levels th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.status-pending {
+  color: #8a6d1f;
+}
+.status-down {
+  color: var(--negative);
+}
+.level-history {
+  margin-top: 12px;
+}
+@media (max-width: 600px) {
+  .level-nav {
+    gap: 4px;
+  }
+  .level-nav .button-link {
+    padding: 6px 8px;
+  }
+}

@@ -11,9 +11,8 @@ import {
   MOMENTUM_WINDOW_IDS,
 } from "@/analytics/config";
 import { COMPONENT_LABELS } from "@/analytics/explain";
-import { getAflData } from "@/services/afl";
-import { coverageSummary } from "@/services/home";
-import { LEVELS } from "@/services/players/levels";
+import { getCompetitionData } from "@/services/competition";
+import { levelCoverage, type LevelCoverage } from "@/services/competition/model";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { shortDate } from "@/lib/format";
@@ -47,6 +46,7 @@ export default function DataPage() {
       </div>
       <nav className="profile-tabs" aria-label="Methodology sections">
         <a href="#coverage">Coverage</a>
+        <a href="#levels">Levels</a>
         <a href="#momentum">Momentum</a>
         <a href="#reading">Reading Momentum</a>
         <a href="#statistics">Statistics</a>
@@ -65,45 +65,40 @@ export default function DataPage() {
             >
               <Coverage />
             </Suspense>
-            <h3 className="table-title">Levels</h3>
-            <table className="method-table">
-              <caption className="sr-only">Level coverage</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Level</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {LEVELS.map((l) => (
-                  <tr key={l.id}>
-                    <th scope="row">
-                      {l.label} <span className="small-muted">({l.short})</span>
-                    </th>
-                    <td>
-                      {l.kind === "fall-league" ? "Fall league" : "Affiliated"}
-                    </td>
-                    <td>
-                      {l.id === "afl" ? (
-                        <span className="status-live">Live — 2026 season</span>
-                      ) : (
-                        <span className="small-muted">
-                          Pending MiLB ingestion
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
             <p className="table-note">
               Source: MLB Stats API schedules, rosters and box scores (used
               under development terms; licensing is reviewed before any public
               launch). Only final games with complete box scores count toward
-              statistics. AFL statistics are never blended with regular-season
-              statistics.
+              statistics. Regular-season games only for MiLB levels; the AFL is
+              its own fall season.
             </p>
+            <h3 className="table-title" id="levels">
+              Levels are separate competitions
+            </h3>
+            <ul className="method-list">
+              <li>
+                Every statistic, window, percentile and Momentum value is
+                computed within one level and season. Lines from different
+                levels are never added together, averaged or ranked against
+                each other.
+              </li>
+              <li>
+                No level-of-competition adjustment is applied: a .900 OPS at
+                Single-A and at Triple-A are not equivalent, and Prospect
+                Terminal does not yet have an approved normalization to convert
+                between them.
+              </li>
+              <li>
+                A player has one profile across levels. Promotions are visible
+                as the levels they played at, with first and last game dates;
+                dated transactions are not ingested.
+              </li>
+              <li>
+                Statistics are &ldquo;through&rdquo; each level&apos;s own latest
+                completed game, so 7/14/30-day windows end on different dates
+                for different levels.
+              </li>
+            </ul>
           </section>
 
           <section id="momentum" className="page-section method-section">
@@ -236,6 +231,13 @@ export default function DataPage() {
                     relievers.
                   </li>
                 </ul>
+                <p className="method-text">
+                  These thresholds were calibrated on Arizona Fall League
+                  samples. MiLB seasons give much larger earlier baselines, so
+                  medium and high confidence are reached more often there; any
+                  MiLB-specific recalibration will be documented here before it
+                  is applied.
+                </p>
                 <h3 className="table-title">When it&apos;s blank</h3>
                 <p className="method-text">
                   Momentum shows “—” when there is no earlier baseline to
@@ -286,7 +288,7 @@ export default function DataPage() {
                 ],
                 [
                   "Percentiles",
-                  "Rank among AFL players at the same role with at least 30 PA or BF — not MLB or MiLB percentiles.",
+                  "Rank among players at the same level, season and role with at least 30 PA or BF — not MLB percentiles and never across levels.",
                 ],
               ].map(([term, def]) => (
                 <div key={term}>
@@ -338,33 +340,85 @@ export default function DataPage() {
   );
 }
 
+const STATUS: Record<LevelCoverage["status"], [string, string]> = {
+  live: ["status-live", "Live"],
+  "no-games": ["status-pending", "Ingested — no completed games yet"],
+  "not-ingested": ["small-muted", "Not ingested"],
+  unavailable: ["status-down", "Temporarily unavailable"],
+};
+
 async function Coverage() {
-  const data = await getAflData();
-  if (data.status !== "ok") return <AflDataNotice status={data.status} />;
-  const c = coverageSummary(data.snapshot);
-  const stats: [string, string][] = [
-    ["Season", c.season],
-    ["Stats through", c.asOf ? shortDate(c.asOf) : "—"],
-    ["Teams", String(c.teams)],
-    ["Players", String(c.players)],
-    ["Hitters with PA", String(c.hitters)],
-    ["Pitchers with BF", String(c.pitchers)],
-    ["Final games", String(c.gamesFinal)],
-    ["Scheduled games", String(c.gamesScheduled)],
-    ["League OPS", c.leagueOps],
-    [
-      "Last ingestion",
-      c.lastIngestedAt ? shortDate(c.lastIngestedAt.slice(0, 10)) : "—",
-    ],
-  ];
+  const data = await getCompetitionData();
+  if (data.status === "not-configured" || data.status === "unavailable")
+    return <AflDataNotice status={data.status} />;
+  const rows =
+    data.status === "ok"
+      ? levelCoverage(data.levels, data.levelStatus)
+      : levelCoverage([], data.levelStatus);
   return (
-    <dl className="coverage-list method-coverage">
-      {stats.map(([k, v]) => (
-        <div key={k}>
-          <dt>{k}</dt>
-          <dd>{v}</dd>
-        </div>
-      ))}
-    </dl>
+    <>
+      {data.status === "empty" && <AflDataNotice status="empty" />}
+      <div className="table-scroll">
+        <table className="method-table coverage-levels">
+          <caption className="sr-only">Data coverage by level</caption>
+          <thead>
+            <tr>
+              <th scope="col">Level</th>
+              <th scope="col">Status</th>
+              <th scope="col">Season</th>
+              <th scope="col">Through</th>
+              <th scope="col" className="numeric">Final games</th>
+              <th scope="col" className="numeric">Scheduled</th>
+              <th scope="col" className="numeric">Teams</th>
+              <th scope="col" className="numeric">Hitters</th>
+              <th scope="col" className="numeric">Pitchers</th>
+              <th scope="col" className="numeric" title="Season OPS of all batting lines at this level">
+                Level OPS
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ level, status, coverage: c }) => (
+              <tr key={level.id}>
+                <th scope="row">
+                  {level.label} <span className="small-muted">({level.short})</span>
+                </th>
+                <td className={STATUS[status][0]}>{STATUS[status][1]}</td>
+                {c ? (
+                  <>
+                    <td>{c.season}</td>
+                    <td>{c.asOf ? shortDate(c.asOf) : "—"}</td>
+                    <td className="numeric">{c.gamesFinal.toLocaleString()}</td>
+                    <td className="numeric">{c.gamesScheduled.toLocaleString()}</td>
+                    <td className="numeric">{c.teams}</td>
+                    <td className="numeric">{c.hitters.toLocaleString()}</td>
+                    <td className="numeric">{c.pitchers.toLocaleString()}</td>
+                    <td className="numeric">{c.leagueOps}</td>
+                  </>
+                ) : (
+                  <td colSpan={8} className="small-muted">
+                    —
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <LastIngestion rows={rows} />
+    </>
   );
+}
+
+function LastIngestion({ rows }: { rows: LevelCoverage[] }) {
+  const last = rows
+    .map((r) => r.coverage?.lastIngestedAt ?? null)
+    .filter((d): d is string => d !== null)
+    .sort()
+    .at(-1);
+  return last ? (
+    <p className="table-note">
+      Last applied ingestion run: {shortDate(last.slice(0, 10))}.
+    </p>
+  ) : null;
 }

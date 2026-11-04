@@ -16,8 +16,11 @@ import {
 } from "../src/ingestion/fixtures/milb-synthetic";
 import { GameStatisticsRepository } from "../src/statistics/repository";
 import { loadAflSnapshot, loadMilbLevelSnapshot } from "../src/services/afl/queries";
-import { buildPlayerRows, playerProfile } from "../src/services/afl/read-model";
+import { buildPlayerRows, completedGames, playerProfile } from "../src/services/afl/read-model";
 import { createAnalyticsContext, playerMomentumByWindow } from "../src/analytics";
+import { dbLevelLoader, loadCompetition } from "../src/services/competition/load";
+import { levelCoverage, playerLevels, profileLevel } from "../src/services/competition/model";
+import { directoryRows } from "../src/services/players/adapter";
 import { mockMlbFetch, syntheticMlb } from "./mlb-test-support";
 
 /**
@@ -297,6 +300,38 @@ test("MiLB ingestion against PostgreSQL", async (t) => {
       assert.doesNotThrow(() => JSON.stringify(momentum));
       assert.ok(Object.values(momentum).every((m) => m.score === null || Math.abs(m.score) <= 100));
       assert.equal(await loadMilbLevelSnapshot(db, "aaa", 2025), null);
+    });
+
+    await t.test("site competition read: every level, one identity per player", async () => {
+      const data = await loadCompetition(dbLevelLoader(db, 2026));
+      assert.equal(data.status, "ok");
+      if (data.status !== "ok") return;
+      for (const level of ["aaa", "aa", "high-a", "single-a"] as const)
+        assert.equal(data.levelStatus[level], "ok", level);
+      const riser = (await internal("player", P.riser))!;
+      // Promoted AA → AAA: one directory row (latest level), both levels listed, AAA-only stats.
+      const rows = directoryRows(data.levels, { window: "season", role: "hitter" });
+      const mine = rows.filter((r) => r.id === riser);
+      assert.equal(mine.length, 1);
+      assert.equal(mine[0].level, "aaa");
+      assert.deepEqual(mine[0].levels, ["aaa", "aa"]);
+      assert.equal(mine[0].batting!.plateAppearances, 8);
+      assert.equal(new Set(rows.map((r) => r.id)).size, rows.length, "no duplicate identities");
+      // Level-scoped directory keeps the AA line separate.
+      const aaRows = directoryRows(data.levels, { level: "aa", window: "season", role: "hitter" });
+      assert.equal(aaRows.find((r) => r.id === riser)!.batting!.plateAppearances, 5);
+      // Profile resolution: most recent level by default, the requested level when present.
+      const presence = playerLevels(data.levels, riser);
+      assert.deepEqual(presence.map((p) => p.level), ["aaa", "aa"]);
+      assert.equal(profileLevel(presence, undefined), "aaa");
+      assert.equal(profileLevel(presence, "aa"), "aa");
+      assert.equal(profileLevel(presence, "single-a"), "aaa");
+      // Coverage is reported per level, never summed.
+      const coverage = levelCoverage(data.levels, data.levelStatus);
+      const aaaSnap = data.levels.find((l) => l.level === "aaa")!.snapshot;
+      const aaaCoverage = coverage.find((c) => c.level.id === "aaa")!.coverage!;
+      assert.equal(aaaCoverage.gamesFinal, completedGames(aaaSnap).length);
+      assert.ok(aaaCoverage.gamesFinal > 0 && aaaCoverage.gamesFinal < aaaSnap.games.length);
     });
 
     await t.test("AFL data is untouched", async () => {

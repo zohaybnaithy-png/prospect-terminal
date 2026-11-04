@@ -8,8 +8,6 @@ import {
   STAT_WINDOWS,
   STAT_WINDOW_LABELS,
   filterDirectory,
-  rowsForRole,
-  sortPositionGroups,
   type EntityRef,
   type PlayerDirectoryRow,
   type PositionGroup,
@@ -79,7 +77,7 @@ function contextColumns(): Column<Row>[] {
     {
       key: "player",
       label: "Player",
-      render: (r) => <PlayerLink player={r} />,
+      render: (r) => <PlayerLink player={r} level={r.level} />,
       sortValue: (r) => r.name,
     },
     {
@@ -98,7 +96,32 @@ function contextColumns(): Column<Row>[] {
     {
       key: "lvl",
       label: "Lvl",
-      render: (r) => LEVELS.find((l) => l.id === r.level)?.short ?? "—",
+      title:
+        "Level the row's statistics and Momentum come from; other 2026 levels with games in this window are listed beside it",
+      render: (r) => {
+        const def = LEVELS.find((l) => l.id === r.level);
+        const others = r.levels.filter((l) => l !== r.level);
+        return (
+          <>
+            <span className="level-tag" title={def?.label}>
+              {def?.short ?? "—"}
+            </span>
+            {others.length > 0 && (
+              <span
+                className="level-also"
+                title={`Also played at: ${others
+                  .map((o) => LEVELS.find((l) => l.id === o)?.label)
+                  .join(", ")}`}
+              >
+                +{" "}
+                {others
+                  .map((o) => LEVELS.find((l) => l.id === o)?.short)
+                  .join(", ")}
+              </span>
+            )}
+          </>
+        );
+      },
       sortValue: (r) => LEVELS.findIndex((l) => l.id === r.level),
     },
     {
@@ -230,6 +253,9 @@ function toSearch(state: DirectoryState, window: StatWindow) {
   return s ? `?${s}` : "";
 }
 
+/** Rows rendered per page; a full MiLB season has thousands of players per role. */
+const PAGE_SIZE = 100;
+
 export function PlayerDirectory({
   rows,
   initial,
@@ -237,20 +263,32 @@ export function PlayerDirectory({
   momentumShort,
   teams,
   organizations,
+  positions,
   levels,
 }: {
+  /** Rows for the server-selected role and level scope. */
   rows: Row[];
   initial: DirectoryState;
   window: StatWindow;
   momentumShort: string;
   teams: EntityRef[];
   organizations: EntityRef[];
+  positions: PositionGroup[];
+  /** Levels with ingested data. */
   levels: LevelId[];
 }) {
   const router = useRouter();
   const [state, setState] = useState<DirectoryState>(initial);
-  const update = (patch: Partial<DirectoryState>) =>
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const update = (patch: Partial<DirectoryState>) => {
     setState((s) => ({ ...s, ...patch }));
+    setLimit(PAGE_SIZE);
+  };
+  // Role, level and window select which rows the server sends; they navigate.
+  const navigate = (patch: Partial<DirectoryState>, w: StatWindow = window) =>
+    router.push(`/players${toSearch({ ...state, ...patch }, w)}`, {
+      scroll: false,
+    });
 
   // Keep the URL shareable without a server round trip for client-side filters.
   useEffect(() => {
@@ -270,10 +308,7 @@ export function PlayerDirectory({
     state.sort && columns.some((c) => c.key === state.sort!.key)
       ? state.sort
       : DEFAULT_SORT;
-  const roleRows = rowsForRole(rows, state.role);
-  const rolePositions = sortPositionGroups(
-    roleRows.map((r) => r.positionGroup),
-  );
+  const roleRows = rows;
   const filtered = filterDirectory(roleRows, state).filter(
     (r) => opportunities(r, state.role) >= state.minSample,
   );
@@ -286,6 +321,7 @@ export function PlayerDirectory({
   );
   const sorted = sortByValue(base, column.sortValue!, sort.direction);
   const position = new Map(sorted.map((r, i) => [r.id, i + 1]));
+  const shown = sorted.slice(0, limit);
   const ranked: Column<Row>[] = [
     {
       key: "rank",
@@ -297,7 +333,6 @@ export function PlayerDirectory({
   ];
   const activeFilters = Boolean(
     state.query ||
-    state.level ||
     state.teamId ||
     state.organizationId ||
     state.position ||
@@ -306,7 +341,6 @@ export function PlayerDirectory({
   const clear = () =>
     update({
       query: "",
-      level: "",
       teamId: "",
       organizationId: "",
       position: "",
@@ -327,15 +361,7 @@ export function PlayerDirectory({
               type="button"
               aria-pressed={state.role === r}
               onClick={() =>
-                setState((s) => {
-                  const next = rowsForRole(rows, r).map((x) => x.positionGroup);
-                  return {
-                    ...s,
-                    role: r,
-                    position:
-                      s.position && next.includes(s.position) ? s.position : "",
-                  };
-                })
+                r !== state.role && navigate({ role: r, position: "" })
               }
             >
               {r === "hitter" ? "Hitters" : "Pitchers"}
@@ -356,13 +382,15 @@ export function PlayerDirectory({
           <span>Level</span>
           <select
             value={state.level}
-            onChange={(e) => update({ level: e.target.value as LevelId | "" })}
+            onChange={(e) =>
+              navigate({ level: e.target.value as LevelId | "", teamId: "" })
+            }
           >
             <option value="">All levels</option>
             {LEVELS.map((l) => (
               <option key={l.id} value={l.id} disabled={!levels.includes(l.id)}>
-                {l.short}
-                {levels.includes(l.id) ? "" : " — data pending"}
+                {l.label}
+                {levels.includes(l.id) ? "" : " — not ingested"}
               </option>
             ))}
           </select>
@@ -404,7 +432,7 @@ export function PlayerDirectory({
             }
           >
             <option value="">All positions</option>
-            {rolePositions.map((p) => (
+            {positions.map((p) => (
               <option key={p} value={p}>
                 {POSITION_GROUP_LABELS[p]}
               </option>
@@ -428,12 +456,7 @@ export function PlayerDirectory({
           <span>Stats</span>
           <select
             value={window}
-            onChange={(e) =>
-              router.push(
-                `/players${toSearch(state, e.target.value as StatWindow)}`,
-                { scroll: false },
-              )
-            }
+            onChange={(e) => navigate({}, e.target.value as StatWindow)}
           >
             {STAT_WINDOWS.map((w) => (
               <option key={w} value={w}>
@@ -452,11 +475,16 @@ export function PlayerDirectory({
         <strong>{filtered.length}</strong>{" "}
         {state.role === "hitter" ? "hitters" : "pitchers"}
         {filtered.length !== roleRows.length && ` of ${roleRows.length}`} ·{" "}
-        {STAT_WINDOW_LABELS[window]} · sorted by {column.label}
+        {state.level
+          ? LEVELS.find((l) => l.id === state.level)?.label
+          : "all levels"}{" "}
+        · {STAT_WINDOW_LABELS[window]} · sorted by {column.label}
         {sort.direction === "desc" ? " ↓" : " ↑"}
+        {sorted.length > shown.length &&
+          ` · showing ${shown.length.toLocaleString()}`}
       </p>
       <DataTable
-        rows={sorted}
+        rows={shown}
         columns={ranked}
         rowKey={(r) => r.id}
         caption={`${state.role === "hitter" ? "Batting" : "Pitching"} statistics and Momentum`}
@@ -476,6 +504,16 @@ export function PlayerDirectory({
             : "No players have game lines in this timeframe."
         }
       />
+      {sorted.length > shown.length && (
+        <div className="directory-more">
+          <button type="button" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+            Show {Math.min(PAGE_SIZE, sorted.length - shown.length)} more
+          </button>
+          <button type="button" onClick={() => setLimit(sorted.length)}>
+            Show all {sorted.length.toLocaleString()}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

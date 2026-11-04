@@ -13,6 +13,7 @@ import {
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { shortDate } from "@/lib/format";
 import { AflOrganizationLink, AflTeamLink } from "./links";
+import type { LevelId } from "@/services/players/levels";
 
 interface WindowRow<T> {
   id: string;
@@ -76,8 +77,8 @@ export function BattingWindowTable({
       rows={rows}
       columns={columns}
       rowKey={(r) => r.id}
-      caption="AFL batting by window, from ingested complete box scores"
-      emptyMessage="No AFL batting lines."
+      caption="Batting by window, from ingested complete box scores"
+      emptyMessage="No batting lines at this level."
     />
   );
 }
@@ -138,13 +139,13 @@ export function PitchingWindowTable({
       rows={rows}
       columns={columns}
       rowKey={(r) => r.id}
-      caption="AFL pitching by window, from ingested complete box scores"
-      emptyMessage="No AFL pitching lines."
+      caption="Pitching by window, from ingested complete box scores"
+      emptyMessage="No pitching lines at this level."
     />
   );
 }
 
-const gameContext: Column<GameLogEntry>[] = [
+const gameContext = (level?: LevelId): Column<GameLogEntry>[] => [
   {
     key: "date",
     label: "Date",
@@ -153,7 +154,7 @@ const gameContext: Column<GameLogEntry>[] = [
   {
     key: "team",
     label: "Team",
-    render: (g) => (g.team ? <AflTeamLink team={g.team} /> : dash),
+    render: (g) => (g.team ? <AflTeamLink team={g.team} level={level} /> : dash),
   },
   {
     key: "opp",
@@ -162,7 +163,7 @@ const gameContext: Column<GameLogEntry>[] = [
       g.opponent ? (
         <>
           {g.home ? "vs " : "@ "}
-          <AflTeamLink team={g.opponent} />
+          <AflTeamLink team={g.opponent} level={level} />
         </>
       ) : (
         dash
@@ -171,12 +172,18 @@ const gameContext: Column<GameLogEntry>[] = [
   { key: "result", label: "Result", render: (g) => g.result ?? dash },
 ];
 
-export function BattingGameLog({ entries }: { entries: GameLogEntry[] }) {
+export function BattingGameLog({
+  entries,
+  level,
+}: {
+  entries: GameLogEntry[];
+  level?: LevelId;
+}) {
   const b =
     (get: (s: BattingAggregate) => number | null) => (g: GameLogEntry) =>
       g.batting ? (get(g.batting) ?? dash) : dash;
   const columns: Column<GameLogEntry>[] = [
-    ...gameContext,
+    ...gameContext(level),
     {
       key: "pa",
       label: "PA",
@@ -199,18 +206,24 @@ export function BattingGameLog({ entries }: { entries: GameLogEntry[] }) {
       rows={entries.filter((g) => g.batting)}
       columns={columns}
       rowKey={(g) => `b-${g.gameId}`}
-      caption="AFL batting game log"
-      emptyMessage="No AFL batting game lines."
+      caption="Batting game log"
+      emptyMessage="No batting game lines at this level."
     />
   );
 }
 
-export function PitchingGameLog({ entries }: { entries: GameLogEntry[] }) {
+export function PitchingGameLog({
+  entries,
+  level,
+}: {
+  entries: GameLogEntry[];
+  level?: LevelId;
+}) {
   const p =
     (get: (s: PitchingAggregate) => number | null) => (g: GameLogEntry) =>
       g.pitching ? (get(g.pitching) ?? dash) : dash;
   const columns: Column<GameLogEntry>[] = [
-    ...gameContext,
+    ...gameContext(level),
     {
       key: "ip",
       label: "IP",
@@ -237,22 +250,24 @@ export function PitchingGameLog({ entries }: { entries: GameLogEntry[] }) {
       rows={entries.filter((g) => g.pitching)}
       columns={columns}
       rowKey={(g) => `p-${g.gameId}`}
-      caption="AFL pitching game log"
-      emptyMessage="No AFL pitching game lines."
+      caption="Pitching game log"
+      emptyMessage="No pitching game lines at this level."
     />
   );
 }
 
 export function RosterHistoryTable({
   rows,
+  level,
 }: {
   rows: AflPlayerProfile["rosterHistory"];
+  level?: LevelId;
 }) {
   return (
     <DataTable
       rows={rows}
       rowKey={(r) => `${r.teamId}-${r.organizationId}-${r.rosterStatus}`}
-      caption="Source roster observations for this AFL season"
+      caption="Source roster observations for this level and season"
       emptyMessage="No source roster observations recorded for this player."
       columns={[
         {
@@ -275,8 +290,9 @@ export function RosterHistoryTable({
         },
         {
           key: "team",
-          label: "AFL team",
-          render: (r) => (r.team ? <AflTeamLink team={r.team} full /> : dash),
+          label: "Team",
+          render: (r) =>
+            r.team ? <AflTeamLink team={r.team} full level={level} /> : dash,
         },
         {
           key: "org",

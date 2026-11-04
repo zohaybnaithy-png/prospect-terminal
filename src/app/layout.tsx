@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s | Prospect Terminal",
   },
   description:
-    "Player-first prospect analytics: trending prospects, Momentum, game logs and scouting-style player profiles built on real 2026 Arizona Fall League data.",
+    "Player-first prospect analytics: trending prospects, Momentum, game logs and scouting-style player profiles built on real 2026 Minor League Baseball (Triple-A to Single-A) and Arizona Fall League data.",
 };
 export default function RootLayout({
   children,
@@ -31,7 +31,7 @@ export default function RootLayout({
         <footer className="site-footer">
           <Link href="/">Prospect Terminal</Link>
           <span>
-            2026 Arizona Fall League data via the MLB Stats API (development
+            2026 MiLB (Triple-A to Single-A) and Arizona Fall League data via the MLB Stats API (development
             use). Momentum measures recent change, not overall quality.
           </span>
           <Link href="/players">Players</Link>

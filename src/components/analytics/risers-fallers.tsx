@@ -13,6 +13,7 @@ import { formatMetric, metricDefinition } from "@/analytics/metrics";
 import type { RiserSets } from "@/analytics/views";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
+import type { LevelId } from "@/services/players/levels";
 import {
   CONFIDENCE_HELP,
   ConfidenceMeter,
@@ -22,13 +23,15 @@ import {
   persistenceText,
 } from "./momentum-parts";
 
-/** Biggest Risers / Fallers: ranked by change relative to each player's own AFL baseline. */
+/** Biggest Risers / Fallers: ranked by change relative to each player's own baseline at one level. */
 export function RisersFallers({
   sets,
   minRecent,
   minBaseline,
   minMagnitude,
+  level,
 }: {
+  level: LevelId;
   sets: RiserSets;
   minRecent: Record<Role, Record<MomentumWindow, number>>;
   minBaseline: Record<Role, number>;
@@ -46,7 +49,7 @@ export function RisersFallers({
     <section className="explorer" aria-label="Biggest risers and fallers">
       <div className="section-heading">
         <h2>Biggest Risers &amp; Fallers</h2>
-        <span className="small-muted">Change vs. each player&apos;s own earlier AFL games — not raw production</span>
+        <span className="small-muted">Change vs. each player&apos;s own earlier games at this level — not raw production</span>
       </div>
       <div className="filter-bar">
         <div className="button-group" role="group" aria-label="Window">
@@ -74,13 +77,13 @@ export function RisersFallers({
       {unavailable ? (
         <p className="empty-state" aria-live="polite">
           {MOMENTUM_WINDOWS[window].short} unavailable — no{" "}
-          {role === "hitter" ? "hitter" : "pitcher"} has enough AFL games
+          {role === "hitter" ? "hitter" : "pitcher"} has enough games at this level
           before this window to compare with yet. No change is estimated.
         </p>
       ) : (
         <div className="riser-columns">
-          <RankList title="Risers" entries={data.risers} cat={cat} />
-          <RankList title="Fallers" entries={data.fallers} cat={cat} />
+          <RankList title="Risers" entries={data.risers} cat={cat} level={level} />
+          <RankList title="Fallers" entries={data.fallers} cat={cat} level={level} />
         </div>
       )}
       <p className="table-note">
@@ -96,7 +99,17 @@ export function RisersFallers({
   );
 }
 
-function RankList({ title, entries, cat }: { title: string; entries: RankedEntry[]; cat: RiserCategory }) {
+function RankList({
+  title,
+  entries,
+  cat,
+  level,
+}: {
+  title: string;
+  entries: RankedEntry[];
+  cat: RiserCategory;
+  level: LevelId;
+}) {
   return (
     <div>
       <h3 className="table-title riser-title">{title}</h3>
@@ -107,10 +120,10 @@ function RankList({ title, entries, cat }: { title: string; entries: RankedEntry
               <span className="list-rank">{i + 1}</span>
               <div>
                 <div className="trending-player-line">
-                  <PlayerLink player={{ id: e.playerId, name: e.name }} />
+                  <PlayerLink player={{ id: e.playerId, name: e.name }} level={level} />
                   <span className="trending-context">
                     {e.organization && <AflOrganizationLink organization={e.organization} />}
-                    {e.team && <AflTeamLink team={e.team} />}
+                    {e.team && <AflTeamLink team={e.team} level={level} />}
                   </span>
                 </div>
                 <div className="performance-summary">

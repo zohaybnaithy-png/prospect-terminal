@@ -1,5 +1,7 @@
 import Link from "next/link";
-import type { CoverageSummary, TopLine } from "@/services/home";
+import type { TopLine } from "@/services/home";
+import type { LevelCoverage } from "@/services/competition/model";
+import type { LevelId } from "@/services/players/levels";
 import type { TopProspectsResult } from "@/services/rankings";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { AflTeamLink } from "@/components/afl/links";
@@ -10,10 +12,14 @@ export function LatestLines({
   date,
   hitters,
   pitchers,
+  level,
+  levelLabel,
 }: {
   date: string | null;
   hitters: TopLine[];
   pitchers: TopLine[];
+  level: LevelId;
+  levelLabel: string;
 }) {
   return (
     <section className="home-panel" aria-labelledby="latest-lines-title">
@@ -21,18 +27,18 @@ export function LatestLines({
         <h2 id="latest-lines-title">Latest Results</h2>
         <span className="small-muted">
           {date
-            ? `Top box-score lines · ${shortDate(date)}`
+            ? `Top ${levelLabel} box-score lines · ${shortDate(date)}`
             : "No completed games"}
         </span>
       </div>
       {date ? (
         <div className="lines-columns">
-          <LineList title="At the plate" lines={hitters} />
-          <LineList title="On the mound" lines={pitchers} />
+          <LineList title="At the plate" lines={hitters} level={level} />
+          <LineList title="On the mound" lines={pitchers} level={level} />
         </div>
       ) : (
         <p className="empty-state">
-          No completed AFL games have been ingested.
+          No completed {levelLabel} games have been ingested.
         </p>
       )}
       <p className="table-note">
@@ -43,7 +49,15 @@ export function LatestLines({
   );
 }
 
-function LineList({ title, lines }: { title: string; lines: TopLine[] }) {
+function LineList({
+  title,
+  lines,
+  level,
+}: {
+  title: string;
+  lines: TopLine[];
+  level: LevelId;
+}) {
   return (
     <div>
       <h3 className="mini-heading">{title}</h3>
@@ -54,13 +68,16 @@ function LineList({ title, lines }: { title: string; lines: TopLine[] }) {
             {lines.map((l) => (
               <tr key={`${l.playerId}-${l.line}`}>
                 <th scope="row">
-                  <PlayerLink player={{ id: l.playerId, name: l.name }} />
+                  <PlayerLink
+                    player={{ id: l.playerId, name: l.name }}
+                    level={level}
+                  />
                   <span className="line-matchup">
-                    {l.team && <AflTeamLink team={l.team} />}
+                    {l.team && <AflTeamLink team={l.team} level={level} />}
                     {l.opponent && (
                       <>
                         {" vs "}
-                        <AflTeamLink team={l.opponent} />
+                        <AflTeamLink team={l.opponent} level={level} />
                       </>
                     )}
                   </span>
@@ -122,41 +139,75 @@ export function TopProspectsPanel({ result }: { result: TopProspectsResult }) {
   );
 }
 
-export function CoveragePanel({ coverage }: { coverage: CoverageSummary }) {
-  const rows: [string, string][] = [
-    ["Through", coverage.asOf ? shortDate(coverage.asOf) : "—"],
-    ["Final games", String(coverage.gamesFinal)],
-    ["Scheduled", String(coverage.gamesScheduled)],
-    ["Hitters / pitchers", `${coverage.hitters} / ${coverage.pitchers}`],
-    ["League OPS", coverage.leagueOps],
-    [
-      "Last ingestion",
-      coverage.lastIngestedAt
-        ? shortDate(coverage.lastIngestedAt.slice(0, 10))
-        : "—",
-    ],
-  ];
+const STATUS_TEXT: Record<LevelCoverage["status"], string> = {
+  live: "",
+  "no-games": "No completed games",
+  "not-ingested": "Not ingested",
+  unavailable: "Unavailable",
+};
+
+/** Coverage at every level, including levels with no data (shown as such, never hidden). */
+export function CoveragePanel({ coverage }: { coverage: LevelCoverage[] }) {
+  const lastIngested = coverage
+    .map((c) => c.coverage?.lastIngestedAt ?? null)
+    .filter((d): d is string => d !== null)
+    .sort()
+    .at(-1);
   return (
     <section className="home-panel" aria-labelledby="coverage-title">
       <div className="home-section-heading">
         <h2 id="coverage-title">Data Coverage</h2>
         <Link href="/data">Methodology →</Link>
       </div>
-      <dl className="coverage-list">
-        <div className="coverage-source">
-          <dt>Source</dt>
-          <dd>{coverage.season} · MLB Stats API box scores</dd>
-        </div>
-        {rows.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
+      <table className="coverage-levels">
+        <caption className="sr-only">Data coverage by level</caption>
+        <thead>
+          <tr>
+            <th scope="col">Level</th>
+            <th scope="col">Through</th>
+            <th scope="col" className="numeric">
+              Games
+            </th>
+            <th scope="col" className="numeric" title="Hitters / pitchers with lines">
+              H / P
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {coverage.map(({ level, status, coverage: c }) => (
+            <tr key={level.id}>
+              <th scope="row" title={level.label}>
+                {status === "live" ? (
+                  <Link href={`/?level=${level.id}`}>{level.short}</Link>
+                ) : (
+                  level.short
+                )}
+              </th>
+              {c && status === "live" ? (
+                <>
+                  <td>{c.asOf ? shortDate(c.asOf) : "—"}</td>
+                  <td className="numeric">{c.gamesFinal.toLocaleString()}</td>
+                  <td className="numeric">
+                    {c.hitters} / {c.pitchers}
+                  </td>
+                </>
+              ) : (
+                <td
+                  colSpan={3}
+                  className={
+                    status === "unavailable" ? "status-down" : "small-muted"
+                  }
+                >
+                  {STATUS_TEXT[status]}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <p className="table-note">
-        Affiliated MiLB levels (AAA → Single-A) are added when MiLB ingestion
-        lands.
+        MLB Stats API box scores; final games with complete box scores only.
+        {lastIngested && ` Last ingestion ${shortDate(lastIngested.slice(0, 10))}.`}
       </p>
     </section>
   );

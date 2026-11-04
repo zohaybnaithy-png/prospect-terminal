@@ -34,7 +34,7 @@ export function WhatChanged({
           ))}
         </div>
         <span className="small-muted">
-          {MOMENTUM_WINDOWS[window].label} vs. all earlier AFL games
+          {MOMENTUM_WINDOWS[window].label} vs. all earlier games at this level
         </span>
       </div>
       {roles.map(({ role, momentum }) => (
@@ -64,7 +64,7 @@ function RoleChange({ role, m, showRole }: { role: Role; m: MomentumResult; show
             <thead>
               <tr>
                 <th scope="col">Metric</th>
-                <th scope="col" className="numeric" title="All earlier AFL games">
+                <th scope="col" className="numeric" title="All earlier games at this level">
                   Before
                 </th>
                 <th scope="col" className="numeric">Now</th>
@@ -101,7 +101,7 @@ function RoleChange({ role, m, showRole }: { role: Role; m: MomentumResult; show
       ) : null}
       <p className="table-note">
         Now: {r ? `${shortDate(r.recent.from)}–${shortDate(r.recent.to)}` : "—"},{" "}
-        {m.sample.recent} {m.sample.unit}. Before: all earlier AFL games
+        {m.sample.recent} {m.sample.unit}. Before: all earlier games at this level
         {r?.baseline ? ` through ${shortDate(r.baseline.to)}` : ""}, {m.sample.baseline}{" "}
         {m.sample.unit}. Green/red mark improvement/decline for the player (lower K%
         {role === "pitcher" ? ", BB%, WHIP and ERA are" : " is"} better). Completed games only.

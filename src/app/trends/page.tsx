@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeading } from "@/components/ui/primitives";
-import { getAflData } from "@/services/afl";
+import { getCompetitionData } from "@/services/competition";
+import { selectLevel } from "@/services/competition/model";
+import { levelById } from "@/services/players/levels";
 import { AflDataNotice } from "@/components/afl/data-notice";
+import { LevelNav } from "@/components/levels/level-nav";
 import { RisersFallers } from "@/components/analytics/risers-fallers";
 import { PerformanceMap } from "@/components/analytics/performance-map";
 import { MOMENTUM_SETTINGS } from "@/analytics/config";
@@ -13,40 +16,66 @@ import { analyticsDebugEnabled } from "@/analytics/debug";
 
 export const metadata: Metadata = { title: "Prospect trends" };
 
-export default function TrendsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default function TrendsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   return (
     <>
       <PageHeading
-        title="AFL prospect trends"
-        description="Which prospects are changing, how they are changing, and whether the change is meaningful. Momentum compares each player's recent AFL games with their own earlier AFL games — it measures change, not overall quality."
+        title="Prospect trends"
+        description="Which prospects are changing, how they are changing, and whether the change is meaningful — one level at a time. Momentum compares each player's recent games with their own earlier games at the same level; it measures change, not overall quality."
       />
       <Suspense
         fallback={
           <p className="empty-state" aria-busy="true">
-            Loading AFL trends…
+            Loading trends…
           </p>
         }
       >
-        <Trends />
+        <Trends searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function Trends() {
-  const data = await getAflData();
+async function Trends({ searchParams }: { searchParams: SearchParams }) {
+  const [data, params] = await Promise.all([getCompetitionData(), searchParams]);
   if (data.status !== "ok") return <AflDataNotice status={data.status} />;
-  const ctx = analyticsContextFor(data.snapshot);
+  const requested = typeof params.level === "string" ? params.level : undefined;
+  const ls = selectLevel(data.levels, requested)!;
+  const level = levelById(ls.level);
+  const nav = (
+    <LevelNav
+      basePath="/trends"
+      current={ls.level}
+      available={data.levels.map((l) => l.level)}
+    />
+  );
+  const ctx = analyticsContextFor(ls.snapshot);
   if (!ctx.ds.asOf)
-    return <p className="empty-state">No completed AFL games have been ingested.</p>;
-  const risers = riserSets(data.snapshot);
+    return (
+      <>
+        {nav}
+        <p className="empty-state">
+          No completed {level.label} games have been ingested.
+        </p>
+      </>
+    );
+  const risers = riserSets(ls.snapshot);
   return (
     <div className="trends-stack">
+      {nav}
       <p className="table-note">
-        Through {shortDate(ctx.ds.asOf)} (latest completed AFL game). A window
-        is shown as unavailable when players have no earlier AFL games before it
-        to compare with (often 30D in the short AFL season); no change is
-        estimated then.
+        {level.label}, through {shortDate(ctx.ds.asOf)} (latest completed{" "}
+        {level.label} game). Rankings and percentiles are within{" "}
+        {level.label} only; levels are not compared with each other. A window
+        is shown as unavailable when players have no earlier games at this
+        level before it to compare with (common for the 30D window in the short
+        AFL season); no change is estimated then.
         {analyticsDebugEnabled() && (
           <>
             {" "}
@@ -56,11 +85,16 @@ async function Trends() {
       </p>
       <RisersFallers
         sets={risers}
+        level={ls.level}
         minRecent={MOMENTUM_SETTINGS.sample.leaderboardMinRecent}
         minBaseline={MOMENTUM_SETTINGS.sample.leaderboardMinBaseline}
         minMagnitude={MOMENTUM_SETTINGS.sample.leaderboardMinMagnitude}
       />
-      <PerformanceMap sets={mapSets(data.snapshot)} comparable={risers.comparable} />
+      <PerformanceMap
+        sets={mapSets(ls.snapshot)}
+        comparable={risers.comparable}
+        level={ls.level}
+      />
     </div>
   );
 }

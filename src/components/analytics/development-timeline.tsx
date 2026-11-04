@@ -79,7 +79,7 @@ export function DevelopmentTimeline({
         <span className="small-muted">
           {view === "momentum"
             ? `${label} Momentum by date · shaded band = stable (−14 to +14)`
-            : `${label} ${keyLabel} in the ${MOMENTUM_WINDOWS[window].short} window ending each date (solid) vs. all earlier AFL games (dashed)`}
+            : `${label} ${keyLabel} in the ${MOMENTUM_WINDOWS[window].short} window ending each date (solid) vs. all earlier games at this level (dashed)`}
         </span>
       </div>
       {scored.length && view === "metric" ? (
@@ -168,7 +168,7 @@ export function DevelopmentTimeline({
         </div>
       ) : (
         <p className="empty-state">
-          {MOMENTUM_WINDOWS[window].short} unavailable — not enough earlier AFL
+          {MOMENTUM_WINDOWS[window].short} unavailable — not enough earlier
           games before this window to compare with. No change is estimated.
         </p>
       )}

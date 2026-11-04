@@ -1,11 +1,11 @@
-import { getAflData } from "@/services/afl";
 import {
   aflAsOf,
   recentPerformers,
   RECENT_HITTER_MIN_PA,
 } from "@/services/afl/read-model";
+import type { AflSnapshot } from "@/services/afl/types";
+import { levelById, type LevelId } from "@/services/players/levels";
 import { shortDate } from "@/lib/format";
-import { AflDataNotice } from "./data-notice";
 import {
   AflRecentPerformers,
   type RecentPerformerSets,
@@ -22,31 +22,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AflRecentPerformersFallback() {
-  return (
-    <Shell>
-      <p className="empty-state" aria-busy="true">
-        Loading AFL performances…
-      </p>
-    </Shell>
-  );
-}
-
 /** Server-side: computes the small per-window lists so only display rows reach the client. */
-export async function AflRecentPerformersSection() {
-  const data = await getAflData();
-  if (data.status !== "ok")
-    return (
-      <Shell>
-        <AflDataNotice status={data.status} compact />
-      </Shell>
-    );
-  const asOf = aflAsOf(data.snapshot);
+export function RecentPerformersSection({
+  snapshot,
+  level,
+}: {
+  snapshot: AflSnapshot;
+  level: LevelId;
+}) {
+  const asOf = aflAsOf(snapshot);
   if (!asOf)
     return (
       <Shell>
         <p className="empty-state">
-          No completed AFL games have been ingested.
+          No completed {levelById(level).label} games have been ingested.
         </p>
       </Shell>
     );
@@ -54,8 +43,8 @@ export async function AflRecentPerformersSection() {
     (["7d", "14d", "30d"] as const).map((w) => [
       w,
       {
-        hitters: recentPerformers(data.snapshot, w, "hitters"),
-        pitchers: recentPerformers(data.snapshot, w, "pitchers"),
+        hitters: recentPerformers(snapshot, w, "hitters"),
+        pitchers: recentPerformers(snapshot, w, "pitchers"),
       },
     ]),
   ) as RecentPerformerSets;
@@ -63,7 +52,8 @@ export async function AflRecentPerformersSection() {
     <AflRecentPerformers
       sets={sets}
       minPa={RECENT_HITTER_MIN_PA}
-      asOf={shortDate(asOf)}
+      asOf={`${levelById(level).short} · ${shortDate(asOf)}`}
+      level={level}
     />
   );
 }

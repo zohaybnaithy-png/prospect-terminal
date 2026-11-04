@@ -20,6 +20,9 @@ import {
 } from "@/services/afl/read-model";
 import type { AflSnapshot } from "@/services/afl/types";
 import type { PlayerAnalyticsView, RoleAnalyticsView } from "@/analytics/views";
+import type { PlayerLevelPresence } from "@/services/competition/model";
+import { levelById, type LevelId } from "@/services/players/levels";
+import { playerHref } from "@/components/ui/entity-links";
 import { MOMENTUM_WINDOWS, MOMENTUM_WINDOW_IDS } from "@/analytics/config";
 import { shortDate } from "@/lib/format";
 import {
@@ -38,18 +41,27 @@ const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
 const RECENT_GAMES = 10;
 
 /**
- * Real AFL player profile. Momentum comes from the V1 analytics model (src/analytics); nothing
- * here computes or adjusts it. Prospect Grade is not shown because no Grade model exists.
+ * Real player profile for one level (AFL, Triple-A, Double-A, High-A or Single-A). Everything on
+ * it — statistics, windows, Momentum, percentiles, game log — comes from that level's snapshot
+ * only; other levels are listed (never blended) in the "Levels" section. Momentum comes from the
+ * V1 analytics model (src/analytics); nothing here computes or adjusts it. Prospect Grade is not
+ * shown because no Grade model exists.
  */
 export function AflPlayerProfileView({
   profile,
   snapshot,
   analytics,
+  level = "afl",
+  presence = [],
 }: {
   profile: AflPlayerProfile;
   snapshot: AflSnapshot;
   analytics: PlayerAnalyticsView;
+  level?: LevelId;
+  /** Every level the player appears at this season (most recent first). */
+  presence?: PlayerLevelPresence[];
 }) {
+  const lvl = levelById(level);
   const { player, row, asOf } = profile;
   const season = profile.windows.season;
   const hasBatting = season.batting !== null;
@@ -65,19 +77,20 @@ export function AflPlayerProfileView({
     ["Splits by window", "windows"],
     ...(analytics.roles.length ? [["Percentiles", "percentiles"]] : []),
     ["Game log", "game-log"],
+    ["Levels", "levels"],
     ["Roster", "roster"],
   ];
   const recent = profile.windows["14d"];
   const strips = [
     hasBatting && (
       <div key="b" className="strip-group">
-        <BattingStrip label="AFL season" s={season.batting!} />
+        <BattingStrip label={`${lvl.short} season`} s={season.batting!} />
         <BattingStrip label="Last 14 days" s={recent.batting} />
       </div>
     ),
     hasPitching && (
       <div key="p" className="strip-group">
-        <PitchingStrip label="AFL season" s={season.pitching!} />
+        <PitchingStrip label={`${lvl.short} season`} s={season.pitching!} />
         <PitchingStrip label="Last 14 days" s={recent.pitching} />
       </div>
     ),
@@ -97,11 +110,11 @@ export function AflPlayerProfileView({
           </p>
           <h1>{player.name}</h1>
           <div className="context-line">
-            <span className="level-badge" title="Arizona Fall League">
-              AFL
+            <span className="level-badge" title={lvl.label}>
+              {lvl.short}
             </span>
             <strong>{row.position}</strong>
-            {row.team && <AflTeamLink team={row.team} full />}
+            {row.team && <AflTeamLink team={row.team} full level={level} />}
             {row.organization ? (
               <AflOrganizationLink organization={row.organization} full />
             ) : (
@@ -110,6 +123,24 @@ export function AflPlayerProfileView({
               </span>
             )}
           </div>
+          {presence.length > 1 && (
+            <nav className="level-nav" aria-label="Player level">
+              <span className="level-nav-label">Levels</span>
+              <div className="button-group">
+                {presence.map((p) => (
+                  <Link
+                    key={p.level}
+                    href={playerHref(player.id, p.level)}
+                    className="button-link"
+                    title={`${levelById(p.level).label} — ${p.games} games`}
+                    aria-current={p.level === level ? "page" : undefined}
+                  >
+                    {levelById(p.level).short}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          )}
           <dl className="bio-line">
             {row.age !== null && (
               <div title={asOfLabel ? `Age as of ${asOfLabel}` : undefined}>
@@ -154,7 +185,8 @@ export function AflPlayerProfileView({
             <div className="season-strips">{strips}</div>
           ) : (
             <p className="empty-state">
-              No AFL game lines have been recorded for this player yet.
+              No {lvl.label} game lines have been recorded for this player
+              yet.
             </p>
           )}
         </header>
@@ -173,8 +205,8 @@ export function AflPlayerProfileView({
                 <h2>Momentum</h2>
               </div>
               <p className="small-muted">
-                Momentum needs completed AFL games before it can compare recent
-                and earlier performance.
+                Momentum needs completed {lvl.label} games before it can
+                compare recent and earlier performance.
               </p>
             </section>
           )}
@@ -199,19 +231,27 @@ export function AflPlayerProfileView({
           }
         />
         {!profile.gameLog.length && (
-          <p className="empty-state">No completed AFL games recorded.</p>
+          <p className="empty-state">
+            No completed {lvl.label} games recorded.
+          </p>
         )}
         {orderByRole(pitcherFirst, [
           hasBatting && (
             <div key="b">
               {hasPitching && <h3 className="table-title">Batting</h3>}
-              <BattingGameLog entries={battingLog.slice(0, RECENT_GAMES)} />
+              <BattingGameLog
+                entries={battingLog.slice(0, RECENT_GAMES)}
+                level={level}
+              />
             </div>
           ),
           hasPitching && (
             <div key="p">
               {hasBatting && <h3 className="table-title">Pitching</h3>}
-              <PitchingGameLog entries={pitchingLog.slice(0, RECENT_GAMES)} />
+              <PitchingGameLog
+                entries={pitchingLog.slice(0, RECENT_GAMES)}
+                level={level}
+              />
             </div>
           ),
         ])}
@@ -238,7 +278,7 @@ export function AflPlayerProfileView({
           </>
         ) : (
           <p className="placeholder-panel">
-            No completed AFL games to chart for this player yet.
+            No completed {lvl.label} games to chart for this player yet.
           </p>
         )}
       </section>
@@ -247,10 +287,10 @@ export function AflPlayerProfileView({
         <SectionTitle title="Splits by window" />
         <p className="table-note">
           {asOfLabel
-            ? `Windows end ${asOfLabel}, the latest completed AFL game date. `
+            ? `Windows end ${asOfLabel}, the latest completed ${lvl.label} game date. `
             : ""}
-          Totals are summed from final games with complete box scores; AFL
-          statistics are never blended with regular-season statistics.
+          Totals are summed from final {lvl.label} games with complete box
+          scores; statistics from other levels are never blended in.
         </p>
         {orderByRole(pitcherFirst, [
           hasBatting && (
@@ -282,13 +322,13 @@ export function AflPlayerProfileView({
 
       {analytics.roles.length > 0 && (
         <section id="percentiles" className="page-section">
-          <SectionTitle title="AFL percentiles" />
+          <SectionTitle title={`${lvl.label} percentiles`} />
           <div className="fingerprint-grid">
             {analytics.roles.map(({ role, fingerprint }) => (
               <DevelopmentFingerprint
                 key={role}
                 fp={fingerprint}
-                label={`${ROLE_LABEL[role]} — vs. AFL ${role}s`}
+                label={`${ROLE_LABEL[role]} — vs. ${lvl.short} ${role}s`}
               />
             ))}
           </div>
@@ -298,30 +338,39 @@ export function AflPlayerProfileView({
       <section id="game-log" className="page-section">
         <SectionTitle title="Game log" />
         {!profile.gameLog.length && (
-          <p className="empty-state">No completed AFL games recorded.</p>
+          <p className="empty-state">
+            No completed {lvl.label} games recorded.
+          </p>
         )}
         {profile.gameLog.length > 0 && (
           <details
             className="log-details"
             open={profile.gameLog.length <= RECENT_GAMES}
           >
-            <summary>All {profile.gameLog.length} AFL games</summary>
+            <summary>
+              All {profile.gameLog.length} {lvl.label} games
+            </summary>
             {orderByRole(pitcherFirst, [
               hasBatting && (
                 <div key="b">
                   <h3 className="table-title">Batting</h3>
-                  <BattingGameLog entries={battingLog} />
+                  <BattingGameLog entries={battingLog} level={level} />
                 </div>
               ),
               hasPitching && (
                 <div key="p">
                   <h3 className="table-title">Pitching</h3>
-                  <PitchingGameLog entries={pitchingLog} />
+                  <PitchingGameLog entries={pitchingLog} level={level} />
                 </div>
               ),
             ])}
           </details>
         )}
+      </section>
+
+      <section id="levels" className="page-section">
+        <SectionTitle title={`${snapshot.season.year} by level`} />
+        <LevelHistory presence={presence} current={level} playerId={player.id} />
       </section>
 
       <section id="roster" className="page-section">
@@ -331,7 +380,7 @@ export function AflPlayerProfileView({
           ingestion time, not dated transactions. Assignment and promotion
           history is not ingested yet.
         </p>
-        <RosterHistoryTable rows={profile.rosterHistory} />
+        <RosterHistoryTable rows={profile.rosterHistory} level={level} />
       </section>
     </>
   );
@@ -517,10 +566,92 @@ function MomentumPanel({
         </details>
       )}
       <p className="mp-footnote">
-        Change vs. this player&apos;s own earlier AFL games on a −100 to +100
+        Change vs. this player&apos;s own earlier games at this level on a −100 to +100
         scale; 0 means performing like their baseline. Not a measure of overall
         talent or MLB outlook.
       </p>
     </section>
+  );
+}
+
+/**
+ * The player's levels this season side by side. Each row is that level's own totals; rows are
+ * never summed or compared, because the levels are different competitions.
+ */
+function LevelHistory({
+  presence,
+  current,
+  playerId,
+}: {
+  presence: PlayerLevelPresence[];
+  current: LevelId;
+  playerId: string;
+}) {
+  if (!presence.length)
+    return <p className="empty-state">No level data recorded.</p>;
+  return (
+    <>
+      <div className="table-scroll">
+        <table className="coverage-levels level-history">
+          <caption className="sr-only">Levels this season</caption>
+          <thead>
+            <tr>
+              <th scope="col">Level</th>
+              <th scope="col">Season</th>
+              <th scope="col">Team</th>
+              <th scope="col" className="numeric">G</th>
+              <th scope="col">Games</th>
+              <th scope="col">Batting</th>
+              <th scope="col">Pitching</th>
+            </tr>
+          </thead>
+          <tbody>
+            {presence.map((p) => (
+              <tr key={p.level} aria-current={p.level === current ? "true" : undefined}>
+                <th scope="row">
+                  {p.level === current ? (
+                    <strong>{levelById(p.level).label}</strong>
+                  ) : (
+                    <Link href={playerHref(playerId, p.level)}>
+                      {levelById(p.level).label}
+                    </Link>
+                  )}
+                </th>
+                <td>{p.season}</td>
+                <td>
+                  {p.team ? (
+                    <AflTeamLink team={p.team} level={p.level} />
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="numeric">{p.games}</td>
+                <td>
+                  {p.firstGame && p.lastGame
+                    ? `${shortDate(p.firstGame)} – ${shortDate(p.lastGame)}`
+                    : "No completed games"}
+                </td>
+                <td>
+                  {p.batting
+                    ? `${formatRate(p.batting.avg)}/${formatRate(p.batting.obp)}/${formatRate(p.batting.slg)} · ${p.batting.plateAppearances} PA`
+                    : "—"}
+                </td>
+                <td>
+                  {p.pitching
+                    ? `${inningsFromOuts(p.pitching.outsRecorded)} IP · ${formatFixed(p.pitching.era, 2)} ERA · ${p.pitching.battersFaced} BF`
+                    : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="table-note">
+        Each level&apos;s line is its own; levels are different competitions,
+        so lines are not added together or compared directly. Promotion dates
+        are not ingested — first and last game dates show when the player
+        appeared at each level.
+      </p>
+    </>
   );
 }

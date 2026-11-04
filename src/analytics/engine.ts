@@ -81,13 +81,13 @@ export type ChangeStatus =
 
 export const CHANGE_STATUS_LABELS: Record<ChangeStatus, string> = {
   ok: "",
-  "no-games": "No completed AFL games yet",
+  "no-games": "No completed games at this level yet",
   "no-recent": "No games in this window",
   "insufficient-recent": "Too few recent opportunities",
   "no-baseline":
-    "Unavailable — no earlier AFL games before this window to compare with",
+    "Unavailable — no earlier games at this level before this window to compare with",
   "insufficient-baseline":
-    "Unavailable — too few earlier AFL games before this window to compare with",
+    "Unavailable — too few earlier games at this level before this window to compare with",
   "no-data": "No comparable statistics",
 };
 

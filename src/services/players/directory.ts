@@ -1,10 +1,9 @@
 /**
  * Level-agnostic player directory model (client-safe: types, filters, options; no analytics).
  *
- * `PlayerDirectoryRow` is the contract the Players page renders. Today the only adapter is
- * `aflDirectoryRows` in ./afl-adapter (real AFL data). When MiLB ingestion lands, an adapter that
- * maps its normalized read model onto the same row shape (with level "aaa" / "aa" / "high-a" /
- * "single-a") plugs in without changing the page. Pure functions only: no I/O.
+ * `PlayerDirectoryRow` is the contract the Players page renders. Rows come from
+ * `levelDirectoryRows` / `directoryRows` in ./adapter, which map any level snapshot (AFL,
+ * Triple-A, Double-A, High-A, Single-A) onto this shape. Pure functions only: no I/O.
  */
 import type { MomentumWindow, Role } from "@/analytics/config";
 import type { ConfidenceLevel } from "@/analytics/momentum";
@@ -51,7 +50,14 @@ export interface PlayerDirectoryRow {
   position: string;
   positionGroup: PositionGroup;
   age: number | null;
+  /** Level the row's statistics and Momentum come from. */
   level: LevelId;
+  /** Every level where the player has lines in the window (ladder order); includes `level`. */
+  levels: LevelId[];
+  /** Latest completed game date at the row's level (statistics are "through" this date). */
+  asOf: string | null;
+  /** The player's latest completed game at the row's level. */
+  lastGame: string | null;
   team: EntityRef | null;
   organization: EntityRef | null;
   batting: BattingAggregate | null;

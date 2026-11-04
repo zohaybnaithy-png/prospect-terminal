@@ -11,7 +11,7 @@ export default function PlayersError({
   return (
     <div className="page-heading">
       <h1>Player data could not be loaded</h1>
-      <p>Something went wrong while reading AFL data. Please try again.</p>
+      <p>Something went wrong while reading player data. Please try again.</p>
       <p>
         <button type="button" className="reset-button" onClick={() => retry()}>
           Try again

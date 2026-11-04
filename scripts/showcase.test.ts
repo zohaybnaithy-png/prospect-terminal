@@ -14,7 +14,7 @@ import {
   rowsForRole,
   sortPositionGroups,
 } from "../src/services/players/directory";
-import { aflDirectoryRows } from "../src/services/players/afl-adapter";
+import { aflDirectoryRows } from "../src/services/players/adapter";
 import { LEVELS, isLevelId } from "../src/services/players/levels";
 import {
   coverageSummary,

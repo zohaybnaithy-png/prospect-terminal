@@ -10,13 +10,22 @@ import {
 import type { TrendingEntry, TrendingSets } from "@/services/home";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
+import type { LevelId } from "@/services/players/levels";
 import {
   ConfidenceMeter,
   MomentumValue,
 } from "@/components/analytics/momentum-parts";
 
 /** Homepage Trending Prospects: V1 Momentum risers and fallers, precomputed on the server. */
-export function TrendingProspects({ sets }: { sets: TrendingSets }) {
+export function TrendingProspects({
+  sets,
+  level,
+  levelLabel,
+}: {
+  sets: TrendingSets;
+  level: LevelId;
+  levelLabel: string;
+}) {
   const [role, setRole] = useState<Role>("hitter");
   const [window, setWindow] = useState<MomentumWindow>("14d");
   const lists = sets.lists[role][window];
@@ -25,7 +34,7 @@ export function TrendingProspects({ sets }: { sets: TrendingSets }) {
     <section className="home-panel" aria-labelledby="trending-title">
       <div className="home-section-heading">
         <h2 id="trending-title">Trending Prospects</h2>
-        <Link href="/trends">All risers &amp; fallers →</Link>
+        <Link href={`/trends?level=${level}`}>All risers &amp; fallers →</Link>
       </div>
       <div className="panel-controls">
         <div className="button-group" role="group" aria-label="Role">
@@ -54,19 +63,19 @@ export function TrendingProspects({ sets }: { sets: TrendingSets }) {
         </div>
         <span className="small-muted panel-controls-note">
           Momentum: {MOMENTUM_WINDOWS[window].label.toLowerCase()} vs. each
-          player&apos;s own earlier AFL games
+          player&apos;s own earlier {levelLabel} games
         </span>
       </div>
       {unavailable ? (
         <p className="empty-state" aria-live="polite">
           {MOMENTUM_WINDOWS[window].short} unavailable — no{" "}
-          {role === "hitter" ? "hitter" : "pitcher"} has enough earlier AFL
-          games to compare against yet.
+          {role === "hitter" ? "hitter" : "pitcher"} has enough earlier{" "}
+          {levelLabel} games to compare against yet.
         </p>
       ) : (
         <div className="trending-columns" aria-live="polite">
-          <TrendColumn title="Trending up" entries={lists.risers} />
-          <TrendColumn title="Cooling" entries={lists.fallers} />
+          <TrendColumn title="Trending up" entries={lists.risers} level={level} />
+          <TrendColumn title="Cooling" entries={lists.fallers} level={level} />
         </div>
       )}
     </section>
@@ -76,9 +85,11 @@ export function TrendingProspects({ sets }: { sets: TrendingSets }) {
 function TrendColumn({
   title,
   entries,
+  level,
 }: {
   title: string;
   entries: TrendingEntry[];
+  level: LevelId;
 }) {
   return (
     <div className="trend-column">
@@ -90,13 +101,16 @@ function TrendColumn({
               <MomentumValue score={e.score} />
               <div className="trend-row-body">
                 <div className="trend-row-name">
-                  <PlayerLink player={{ id: e.playerId, name: e.name }} />
+                  <PlayerLink
+                    player={{ id: e.playerId, name: e.name }}
+                    level={level}
+                  />
                   <span className="trend-row-context">
                     {e.position}
                     {e.team && (
                       <>
                         {" · "}
-                        <AflTeamLink team={e.team} />
+                        <AflTeamLink team={e.team} level={level} />
                       </>
                     )}
                     {e.organization && (

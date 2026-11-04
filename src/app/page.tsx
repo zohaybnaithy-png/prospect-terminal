@@ -1,20 +1,30 @@
 import { Suspense } from "react";
-import { getAflData } from "@/services/afl";
-import { coverageSummary, latestTopLines, trendingSets } from "@/services/home";
-import { getTopProspects } from "@/services/rankings";
-import { AflDataNotice } from "@/components/afl/data-notice";
+import { getCompetitionData } from "@/services/competition";
 import {
-  AflRecentPerformersFallback,
-  AflRecentPerformersSection,
-} from "@/components/afl/home-performers";
+  defaultLevel,
+  levelCoverage,
+  selectLevel,
+} from "@/services/competition/model";
+import { latestTopLines, trendingSets } from "@/services/home";
+import { getTopProspects } from "@/services/rankings";
+import { levelById } from "@/services/players/levels";
+import { AflDataNotice } from "@/components/afl/data-notice";
+import { RecentPerformersSection } from "@/components/afl/home-performers";
 import { TrendingProspects } from "@/components/home/trending-prospects";
 import {
   CoveragePanel,
   LatestLines,
   TopProspectsPanel,
 } from "@/components/home/sections";
+import { LevelNav } from "@/components/levels/level-nav";
 
-export default function HomePage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default function HomePage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   return (
     <>
       <h1 className="sr-only">
@@ -27,16 +37,17 @@ export default function HomePage() {
           </p>
         }
       >
-        <HomeDashboard />
+        <HomeDashboard searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function HomeDashboard() {
-  const [data, topProspects] = await Promise.all([
-    getAflData(),
+async function HomeDashboard({ searchParams }: { searchParams: SearchParams }) {
+  const [data, topProspects, params] = await Promise.all([
+    getCompetitionData(),
     getTopProspects(),
+    searchParams,
   ]);
   if (data.status !== "ok")
     return (
@@ -51,23 +62,48 @@ async function HomeDashboard() {
         </div>
         <aside className="homepage-sidebar" aria-label="Rankings">
           <TopProspectsPanel result={topProspects} />
+          {data.status === "empty" && (
+            <CoveragePanel coverage={levelCoverage([], data.levelStatus)} />
+          )}
         </aside>
       </div>
     );
-  const lines = latestTopLines(data.snapshot);
+  const requested = typeof params.level === "string" ? params.level : undefined;
+  const ls = selectLevel(data.levels, requested)!;
+  const level = levelById(ls.level);
+  const available = data.levels.map((l) => l.level);
   return (
-    <div className="homepage-grid">
-      <div className="homepage-main">
-        <TrendingProspects sets={trendingSets(data.snapshot)} />
-        <LatestLines {...lines} />
+    <>
+      <LevelNav
+        basePath="/"
+        current={ls.level}
+        available={available}
+        label={
+          ls.level === defaultLevel(data.levels) ? "Level (latest)" : "Level"
+        }
+      />
+      <div className="homepage-grid">
+        <div className="homepage-main">
+          <TrendingProspects
+            sets={trendingSets(ls.snapshot)}
+            level={ls.level}
+            levelLabel={level.label}
+          />
+          <LatestLines
+            {...latestTopLines(ls.snapshot)}
+            level={ls.level}
+            levelLabel={level.label}
+          />
+        </div>
+        <aside
+          className="homepage-sidebar"
+          aria-label="Performance and rankings"
+        >
+          <RecentPerformersSection snapshot={ls.snapshot} level={ls.level} />
+          <TopProspectsPanel result={topProspects} />
+          <CoveragePanel coverage={levelCoverage(data.levels, data.levelStatus)} />
+        </aside>
       </div>
-      <aside className="homepage-sidebar" aria-label="Performance and rankings">
-        <Suspense fallback={<AflRecentPerformersFallback />}>
-          <AflRecentPerformersSection />
-        </Suspense>
-        <TopProspectsPanel result={topProspects} />
-        <CoveragePanel coverage={coverageSummary(data.snapshot)} />
-      </aside>
-    </div>
+    </>
   );
 }

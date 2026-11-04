@@ -96,28 +96,9 @@ export function currentStint(
   playerId: string,
 ): AflRosterStint | null {
   return (
-    s.rosterStints
-      .filter((r) => r.playerId === playerId)
-      .sort(
-        (a, b) =>
-          b.lastObservedAt.localeCompare(a.lastObservedAt) ||
-          a.teamId.localeCompare(b.teamId),
-      )[0] ?? null
+    s.rosterStints.filter((r) => r.playerId === playerId).sort(stintOrder)[0] ??
+    null
   );
-}
-
-function lastLineTeam(
-  s: AflSnapshot,
-  playerId: string,
-  gameById: Map<string, AflGame>,
-): string | null {
-  let best: { date: string; teamId: string } | null = null;
-  for (const line of [...s.batting, ...s.pitching]) {
-    if (line.playerId !== playerId) continue;
-    const date = gameById.get(line.gameId)?.date ?? "";
-    if (!best || date > best.date) best = { date, teamId: line.teamId };
-  }
-  return best?.teamId ?? null;
 }
 
 export interface AflPlayerContext {
@@ -128,16 +109,41 @@ export interface AflPlayerContext {
   teamSource: "roster" | "game-lines" | null;
 }
 
+/** Same ordering as currentStint: latest observation first, ties by team id. */
+const stintOrder = (a: AflRosterStint, b: AflRosterStint) =>
+  b.lastObservedAt.localeCompare(a.lastObservedAt) ||
+  a.teamId.localeCompare(b.teamId);
+
+/**
+ * Per-player current stint and last game-line team in one pass over the snapshot, so building
+ * rows stays linear at MiLB-level scale (thousands of players, tens of thousands of lines).
+ * Selection rules are identical to currentStint / lastLineTeam.
+ */
+function contextIndex(s: AflSnapshot, gameById: Map<string, AflGame>) {
+  const stints = new Map<string, AflRosterStint>();
+  for (const r of s.rosterStints) {
+    const best = stints.get(r.playerId);
+    if (!best || stintOrder(r, best) < 0) stints.set(r.playerId, r);
+  }
+  const lastTeam = new Map<string, { date: string; teamId: string }>();
+  for (const line of [...s.batting, ...s.pitching]) {
+    const date = gameById.get(line.gameId)?.date ?? "";
+    const best = lastTeam.get(line.playerId);
+    if (!best || date > best.date)
+      lastTeam.set(line.playerId, { date, teamId: line.teamId });
+  }
+  return { stints, lastTeam };
+}
+
 function playerContext(
-  s: AflSnapshot,
   playerId: string,
   maps: {
     teams: Map<string, AflTeam>;
     organizations: Map<string, AflOrganization>;
-    games: Map<string, AflGame>;
   },
+  index: ReturnType<typeof contextIndex>,
 ): AflPlayerContext {
-  const stint = currentStint(s, playerId);
+  const stint = index.stints.get(playerId);
   if (stint)
     return {
       team: maps.teams.get(stint.teamId) ?? null,
@@ -147,7 +153,7 @@ function playerContext(
       rosterStatus: stint.rosterStatus,
       teamSource: "roster",
     };
-  const teamId = lastLineTeam(s, playerId, maps.games);
+  const teamId = index.lastTeam.get(playerId)?.teamId ?? null;
   return {
     team: teamId ? (maps.teams.get(teamId) ?? null) : null,
     organization: null,
@@ -177,8 +183,8 @@ export function buildPlayerRows(
   const maps = {
     teams: byId(s.teams),
     organizations: byId(s.organizations),
-    games: byId(s.games),
   };
+  const index = contextIndex(s, byId(s.games));
   return s.players
     .map((p) => {
       const b = batting.get(p.id),
@@ -188,7 +194,7 @@ export function buildPlayerRows(
         name: p.name,
         position: displayPosition(p),
         age: p.birthDate && asOf ? ageOn(p.birthDate, asOf) : null,
-        ...playerContext(s, p.id, maps),
+        ...playerContext(p.id, maps, index),
         batting: b?.length ? aggregateBatting(b) : null,
         pitching: pi?.length ? aggregatePitching(pi) : null,
       };
@@ -321,7 +327,11 @@ export interface ScoreboardGame {
  * Latest date with completed games, plus the next date with games still to play.
  * Falls back to the earliest upcoming dates before the first completed game.
  */
-export function scoreboard(s: AflSnapshot, limit = 8): ScoreboardGame[] {
+export function scoreboard(
+  s: AflSnapshot,
+  limit = 8,
+  level: "afl" | string = "afl",
+): ScoreboardGame[] {
   const teams = byId(s.teams);
   const sorted = [...s.games].sort(
     (a, b) =>
@@ -346,7 +356,7 @@ export function scoreboard(s: AflSnapshot, limit = 8): ScoreboardGame[] {
       {
         id: g.id,
         date: g.date,
-        statusLabel: gameStatusLabel(g),
+        statusLabel: gameStatusLabel(g, level === "afl" ? "afl" : "et"),
         home,
         away,
         // Scores are shown only once play has started; scheduled/postponed rows show none.
@@ -362,7 +372,13 @@ const phoenixTime = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
   timeZone: "America/Phoenix",
 });
-export function gameStatusLabel(g: AflGame) {
+const easternTime = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/New_York",
+});
+/** Scheduled games show a start time: Arizona time for the AFL, Eastern for MiLB levels. */
+export function gameStatusLabel(g: AflGame, zone: "afl" | "et" = "afl") {
   switch (g.status) {
     case "final":
       return "Final";
@@ -373,7 +389,9 @@ export function gameStatusLabel(g: AflGame) {
     case "cancelled":
       return "Cancelled";
     case "scheduled":
-      return `${phoenixTime.format(new Date(g.startsAt))} MST`;
+      return zone === "afl"
+        ? `${phoenixTime.format(new Date(g.startsAt))} MST`
+        : `${easternTime.format(new Date(g.startsAt))} ET`;
     default:
       return g.status;
   }

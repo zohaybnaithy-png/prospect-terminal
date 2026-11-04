@@ -1,24 +1,36 @@
 import Link from "next/link";
-import { getAflData } from "@/services/afl";
+import { getCompetitionData, DATA_SEASON } from "@/services/competition";
+import { defaultLevel } from "@/services/competition/model";
 import { aflAsOf, scoreboard } from "@/services/afl/read-model";
+import { levelById, type LevelId } from "@/services/players/levels";
 import { AflTeamLink } from "@/components/afl/links";
 import { aflDataNoticeText } from "@/components/afl/data-notice";
 import { shortDate } from "@/lib/format";
 
 function StripShell({
   detail,
+  level,
   children,
 }: {
   detail: string;
+  level?: LevelId;
   children: React.ReactNode;
 }) {
+  const label = level ? levelById(level) : null;
   return (
-    <section className="score-strip" aria-label="Arizona Fall League scores">
+    <section
+      className="score-strip"
+      aria-label={`${label?.label ?? "Latest"} scores`}
+    >
       <div className="score-strip-inner">
         <div className="score-strip-label">
-          <strong>AFL 2026</strong>
+          <strong title={label?.label}>
+            {label ? `${label.short} ${DATA_SEASON}` : `${DATA_SEASON}`}
+          </strong>
           <span>{detail}</span>
-          <Link href="/players">AFL players →</Link>
+          <Link href={level ? `/players?level=${level}` : "/players"}>
+            {label ? `${label.short} players →` : "Players →"}
+          </Link>
         </div>
         {children}
       </div>
@@ -34,19 +46,25 @@ export function ScoreStripFallback() {
   );
 }
 
-/** Real AFL games from the database: latest completed date plus the next scheduled date. */
+/**
+ * Real games from the database for the level with the most recent completed game (the same
+ * default level as the homepage): its latest completed date plus its next scheduled date.
+ */
 export async function ScoreStrip() {
-  const data = await getAflData();
+  const data = await getCompetitionData();
   if (data.status !== "ok")
     return (
       <StripShell detail="Scores unavailable">
         <p className="score-strip-empty">{aflDataNoticeText(data.status)}</p>
       </StripShell>
     );
-  const games = scoreboard(data.snapshot);
-  const asOf = aflAsOf(data.snapshot);
+  const level = defaultLevel(data.levels)!;
+  const snapshot = data.levels.find((l) => l.level === level)!.snapshot;
+  const games = scoreboard(snapshot, 8, level);
+  const asOf = aflAsOf(snapshot);
   return (
     <StripShell
+      level={level}
       detail={asOf ? `Through ${shortDate(asOf)}` : "No completed games yet"}
     >
       {games.length ? (
@@ -54,7 +72,7 @@ export async function ScoreStrip() {
           className="score-games"
           tabIndex={0}
           role="region"
-          aria-label="AFL scoreboard, scroll for more games"
+          aria-label={`${levelById(level).label} scoreboard, scroll for more games`}
         >
           {games.map((game) => (
             <article className="score-game" key={game.id}>
@@ -63,18 +81,18 @@ export async function ScoreStrip() {
                 <span>{game.statusLabel}</span>
               </div>
               <div>
-                <AflTeamLink team={game.away} />
+                <AflTeamLink team={game.away} level={level} />
                 <strong>{game.awayScore ?? "—"}</strong>
               </div>
               <div>
-                <AflTeamLink team={game.home} />
+                <AflTeamLink team={game.home} level={level} />
                 <strong>{game.homeScore ?? "—"}</strong>
               </div>
             </article>
           ))}
         </div>
       ) : (
-        <p className="score-strip-empty">No AFL games have been ingested.</p>
+        <p className="score-strip-empty">No {levelById(level).label} games have been ingested.</p>
       )}
     </StripShell>
   );
