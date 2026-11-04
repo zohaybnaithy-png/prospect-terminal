@@ -7,23 +7,42 @@ import { progress } from "../progress";
 export interface SourceDocument {
   url: string;
   fetchedAt: string;
-  body: unknown;
+  /** sha256 of the stable-JSON response body, computed when fetched. */
+  contentHash: string;
+  /** Present unless the client was created with retainBodies: false. */
+  body?: unknown;
 }
-/** One in-flight request, 100ms between starts, URL caching, bounded transport retries. */
+export interface MlbClientOptions {
+  baseUrl?: string;
+  fetcher?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+  recordDir?: string;
+  /** Requests allowed in flight at once (default 1; bounded 1–8). */
+  concurrency?: number;
+  /** Minimum spacing between request starts in ms (default 100). */
+  minIntervalMs?: number;
+  /**
+   * Keep full response bodies on `documents` (default true). Large captures set false so only
+   * the url/time/hash manifest is retained; callers keep whatever projection they need.
+   */
+  retainBodies?: boolean;
+}
+/**
+ * Bounded-concurrency JSON client: at most `concurrency` requests in flight, starts spaced by
+ * `minIntervalMs`, URL caching for the capture, and bounded transport retries (fetchJson).
+ * Defaults (1 in flight, 100 ms) preserve the original AFL behavior.
+ */
 export class MlbClient {
-  private queue: Promise<unknown> = Promise.resolve();
   private cache = new Map<string, Promise<unknown>>();
   readonly documents: SourceDocument[] = [];
   private readonly base: URL;
-  constructor(
-    options: {
-      baseUrl?: string;
-      fetcher?: typeof fetch;
-      sleep?: (ms: number) => Promise<void>;
-      recordDir?: string;
-    } = {},
-  ) {
+  private active = 0;
+  private waiting: (() => void)[] = [];
+  private nextStart: Promise<void> = Promise.resolve();
+  private readonly concurrency: number;
+  constructor(options: MlbClientOptions = {}) {
     this.options = options;
+    this.concurrency = Math.min(8, Math.max(1, Math.floor(options.concurrency ?? 1)));
     this.base = mlbBaseUrl(options.baseUrl);
     if (options.recordDir) {
       const path = resolve(options.recordDir);
@@ -35,6 +54,25 @@ export class MlbClient {
     }
   }
   private readonly options;
+  private sleep(ms: number) {
+    return (this.options.sleep ?? ((t) => new Promise((r) => setTimeout(r, t))))(ms);
+  }
+  /** Waits for a concurrency slot, then for the start-spacing interval. */
+  private async acquire() {
+    if (this.active >= this.concurrency)
+      await new Promise<void>((r) => this.waiting.push(r));
+    this.active++;
+    const turn = this.nextStart;
+    let release!: () => void;
+    this.nextStart = new Promise<void>((r) => (release = r));
+    await turn;
+    await this.sleep(this.options.minIntervalMs ?? 100);
+    release();
+  }
+  private releaseSlot() {
+    this.active--;
+    this.waiting.shift()?.();
+  }
   get(
     path: string,
     params: Record<string, string | number | undefined> = {},
@@ -47,10 +85,8 @@ export class MlbClient {
     const key = url.href;
     const cached = this.cache.get(key);
     if (cached) return cached;
-    const request = this.queue.then(async () => {
-      await (
-        this.options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
-      )(100);
+    const request = (async () => {
+      await this.acquire();
       const startedAt = Date.now();
       try {
         const body = await fetchJson(url, {
@@ -59,10 +95,11 @@ export class MlbClient {
           maxBytes: 10_000_000,
           timeoutMs: 15000,
         });
-        const document = {
+        const document: SourceDocument = {
           url: key,
           fetchedAt: new Date().toISOString(),
-          body,
+          contentHash: fingerprint(body),
+          ...(this.options.retainBodies === false ? {} : { body }),
         };
         this.documents.push(document);
         progress("http:get", {
@@ -75,9 +112,9 @@ export class MlbClient {
           await writeFile(
             resolve(
               this.options.recordDir,
-              `${fingerprint(key)}-${fingerprint(body)}.json`,
+              `${fingerprint(key)}-${document.contentHash}.json`,
             ),
-            JSON.stringify(document, null, 2),
+            JSON.stringify({ ...document, body }, null, 2),
             { flag: "wx" },
           ).catch((error) => {
             if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
@@ -92,10 +129,11 @@ export class MlbClient {
         throw new Error(
           `${url.pathname}: ${error instanceof Error ? error.message : "request failed"}`,
         );
+      } finally {
+        this.releaseSlot();
       }
-    });
+    })();
     this.cache.set(key, request);
-    this.queue = request.catch(() => undefined);
     return request;
   }
 }

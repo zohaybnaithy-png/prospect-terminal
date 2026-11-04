@@ -64,7 +64,15 @@ export interface AflPitchingLine extends PitchingCounts {
   teamId: string;
 }
 export interface AflSnapshot {
+  /** AFL: the league. MiLB level snapshot: the level context (first level row UUID, label). */
   league: { id: string; name: string };
+  /** Which competition the snapshot covers. Optional so hand-built test snapshots stay valid. */
+  scope?: {
+    kind: "afl" | "milb-level";
+    level?: "aaa" | "aa" | "high-a" | "single-a";
+    /** Internal league UUIDs whose games are included. */
+    leagueIds: string[];
+  };
   season: { id: string; year: number; name: string };
   teams: AflTeam[];
   organizations: AflOrganization[];

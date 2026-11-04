@@ -19,8 +19,10 @@ import {
   fingerprint,
   isEntityKind,
   normalizedFingerprint,
+  references,
 } from "./plan";
 import type { IngestionSink, IngestionReport } from "./runner";
+import { rawContentHashOf } from "./runner";
 import { beginStage, progress, redact, updateStage } from "./progress";
 const tables = {
   league: core.leagues,
@@ -69,7 +71,10 @@ function bySignature(rows: Row[]) {
       Object.entries(row).filter(([, v]) => v !== undefined),
     );
     const signature = Object.keys(defined).sort().join(",");
-    groups.set(signature, [...(groups.get(signature) ?? []), defined]);
+    // Push (not spread-copy): copying the group per row was O(n²) for large batches.
+    const group = groups.get(signature);
+    if (group) group.push(defined);
+    else groups.set(signature, [defined]);
   }
   return [...groups].map(([signature, group]) => ({
     columns: signature.split(","),
@@ -113,6 +118,48 @@ async function bulkUpsert(
         : insert.onConflictDoNothing({ target: targetColumns }));
     }
   }
+}
+/**
+ * Every `kind:externalId` a batch defines or references. Identity lookups are scoped to these
+ * keys, so a run reads O(batch) identities instead of every identity the provider has ever
+ * created (hundreds of thousands once a full MiLB season is stored). The planner only consults
+ * identities for keys in this set, so results are identical to a provider-wide read.
+ */
+function batchIdentityKeys(batch: NormalizedBatch) {
+  const byKind = new Map<EntityKind, Set<string>>();
+  const add = (kind: EntityKind, externalId: string) => {
+    const set = byKind.get(kind) ?? new Set<string>();
+    set.add(externalId);
+    byKind.set(kind, set);
+  };
+  for (const r of batch.records) {
+    if (isEntityKind(r.kind) && "externalId" in r) add(r.kind, r.externalId);
+    for (const [kind, id] of references(r)) add(kind, id);
+  }
+  return byKind;
+}
+async function readIdentities(
+  db: Pick<Tx, "select">,
+  provider: string,
+  batch: NormalizedBatch,
+) {
+  const rows: (typeof meta.sourceIdentities.$inferSelect)[] = [];
+  for (const [kind, ids] of batchIdentityKeys(batch))
+    rows.push(
+      ...(await selectIn([...ids], (part) =>
+        db
+          .select()
+          .from(meta.sourceIdentities)
+          .where(
+            and(
+              eq(meta.sourceIdentities.provider, provider),
+              eq(meta.sourceIdentities.entityKind, kind),
+              inArray(meta.sourceIdentities.externalId, part),
+            ),
+          ),
+      )),
+    );
+  return rows;
 }
 export class PostgresIngestionSink implements IngestionSink {
   private readonly pool: Pool;
@@ -172,6 +219,73 @@ export class PostgresIngestionSink implements IngestionSink {
     client.release();
     progress("db:connected", { ms: Date.now() - startedAt });
   }
+  /**
+   * Read-only: source game IDs (of `candidates`, when given) already stored as final with a
+   * complete boxscore. Incremental captures use this to avoid re-fetching unchanged games.
+   */
+  async completedGameIds(
+    provider: string,
+    candidates?: string[],
+  ): Promise<Set<string>> {
+    const si = meta.sourceIdentities;
+    const query = (part?: string[]) =>
+      this.db
+        .select({ externalId: si.externalId })
+        .from(si)
+        .innerJoin(core.games, eq(core.games.id, si.internalId))
+        .where(
+          and(
+            eq(si.provider, provider),
+            eq(si.entityKind, "game"),
+            eq(core.games.status, "final"),
+            eq(core.games.boxscoreComplete, true),
+            part ? inArray(si.externalId, part) : undefined,
+          ),
+        );
+    const rows = candidates
+      ? await selectIn(candidates, (part) => query(part))
+      : await query();
+    return new Set(rows.map((r) => r.externalId));
+  }
+  /** Read-only: source IDs of every stored identity of one kind (e.g. players) for a provider. */
+  async knownExternalIds(provider: string, kind: EntityKind): Promise<Set<string>> {
+    const si = meta.sourceIdentities;
+    const rows = await this.db
+      .select({ externalId: si.externalId })
+      .from(si)
+      .where(and(eq(si.provider, provider), eq(si.entityKind, kind)));
+    return new Set(rows.map((r) => r.externalId));
+  }
+  /**
+   * Read-only: latest official date of a stored final game with a complete boxscore in a season,
+   * optionally restricted to games whose home team sits on a level whose source identity starts
+   * with one of `levelPrefixes` (e.g. "milb:11:"). Null when nothing complete is stored.
+   */
+  async latestCompleteGameDate(
+    provider: string,
+    seasonExternalId: string,
+    levelPrefixes?: string[],
+  ): Promise<string | null> {
+    const result = await this.db.execute<{ latest: string | null }>(sql`
+      SELECT max(coalesce(g.official_date, (g.starts_at AT TIME ZONE 'UTC')::date))::text AS latest
+      FROM games g
+      JOIN source_identities ss
+        ON ss.internal_id = g.season_id AND ss.provider = ${provider}
+       AND ss.entity_kind = 'season' AND ss.external_id = ${seasonExternalId}
+      JOIN teams t ON t.id = g.home_team_id
+      LEFT JOIN source_identities sl
+        ON sl.internal_id = t.level_id AND sl.provider = ${provider} AND sl.entity_kind = 'level'
+      WHERE g.status = 'final' AND g.boxscore_complete
+        ${
+          levelPrefixes?.length
+            ? sql`AND (${sql.join(
+                levelPrefixes.map((p) => sql`sl.external_id LIKE ${`${p}%`}`),
+                sql` OR `,
+              )})`
+            : sql``
+        }`);
+    return result.rows[0]?.latest ?? null;
+  }
   async preview(
     snapshot: SourceSnapshot,
     input: NormalizedBatch,
@@ -181,19 +295,29 @@ export class PostgresIngestionSink implements IngestionSink {
     return this.db.transaction(async (tx) => {
       await tx.execute(sql`SET TRANSACTION READ ONLY`);
       beginStage("preview:read-identities");
-      const identities = await tx
-        .select()
-        .from(meta.sourceIdentities)
-        .where(eq(meta.sourceIdentities.provider, snapshot.provider));
+      const identities = await readIdentities(tx, snapshot.provider, input);
       const batch = buildPlan(
         input,
         new Set(identities.map((i) => `${i.entityKind}:${i.externalId}`)),
       );
       beginStage("preview:read-record-state");
-      const prior = await tx
-        .select()
-        .from(meta.ingestionRecordState)
-        .where(eq(meta.ingestionRecordState.provider, snapshot.provider));
+      const sourceKeys = batch.records.map(
+        (r) =>
+          recordKey(r) +
+          (r.kind === "rosterObservation" ? `:${snapshot.observedAt}` : ""),
+      );
+      // Scoped to this batch's keys rather than every state row the provider owns.
+      const prior = await selectIn(sourceKeys, (part) =>
+        tx
+          .select()
+          .from(meta.ingestionRecordState)
+          .where(
+            and(
+              eq(meta.ingestionRecordState.provider, snapshot.provider),
+              inArray(meta.ingestionRecordState.recordKey, part),
+            ),
+          ),
+      );
       progress("preview:compare", { records: batch.records.length });
       const states = new Map(prior.map((r) => [r.recordKey, r]));
       const counts = { insert: 0, update: 0, unchanged: 0 };
@@ -211,7 +335,7 @@ export class PostgresIngestionSink implements IngestionSink {
         provider: snapshot.provider,
         snapshotKey: snapshot.key,
         contentHash: normalizedFingerprint(input),
-        rawContentHash: fingerprint(snapshot.payload),
+        rawContentHash: rawContentHashOf(snapshot),
         status: batch.issues.length
           ? batch.quarantinePolicy === "records"
             ? "dry-run-with-quarantine"
@@ -283,7 +407,7 @@ export class PostgresIngestionSink implements IngestionSink {
       provider: snapshot.provider,
       snapshotKey: snapshot.key,
       contentHash,
-      rawContentHash: fingerprint(snapshot.payload),
+      rawContentHash: rawContentHashOf(snapshot),
       status: "applied",
       records: 0,
       issues: 0,
@@ -308,10 +432,7 @@ export class PostgresIngestionSink implements IngestionSink {
         progress("apply:lock-acquired");
         if (this.signal?.aborted) throw new ApplyError("interrupted");
         beginStage("apply:read-identities");
-        const identities = await tx
-          .select()
-          .from(meta.sourceIdentities)
-          .where(eq(meta.sourceIdentities.provider, snapshot.provider));
+        const identities = await readIdentities(tx, snapshot.provider, input);
         const ids = new Map(
           identities.map((i) => [
             `${i.entityKind}:${i.externalId}`,

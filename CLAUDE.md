@@ -14,10 +14,13 @@ Next.js App Router (a recent version with breaking changes — see AGENTS.md), T
 
 Scripts are in `package.json`; check it rather than assuming. There is no `db:check` script.
 
-## Current phase: trustworthy real data (AFL only)
+## Current phase: trustworthy real data (AFL + MiLB Data Foundation V1)
 
-- Target: Arizona Fall League, season 2026, MLB Stats API (`mlb-stats-api`), leagueId 119, sportId 17, six clubs.
-- Do not expand to all of MiLB until the AFL pipeline is reliable.
+- AFL: Arizona Fall League, season 2026, MLB Stats API (`mlb-stats-api`), leagueId 119, sportId 17, six clubs.
+- MiLB (data foundation, no UI pages yet): Triple-A/Double-A/High-A/Single-A = sportId 11/12/13/14, verified against `sports/{id}` names at runtime; leagues, affiliates and parent orgs (`parentOrgId` → sportId 1) are discovered per season, never hardcoded. Adapter `src/ingestion/sources/milb-stats-api.ts`, orchestrator `src/ingestion/milb-runner.ts`, CLI `npm run ingest:milb`, levels `src/domain/levels.ts`. Details: `docs/MILB-INGESTION.md`.
+- Same provider namespace as the AFL: one internal UUID per player/org/game across AFL and MiLB. Season identity `milb-{year}`; level identity `milb:{sportId}:{leagueId}` (one `levels` row per league). No per-level tables.
+- MiLB backfill = structure pass + date-chunked game captures (one transaction per chunk, resumable via the summary's `resumeFrom`). `--incremental` starts a lookback before the latest stored complete game and skips boxscores of games already complete (except a short refetch window). The fixture source is a synthetic offline dry run only.
+- Not yet validated against the live API or a real database; follow the validation steps in `docs/MILB-INGESTION.md` before any shared-database apply.
 - Boundary: `SourceAdapter → normalized records → planner (buildPlan) → PostgresIngestionSink`. Provider-specific acquisition stays separate from normalized/internal data so providers can be swapped or licensed later.
 
 ### Ingestion guarantees — never weaken for performance
@@ -38,6 +41,8 @@ Stable external source IDs, internal UUID PKs (provider IDs live only in `source
 `contentHash` hashes the normalized batch, so it is the same across captures of unchanged data. `rawContentHash` and the stored response manifest identify the raw capture. Roster observations are keyed by capture time, so a replay with a new capture legitimately reports one insert per roster observation.
 
 Expected clean live AFL snapshot (`afl:2026:all:season:end:all`): 2680 records, 0 issues (subject to legitimate upstream changes).
+
+Scale rules (needed for MiLB volume): apply/preview read only identities and record state referenced by the batch; keep bulk grouping linear; large adapters must not retain raw bodies (`MlbClient` `retainBodies: false`, boxscore projection) and supply `rawContentHash` from the response manifest.
 
 ### Database safety
 

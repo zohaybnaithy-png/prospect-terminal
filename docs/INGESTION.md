@@ -1,5 +1,7 @@
 # AFL ingestion: fixture and MLB Stats API sources
 
+> MiLB (Triple-A through Single-A) uses the same pipeline; see [MILB-INGESTION.md](MILB-INGESTION.md).
+
 ## First local test
 
 From the repository root on the developer machine where Stats API access works:
