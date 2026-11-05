@@ -31,6 +31,23 @@ database, at increasing scale.
 mkdir -p ~/pt-runs
 ```
 
+## Steps 1–4 in one guarded script
+
+`scripts/ops/milb-week-test.sh` runs Steps 1–4 for the Triple-A week (Sep 15–21) against the test
+branch. It stops on the first failed check.
+
+- **Endpoint gate:** the endpoint must be `ep-lucky-sea-akc835g5` and the connection must use SSL.
+- **Before any write:** it checks migrations, takes a baseline, and checks the saved dry run.
+  `scripts/ops/milb-notices.ts` then re-reads the week from the Stats API without any database and
+  lists every notice reason; unknown kinds stop the script.
+- **Writes:** it asks you to type `APPLY`, then applies the week. It runs integrity and box-score
+  checks, then a games-only replay that must change 0 rows and leave counts identical.
+- **Credential:** read from the environment or a hidden prompt; it is never printed or saved.
+  Outputs go to `~/pt-runs`, ending with `09-summary.json`, which is safe to share.
+
+Use `npm run -s` when redirecting CLI output: without `-s`, npm writes a banner line to stdout and
+the saved JSON is not valid.
+
 ## Step 0 — local rehearsal (no Neon, already passing in CI-equivalent runs)
 
 Run this on a disposable local PostgreSQL. It uses the same commands, so the procedure is
@@ -83,7 +100,7 @@ psql "$INGESTION_DATABASE_URL" -X -A -t -c "select count(*) from drizzle.__drizz
    compares against the database without writing:
 
    ```bash
-   npm run ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --dry-run > ~/pt-runs/01-aaa-week-preview.json 2> ~/pt-runs/01-aaa-week-preview.log
+   npm run -s ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --dry-run > ~/pt-runs/01-aaa-week-preview.json 2> ~/pt-runs/01-aaa-week-preview.log
    ```
 
    Check that `status` is `ok`, `totals.issues` is `0`, and the notices are only known
@@ -93,7 +110,7 @@ psql "$INGESTION_DATABASE_URL" -X -A -t -c "select count(*) from drizzle.__drizz
    people) plus one 7-day games chunk, in one transaction per chunk.
 
    ```bash
-   npm run ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --apply > ~/pt-runs/02-aaa-week-apply.json 2> ~/pt-runs/02-aaa-week-apply.log
+   npm run -s ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --apply > ~/pt-runs/02-aaa-week-apply.json 2> ~/pt-runs/02-aaa-week-apply.log
    ```
 
    Expect `status: ok` and no `resumeFrom`. If it fails, nothing from the failed chunk is kept,
@@ -132,7 +149,7 @@ diff ~/pt-runs/00-baseline.txt ~/pt-runs/03-after-week.txt
 Re-run the exact command from Step 2.2. Use `--games-only` so the roster capture is not repeated.
 
 ```bash
-npm run ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --games-only --apply > ~/pt-runs/04-aaa-week-replay.json 2> ~/pt-runs/04-aaa-week-replay.log
+npm run -s ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-09-21 --games-only --apply > ~/pt-runs/04-aaa-week-replay.json 2> ~/pt-runs/04-aaa-week-replay.log
 ```
 
 ```bash
@@ -159,19 +176,19 @@ Go level by level, so each step is reviewable and a failure is contained. The de
 Mar 1 – Oct 31, in 7-day chunks with one transaction each.
 
 ```bash
-npm run ingest:milb -- --season=2026 --level=aaa --apply > ~/pt-runs/10-aaa.json 2> ~/pt-runs/10-aaa.log
+npm run -s ingest:milb -- --season=2026 --level=aaa --apply > ~/pt-runs/10-aaa.json 2> ~/pt-runs/10-aaa.log
 ```
 
 ```bash
-npm run ingest:milb -- --season=2026 --level=aa --apply > ~/pt-runs/11-aa.json 2> ~/pt-runs/11-aa.log
+npm run -s ingest:milb -- --season=2026 --level=aa --apply > ~/pt-runs/11-aa.json 2> ~/pt-runs/11-aa.log
 ```
 
 ```bash
-npm run ingest:milb -- --season=2026 --level=high-a --apply > ~/pt-runs/12-high-a.json 2> ~/pt-runs/12-high-a.log
+npm run -s ingest:milb -- --season=2026 --level=high-a --apply > ~/pt-runs/12-high-a.json 2> ~/pt-runs/12-high-a.log
 ```
 
 ```bash
-npm run ingest:milb -- --season=2026 --level=single-a --apply > ~/pt-runs/13-single-a.json 2> ~/pt-runs/13-single-a.log
+npm run -s ingest:milb -- --season=2026 --level=single-a --apply > ~/pt-runs/13-single-a.json 2> ~/pt-runs/13-single-a.log
 ```
 
 - **After each level:**
