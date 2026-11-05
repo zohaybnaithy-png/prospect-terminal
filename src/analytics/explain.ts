@@ -77,9 +77,9 @@ export function explainMomentum(input: {
 }): string {
   const { combinedZ, contributions, confidence, persistence, settings } = input;
   if (combinedZ === null)
-    return "Not enough recent and earlier AFL games to measure a change.";
+    return "Not enough recent and earlier games at this level to measure a change.";
   if (Math.abs(combinedZ) < settings.persistence.activeZ)
-    return "Recent performance is close to the player's earlier AFL baseline.";
+    return "Recent performance is close to the player's earlier baseline at this level.";
   const { drivers: lead, offsets } = drivers(contributions, combinedZ);
   const up = combinedZ > 0;
   const nouns = lead.map((c) => COMPONENT_LABELS[c.component].noun);

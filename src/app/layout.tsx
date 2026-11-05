@@ -6,11 +6,11 @@ import { Header } from "@/components/layout/header";
 import "./globals.css";
 export const metadata: Metadata = {
   title: {
-    default: "Prospect Terminal | MiLB discovery",
+    default: "Prospect Terminal — prospect performance and Momentum",
     template: "%s | Prospect Terminal",
   },
   description:
-    "Discover minor league performers and follow player development. Real 2026 Arizona Fall League statistics alongside clearly labeled demo content; no scoring models yet.",
+    "Player-first prospect analytics: trending prospects, Momentum, game logs and scouting-style player profiles built on real 2026 Minor League Baseball (Triple-A to Single-A) and Arizona Fall League data.",
 };
 export default function RootLayout({
   children,
@@ -25,22 +25,18 @@ export default function RootLayout({
         <Suspense fallback={<ScoreStripFallback />}>
           <ScoreStrip />
         </Suspense>
-        <div className="demo-ribbon">
-          <strong>AFL 2026</strong> Scores, the AFL player directory, player
-          profiles and Trends (including AFL Momentum) use real ingested Arizona
-          Fall League data. News, highlights,
-          call-ups, Prospect Grades, demo-player Momentum and the fictional
-          organizations are demo placeholders.
-        </div>
         <main id="main" className="main-shell">
           {children}
         </main>
         <footer className="site-footer">
           <Link href="/">Prospect Terminal</Link>
-          <span>MiLB-first · Player-first · Development preview</span>
-          <Link href="/teams">Affiliate directory</Link>
-          <Link href="/data">Statistical data</Link>
-          <Link href="/highlights">Highlight previews</Link>
+          <span>
+            2026 MiLB (Triple-A to Single-A) and Arizona Fall League data via the MLB Stats API (development
+            use). Momentum measures recent change, not overall quality.
+          </span>
+          <Link href="/players">Players</Link>
+          <Link href="/trends">Trends</Link>
+          <Link href="/data">Data &amp; methodology</Link>
         </footer>
       </body>
     </html>

@@ -592,7 +592,7 @@ describe("hitter Momentum on synthetic trajectories", () => {
     // The 30D window covers this whole 27-day season, so nobody has an earlier baseline.
     assert.equal(m(IDS.improver, "30d").status, "no-baseline");
     assert.equal(m(u(99999)).status, "no-recent");
-    assert.match(m(IDS.newcomer, "14d").explanation, /^Unavailable — no earlier AFL games/);
+    assert.match(m(IDS.newcomer, "14d").explanation, /^Unavailable — no earlier games at this level/);
   });
 
   test("models are configuration: different weights give different scores", () => {
@@ -790,7 +790,7 @@ describe("deterministic explanations", () => {
     );
     assert.match(
       explainMomentum({ combinedZ: 0.1, contributions: [], confidence: "high", persistence: "neutral", settings: S }),
-      /close to the player's earlier AFL baseline/,
+      /close to the player's earlier baseline at this level/,
     );
     assert.match(
       explainMomentum({ combinedZ: null, contributions: [], confidence: "low", persistence: "insufficient", settings: S }),

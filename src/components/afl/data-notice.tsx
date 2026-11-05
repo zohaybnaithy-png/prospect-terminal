@@ -2,10 +2,11 @@ import type { AflDataResult } from "@/services/afl/types";
 
 const messages: Record<Exclude<AflDataResult["status"], "ok">, string> = {
   "not-configured":
-    "Real AFL data is not connected: the server has no database configured.",
-  empty: "No 2026 Arizona Fall League data has been ingested yet.",
+    "Real data is not connected: the server has no database configured.",
+  empty:
+    "No 2026 Minor League or Arizona Fall League data has been ingested yet.",
   unavailable:
-    "AFL data is temporarily unavailable. Please try again in a moment.",
+    "Player data is temporarily unavailable. Please try again in a moment.",
 };
 
 /** Empty/error state for real-data sections. Never shows connection details. */

@@ -1,24 +1,18 @@
 # Architecture
 
-## Product and read-model boundaries
+## Product and read-model boundaries (Showcase V1)
 
-Prospect Terminal is MiLB-first and player-first: discovery → player → performance/development → context. The existing App Router, strict TypeScript, Drizzle/PostgreSQL core, stable UUIDs, lazy database client, and explicit demo repository remain. The UI uses a light editorial baseball front page and compact statistical research pages.
+Prospect Terminal is player-first: discovery → player → performance/trajectory → context. All user-facing routes read real data through the server-only `src/services/afl` layer (one cached, read-only snapshot per 60 s) and pure view-model functions:
 
-Server pages load serializable read models through `ProspectRepository`. `catalog()` supplies the small fictional universe; no database connection is made during rendering. The homepage is composed from small editorial components: ScoreStrip, HeadlineCard, TrendingProspects, TopProspects, HighlightCard, and RecentCallups. Only the trending timeframe/context controls require a homepage client boundary. Presentation-only scores, story image references, and highlight storyboards are isolated in `src/data/demo-home.ts`; they do not extend backend contracts or change memberships. Highlights link to `/highlights` previews with an explicit no-footage notice.
+- `src/services/home.ts` — Trending Prospects (V1 risers/fallers + recent-window stat lines), Latest Results, coverage.
+- `src/services/players/` — level registry (derived from `src/domain/levels.ts`), the client-safe `PlayerDirectoryRow` contract, and the level adapter used for the AFL and every MiLB level.
+- `src/services/competition/` — loads every level through `loadAflSnapshot` / `loadMilbLevelSnapshot` with per-level status; pure cross-level selectors (default level, coverage, player presence). Statistics and Momentum are always computed within one level.
+- `src/services/rankings.ts` — MLB-wide rankings boundary; returns `unavailable` until a legitimate source or approved model exists.
+- `src/analytics/views.ts` — Momentum view models (unchanged formulas).
 
-Search/filter state and sortable player tables live in client components. The trajectory chart is the other main interactive island. No production fallback silently converts real-data failures into demo data. Real AFL sections (score strip, AFL Recent Performers, `/players`, AFL player profiles) read through the server-only `src/services/afl` layer when DATABASE_URL is set; demo sections keep the explicit demo repository.
+Server components build serializable rows; small client islands handle instant filtering/sorting (Players, URL-synced via `history.replaceState`), Momentum toggles, and charts. Client components import only client-safe modules (types, formatting, filters); the analytics engine stays on the server. Failures map to `not-configured` / `empty` / `unavailable` notices inside the normal layout; error boundaries show generic messages only.
 
-`DataTable<T>` is a presentation-only primitive usable from server and client compositions. `PlayerTable` adds optional column sorting for identity, age, statistics, Grade, and Momentum. Numeric alignment, sticky headers, explicit captions, focusable horizontal scrolling, restrained hover states, and shared entity-link components make the same entities navigable everywhere. Mobile tables retain their information and scroll; there is no decorative sparkline or hidden statistical column system.
-
-## Discovery contract and demo semantics
-
-`DiscoveryFilters` separates ranking mode, context, timeframe, player type, and optional directory/screener conditions. `discoverDemoPlayers()` performs a **lookup of an explicit fixture order**, followed by filters. It assigns no level weights, calculates no ranking score, and does not use Grade as a substitute for recent performance.
-
-`demoDiscoveryOrder` contains a complete ordered set of stable player IDs for each of four windows and two modes. Prospect Priority fixtures favor meaningful higher-level examples; Pure Performance fixtures allow Single-A/Rookie standouts to precede higher-level players. They are independent editorial examples, not implementations of the eventual methodologies. Changing a window selects both a different fictional counting-stat sample and its corresponding authored order. A column sort temporarily reorders the filtered display and preserves the `#` reference to that selected order. Filter changes reset the column sort.
-
-Grade (0–100) and signed Momentum remain separate as-of-snapshot fields; time controls do not relabel those fields as window-derived analytics. Baseball formatting (AVG, ERA, WHIP, innings) derives ordinary descriptive rates from the selected fictional counting stats. It is not a discovery algorithm.
-
-A future real discovery adapter should aggregate validated game-level records for explicit date bounds, context, and minimum samples, then apply a separately specified/evaluated methodology. Recent windows must handle assignments, missing games, timezones, and eligibility explicitly. This phase does not decide those rules. The current fixture windows are not ingested into game-stat tables or treated as calculated production analytics.
+The fictional fixtures (`src/data/demo.ts`, `src/services/prospects.ts`, `src/services/discovery.ts`) remain solely for tests and the opt-in seed. Retired demo routes redirect (see `next.config.ts`).
 
 ## Preserved relational foundation
 

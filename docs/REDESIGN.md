@@ -1,5 +1,7 @@
 # MiLB-first product redesign review (previous visual phase)
 
+> **Historical.** This describes a previous demo-era phase. Showcase V1 removed the fictional homepage content, demo routes and demo profiles; see the README "Current status" section.
+
 The MiLB/player-development architecture and discovery behavior below are retained. This document records the previous visual phase; the current light editorial homepage and viewport QA are described in [VISUAL-DESIGN.md](VISUAL-DESIGN.md).
 
 ## User experience

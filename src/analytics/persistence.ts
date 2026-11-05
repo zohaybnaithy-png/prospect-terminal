@@ -165,4 +165,4 @@ export function persistenceLabel(
 export const PERSISTENCE_HELP =
   "Persistence = how consistently and how long the direction has continued across rolling windows.";
 export const CONFIDENCE_HELP =
-  "Confidence = how much data supports the signal (recent vs. earlier AFL plate appearances or batters faced).";
+  "Confidence = how much data supports the signal (recent vs. earlier plate appearances or batters faced).";

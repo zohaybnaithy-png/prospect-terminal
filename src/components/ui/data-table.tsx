@@ -19,7 +19,7 @@ export function DataTable<T>({
   caption,
   sort,
   onSort,
-  emptyMessage = "No demo players match these filters. Try a different level, role, or search.",
+  emptyMessage = "No rows to show.",
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -55,7 +55,7 @@ export function DataTable<T>({
                 }
               >
                 {onSort && c.sortValue ? (
-                  <button onClick={() => onSort(c.key)}>
+                  <button type="button" onClick={() => onSort(c.key)}>
                     {c.label}
                     <span aria-hidden="true">
                       {sort?.key === c.key

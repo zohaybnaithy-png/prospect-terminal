@@ -15,14 +15,14 @@ function Bar({ pct }: { pct: number | null }) {
   );
 }
 
-/** AFL-relative percentile fingerprint. Expand a category to see its underlying metrics. */
+/** Same-level percentile fingerprint. Expand a category to see its underlying metrics. */
 export function DevelopmentFingerprint({ fp, label }: { fp: Fingerprint; label: string }) {
   return (
     <div className="fingerprint">
       <h3 className="table-title">{label}</h3>
       {!fp.qualified && (
         <p className="table-note">
-          Below the {fp.minOpportunities} {fp.role === "hitter" ? "PA" : "BF"} AFL
+          Below the {fp.minOpportunities} {fp.role === "hitter" ? "PA" : "BF"}
           comparison threshold ({fp.playerOpportunities} so far): percentiles are
           shown against qualified players but are not stable.
         </p>
@@ -65,10 +65,10 @@ export function DevelopmentFingerprint({ fp, label }: { fp: Fingerprint; label: 
         </li>
       </ul>
       <p className="table-note">
-        Percentiles are relative to {fp.populationSize} 2026 AFL{" "}
+        Percentiles are relative to {fp.populationSize}{" "}
         {fp.role === "hitter" ? "hitters" : "pitchers"} with at least{" "}
-        {fp.minOpportunities} {fp.role === "hitter" ? "PA" : "BF"} — not MLB or
-        MiLB percentiles. Momentum percentile is among {fp.momentum.population}{" "}
+        {fp.minOpportunities} {fp.role === "hitter" ? "PA" : "BF"} at the same level and
+        season — not MLB percentiles or other levels. Momentum percentile is among {fp.momentum.population}{" "}
         players qualified for the 14D change lists.
       </p>
     </div>

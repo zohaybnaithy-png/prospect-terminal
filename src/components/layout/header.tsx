@@ -8,12 +8,8 @@ const links = [
   ["Home", "/"],
   ["Players", "/players"],
   ["Trends", "/trends"],
-  ["Organizations", "/organizations"],
-  ["Leagues", "/leagues"],
   ["Data", "/data"],
-  ["Screener", "/screener"],
-  ["News", "/news"],
-];
+] as const;
 export function Header() {
   const path = usePathname();
   return (
@@ -35,8 +31,8 @@ export function Header() {
           <Search size={16} aria-hidden="true" />
           <input
             name="q"
-            aria-label="Search player or team"
-            placeholder="Search player or team"
+            aria-label="Search players, teams or organizations"
+            placeholder="Search players, teams, orgs"
           />
           <button type="submit" aria-label="Submit player search">
             Search
@@ -45,11 +41,7 @@ export function Header() {
       </div>
       <nav aria-label="Main navigation">
         {links.map(([label, href]) => {
-          const active =
-            href === "/"
-              ? path === "/" || path === "/market"
-              : path.startsWith(href) ||
-                (href === "/organizations" && path.startsWith("/teams"));
+          const active = href === "/" ? path === "/" : path.startsWith(href);
           return (
             <Link
               key={href}

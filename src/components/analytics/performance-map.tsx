@@ -1,4 +1,6 @@
 "use client";
+import type { LevelId } from "@/services/players/levels";
+import { playerHref } from "@/components/ui/entity-links";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -37,13 +39,15 @@ const QUADRANTS = [
 ] as const;
 
 /**
- * Performance × Momentum. x = AFL season percentile of one selectable statistic; y = Momentum.
+ * Performance × Momentum. x = same-level season percentile of one selectable statistic; y = Momentum.
  * Quadrant names are descriptive UI categories, not scouting judgments.
  */
 export function PerformanceMap({
   sets,
   comparable,
+  level,
 }: {
+  level: LevelId;
   sets: MapSets;
   /** Players with a valid comparison per role/window; 0 = window unavailable. */
   comparable: Record<Role, Record<MomentumWindow, number>>;
@@ -83,7 +87,7 @@ export function PerformanceMap({
           ))}
         </div>
         <label className="filter-group">
-          <span>Performance axis (AFL season percentile)</span>
+          <span>Performance axis (season percentile at this level)</span>
           <select value={xMetric} onChange={(e) => setMetric(e.target.value)}>
             {MAP_PERFORMANCE_METRICS[role].map((m) => (
               <option key={m} value={m}>
@@ -100,7 +104,7 @@ export function PerformanceMap({
             <ScatterChart margin={{ top: 14, right: 20, bottom: 26, left: 0 }}>
               <CartesianGrid stroke="#e3e9e8" />
               <XAxis type="number" dataKey="x" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fill: "#637573", fontSize: 11 }} tickLine={false}>
-                <Label value={`${xLabel} — AFL season percentile`} position="bottom" offset={6} style={{ fill: "#4b6263", fontSize: 11 }} />
+                <Label value={`${xLabel} — season percentile at this level`} position="bottom" offset={6} style={{ fill: "#4b6263", fontSize: 11 }} />
               </XAxis>
               <YAxis type="number" dataKey="y" domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]} tick={{ fill: "#637573", fontSize: 11 }} tickLine={false}>
                 <Label value="Momentum" angle={-90} position="insideLeft" offset={14} style={{ fill: "#4b6263", fontSize: 11 }} />
@@ -119,7 +123,7 @@ export function PerformanceMap({
                 cursor="pointer"
                 onClick={(d: unknown) => {
                   const id = (d as { payload?: Point; playerId?: string })?.payload?.playerId ?? (d as Point)?.playerId;
-                  if (id) router.push(`/players/${id}`);
+                  if (id) router.push(playerHref(id, level));
                 }}
               />
             </ScatterChart>
@@ -128,12 +132,12 @@ export function PerformanceMap({
       ) : (
         <p className="empty-state">
           {comparable[role][window] === 0
-            ? `${MOMENTUM_WINDOWS[window].short} unavailable — no player has enough AFL games before this window to compare with yet. No change is estimated.`
+            ? `${MOMENTUM_WINDOWS[window].short} unavailable — no player has enough games at this level before this window to compare with yet. No change is estimated.`
             : "No players meet the sample minimums for this window yet."}
         </p>
       )}
       <p className="table-note">
-        {points.length} qualified players. x is the player&apos;s AFL percentile
+        {points.length} qualified players. x is the player&apos;s percentile at this level
         for one season statistic (not a composite performance model); y is{" "}
         {MOMENTUM_WINDOWS[window].short} Momentum.
         Quadrant names are descriptive categories, not scouting conclusions.

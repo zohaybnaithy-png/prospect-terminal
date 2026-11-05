@@ -128,5 +128,6 @@ Before the first real apply, on a machine with Stats API access:
 - `teams.organization_id` is a single latest value. Re-ingesting an older season after a newer one rewrites it from that season's capture; per-season affiliation history lives on roster observations.
 - Roster observations accumulate per capture (≈ players × teams). Prefer `--roster-type=active` for frequent runs.
 - No transaction feed: promotion dates are not known; observations are capture-time evidence.
-- No scheduler, cursor table or retention policy. The UI has no MiLB pages yet (data foundation only).
+- No scheduler, cursor table or retention policy.
+- The site reads MiLB levels through `src/services/competition` (see README, "Levels"). The staged Neon load procedure is [MILB-NEON-RUNBOOK.md](./MILB-NEON-RUNBOOK.md).
 - Postseason games are excluded by default; spring/fall/exhibition games are always excluded.

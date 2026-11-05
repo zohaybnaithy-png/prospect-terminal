@@ -1,3 +1,10 @@
+/**
+ * FICTIONAL FIXTURES — not used by any user-facing route.
+ *
+ * Kept only for the automated tests (scripts/foundation.test.ts, scripts/discovery.test.ts) and
+ * the explicit opt-in development seed (scripts/seed.ts). Every player, organization, team,
+ * statistic and story here is invented. Do not import this module from src/app or src/components.
+ */
 import type {
   Player,
   Team,

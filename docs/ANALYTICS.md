@@ -79,4 +79,4 @@ Checkpoints: the same window ending today, 7, 14 and 21 days earlier (`stepDays`
 
 ## Pages
 
-`/trends` (Risers/Fallers, Performance × Momentum), AFL player profiles (header Momentum + "Why?", What changed?, fingerprint, timeline), `/analytics/models` (development only; `ANALYTICS_DEBUG=1` in production).
+Homepage Trending Prospects (V1 risers/fallers), `/players` (Momentum column, sortable), `/trends` (Risers/Fallers, Performance × Momentum), AFL player profiles (Momentum panel with 7D/14D/30D, "Why this number?", What changed?, percentiles, Momentum and recent-vs-earlier charts), `/data#momentum` (public methodology), `/analytics/models` (development only; `ANALYTICS_DEBUG=1` in production).

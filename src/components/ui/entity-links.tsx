@@ -1,46 +1,21 @@
 import Link from "next/link";
-import type {
-  Player,
-  Team,
-  Organization,
-  DevelopmentContext,
-} from "@/types/baseball";
+import type { LevelId } from "@/services/players/levels";
+
+/**
+ * A player has one profile (one internal UUID) across every level. `level` only chooses which
+ * level the profile opens at; without it the profile opens at the player's most recent level.
+ */
+export const playerHref = (id: string, level?: LevelId) =>
+  `/players/${id}${level ? `?level=${level}` : ""}`;
+
 export const PlayerLink = ({
   player,
+  level,
 }: {
-  player: Pick<Player, "id" | "name">;
+  player: { id: string; name: string };
+  level?: LevelId;
 }) => (
-  <Link className="player-name" href={`/players/${player.id}`}>
+  <Link className="player-name" href={playerHref(player.id, level)}>
     {player.name}
-  </Link>
-);
-export const OrganizationLink = ({
-  organization,
-  full = false,
-}: {
-  organization: Organization;
-  full?: boolean;
-}) => (
-  <Link
-    href={`/organizations/${organization.id}`}
-    title={`${organization.name} — fictional organization`}
-  >
-    {full ? organization.name : organization.abbreviation}
-  </Link>
-);
-export const TeamLink = ({
-  team,
-  full = false,
-}: {
-  team: Team;
-  full?: boolean;
-}) => (
-  <Link href={`/teams/${team.id}`} title={team.name}>
-    {full ? team.name : team.abbreviation}
-  </Link>
-);
-export const ContextLink = ({ context }: { context: DevelopmentContext }) => (
-  <Link href={`/leagues/${context.slug}`} title={context.name}>
-    {context.shortName}
   </Link>
 );

@@ -1,59 +1,74 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { prospectRepository } from "@/services/prospects";
-import { getAflData } from "@/services/afl";
+import { getCompetitionData } from "@/services/competition";
+import { playerLevels, profileLevel } from "@/services/competition/model";
 import { playerProfile } from "@/services/afl/read-model";
+import { levelById } from "@/services/players/levels";
 import { playerAnalyticsView } from "@/analytics/views";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { AflPlayerProfileView } from "@/components/player/afl-profile";
-import { DemoPlayerProfile } from "@/components/player/demo-profile";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 /**
- * Real AFL players (internal UUIDs from the database) render the AFL profile. Fictional demo
- * fixture IDs, still linked from demo news/highlights/Top Prospects, render the demo profile.
+ * Players are addressed by internal UUID — one identity across every level. `?level=` chooses
+ * which level's statistics and Momentum the profile shows; by default the level of the player's
+ * most recent completed game. Anything else is not found.
  */
-async function resolve(id: string) {
-  if (await prospectRepository.findPlayer(id)) return { kind: "demo" as const };
+async function resolve(id: string, requested: string | undefined) {
   if (!z.uuid().safeParse(id).success) return { kind: "missing" as const };
-  const data = await getAflData();
+  const data = await getCompetitionData();
   if (data.status !== "ok")
     return { kind: "unavailable" as const, status: data.status };
-  const profile = playerProfile(data.snapshot, id);
-  return profile
-    ? { kind: "afl" as const, profile, snapshot: data.snapshot }
+  const presence = playerLevels(data.levels, id);
+  const level = profileLevel(presence, requested);
+  const ls = data.levels.find((l) => l.level === level);
+  const profile = ls ? playerProfile(ls.snapshot, id) : null;
+  return ls && profile
+    ? { kind: "ok" as const, profile, snapshot: ls.snapshot, level: ls.level, presence }
     : { kind: "missing" as const };
 }
 
+const levelParam = async (searchParams: SearchParams) => {
+  const v = (await searchParams).level;
+  return typeof v === "string" ? v : undefined;
+};
+
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const demo = await prospectRepository.findPlayer(id);
-  if (demo) return { title: `${demo.name} — Player profile` };
-  const r = await resolve(id);
-  if (r.kind === "afl")
-    return { title: `${r.profile.player.name} — AFL player profile` };
+  const r = await resolve(id, await levelParam(searchParams));
+  if (r.kind === "ok")
+    return {
+      title: r.profile.player.name,
+      description: `${r.profile.player.name} (${r.profile.row.position}) — ${levelById(r.level).label} statistics, recent games and Momentum.`,
+    };
   return { title: r.kind === "missing" ? "Player not found" : "Player" };
 }
 
 export default async function PlayerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const r = await resolve(id);
+  const r = await resolve(id, await levelParam(searchParams));
   switch (r.kind) {
-    case "demo":
-      return <DemoPlayerProfile id={id} />;
-    case "afl":
+    case "ok":
       return (
         <AflPlayerProfileView
           profile={r.profile}
           snapshot={r.snapshot}
+          level={r.level}
+          presence={r.presence}
           analytics={playerAnalyticsView(r.snapshot, id)}
         />
       );
@@ -61,7 +76,7 @@ export default async function PlayerPage({
       return (
         <>
           <Link href="/players" className="back-link">
-            ← Player directory
+            ← Players
           </Link>
           <AflDataNotice status={r.status} />
         </>
