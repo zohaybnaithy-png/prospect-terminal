@@ -194,15 +194,27 @@ export function foundationalRecords(
   });
 }
 
-/** True when a box score stat line shows the player never appeared (every participation count is 0). */
+/**
+ * True only when a box score stat line provably carries nothing: every participation count is 0
+ * AND every statistic the importer would store (battingStats/pitchingStats) is 0 or absent. A line
+ * with any nonzero stored value (e.g. a pinch runner's run or stolen base with 0 PA), or one that
+ * cannot be normalized, is never treated as empty.
+ */
 function noParticipation(kind: "battingGame" | "pitchingGame", stats: Record<string, unknown>) {
   const fields =
     kind === "battingGame"
       ? ["gamesPlayed", "plateAppearances", "atBats"]
       : ["gamesPlayed", "gamesPitched", "battersFaced", "outs", "numberOfPitches", "pitchesThrown"];
   const present = fields.filter((f) => stats[f] !== undefined);
-  return present.length > 0 && present.every((f) => stats[f] === 0) &&
-    (kind === "battingGame" || stats.inningsPitched === undefined || stats.inningsPitched === "0.0");
+  if (!present.length || !present.every((f) => stats[f] === 0)) return false;
+  if (kind === "pitchingGame" && stats.inningsPitched !== undefined && stats.inningsPitched !== "0.0") return false;
+  let stored: unknown;
+  try {
+    stored = kind === "battingGame" ? battingStats(stats) : pitchingStats(stats);
+  } catch {
+    return false;
+  }
+  return Object.values(stored as Record<string, unknown>).every((v) => v === undefined || v === 0);
 }
 
 /**
@@ -244,7 +256,8 @@ export function normalizeBoxscore(
       throw new Error("Boxscore teams disagree with schedule");
     const lines: IngestionRecord[] = [];
     let bad = false;
-    for (const side of [box.teams.home, box.teams.away])
+    for (const side of [box.teams.home, box.teams.away]) {
+      const other = side === box.teams.home ? box.teams.away : box.teams.home;
       for (const [key, raw] of Object.entries(side.players)) {
         const entry = z
           .object({
@@ -267,11 +280,19 @@ export function normalizeBoxscore(
           const stats = kind === "battingGame" ? row.stats.batting : row.stats.pitching;
           if (!stats || !Object.keys(stats).length) continue;
           // The API occasionally also lists a player under the OTHER club with an all-zero line
-          // (e.g. MiLB gamePk 817667). Skip such a line only when that side supplies its
-          // batters/pitchers list, the player is not in it, and the line records no
-          // participation; anything else is emitted and still goes through conflict quarantine.
+          // (e.g. MiLB gamePk 817667). Skip such a line only when this side's batters/pitchers
+          // list omits the player, the other side's list includes him (so a real line exists
+          // there), and the line stores nothing (noParticipation). Anything else is emitted and
+          // still goes through conflict quarantine.
           const listed = kind === "battingGame" ? side.batters : side.pitchers;
-          if (listed && !listed.includes(row.person.id) && noParticipation(kind, stats)) {
+          const otherListed = kind === "battingGame" ? other.batters : other.pitchers;
+          if (
+            listed &&
+            otherListed &&
+            !listed.includes(row.person.id) &&
+            otherListed.includes(row.person.id) &&
+            noParticipation(kind, stats)
+          ) {
             n.notices.push({
               recordKey: `${kind}:${gamePk}:${row.person.id}`,
               reason: "unlisted-empty-line",
@@ -299,6 +320,7 @@ export function normalizeBoxscore(
           }
         }
       }
+    }
     if (!bad) {
       for (const line of lines) n.add(line);
       n.add({

@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  assertVerifyingTls,
   checkWriteTarget,
   expectedMigrations,
   expectedTables,
@@ -478,6 +479,20 @@ describe("backfill orchestration", () => {
     assert.equal(accepted.levelReports[0].chunks.withQuarantine, 1);
   });
 
+  test("after a quarantine stop, a clean re-apply without the flag resumes at that chunk and completes", async () => {
+    const w = world();
+    w.fail((r) => r.from === "2026-04-08" && r.mode === "games", 1, "applied-with-quarantine");
+    const r = await runBackfill(config({ levels: ["aaa"] }), w.deps);
+    assert.equal(r.status, "stopped");
+    // The cause is fixed upstream/in the adapter: the same chunk now applies cleanly.
+    w.calls.length = 0;
+    const again = await runBackfill(config({ levels: ["aaa"] }), w.deps);
+    assert.equal(again.status, "complete");
+    assert.deepEqual(applies(w).map((c) => c.from), ["2026-04-08", "2026-04-15"]);
+    assert.equal(again.levelReports[0].chunks.withQuarantine, 0);
+    assert.equal(again.levelReports[0].chunks.skippedVerified, 1);
+  });
+
   test("a whole-capture quarantine always stops", async () => {
     const w = world();
     w.fail((r) => r.mode === "structure", 1, "quarantined");
@@ -543,4 +558,14 @@ describe("backfill orchestration", () => {
     assert.equal(r.status, "stopped");
     assert.equal(w.calls.length, 0);
   });
+});
+
+test("writer TLS: sslmode=require is accepted only on pg 8 (where it verifies the certificate)", () => {
+  assert.doesNotThrow(() => assertVerifyingTls("8.23.1", "require"));
+  assert.doesNotThrow(() => assertVerifyingTls("9.0.0", "verify-full"));
+  assert.throws(() => assertVerifyingTls("9.0.0", "require"), /verify-full/);
+  assert.throws(() => assertVerifyingTls("garbage", "require"), /verify-full/);
+  // The installed pg must still accept the test branch's sslmode=require.
+  const installed = JSON.parse(readFileSync(join(process.cwd(), "node_modules/pg/package.json"), "utf8")).version;
+  assert.doesNotThrow(() => assertVerifyingTls(installed, "require"));
 });

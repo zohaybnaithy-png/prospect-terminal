@@ -22,6 +22,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 import { MILB_LEVEL_IDS, type MilbLevelId } from "../../src/domain/levels";
 import {
+  assertVerifyingTls,
   checkWriteTarget,
   expectedMigrations,
   expectedTables,
@@ -54,6 +55,8 @@ const EVIDENCE_SNAPSHOT_KEY = milbSnapshotKey({
 });
 
 const ROOT = resolve(import.meta.dirname, "../..");
+/** Installed pg version (the writer's TLS semantics depend on its major; see assertVerifyingTls). */
+const PG_VERSION = (JSON.parse(readFileSync(join(ROOT, "node_modules/pg/package.json"), "utf8")) as { version: string }).version;
 const HELPER = join(ROOT, "scripts/ops/pg-readonly.mjs");
 
 // Nothing may fall back to the web app's URL or libpq environment defaults.
@@ -199,6 +202,7 @@ async function main() {
     return;
   }
   const target = checkWriteTarget(url, { endpoint: APPROVED_ENDPOINT, database: APPROVED_DATABASE });
+  assertVerifyingTls(PG_VERSION, target.sslmode);
   progress("backfill:start", {
     mode: args.apply ? "APPLY" : "plan (read-only)",
     endpoint: target.endpoint,

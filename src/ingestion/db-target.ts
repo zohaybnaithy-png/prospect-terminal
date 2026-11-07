@@ -130,3 +130,17 @@ export function schemaProblems(
   if (extra.length) problems.push(`unexpected tables: ${extra.join(", ")}`);
   return problems;
 }
+
+/**
+ * pg 8 treats sslmode=require as verify-full (certificate and host verified). pg 9 adopts libpq
+ * semantics where `require` no longer verifies the certificate. Refuse `require` on any other pg
+ * major so a dependency upgrade cannot silently weaken the writer's TLS; verify-full is always fine.
+ */
+export function assertVerifyingTls(pgVersion: string, sslmode: string) {
+  if (sslmode === "verify-full") return;
+  const major = Number(/^(\d+)\./.exec(pgVersion)?.[1]);
+  if (sslmode === "require" && major === 8) return;
+  throw new TargetGuardError(
+    `sslmode=${sslmode} does not verify the server certificate with pg ${pgVersion}; use sslmode=verify-full`,
+  );
+}
