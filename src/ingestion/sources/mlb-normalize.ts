@@ -194,6 +194,17 @@ export function foundationalRecords(
   });
 }
 
+/** True when a box score stat line shows the player never appeared (every participation count is 0). */
+function noParticipation(kind: "battingGame" | "pitchingGame", stats: Record<string, unknown>) {
+  const fields =
+    kind === "battingGame"
+      ? ["gamesPlayed", "plateAppearances", "atBats"]
+      : ["gamesPlayed", "gamesPitched", "battersFaced", "outs", "numberOfPitches", "pitchesThrown"];
+  const present = fields.filter((f) => stats[f] !== undefined);
+  return present.length > 0 && present.every((f) => stats[f] === 0) &&
+    (kind === "battingGame" || stats.inningsPitched === undefined || stats.inningsPitched === "0.0");
+}
+
 /**
  * Normalizes one completed-game boxscore into batting/pitching lines plus a gameLineSet.
  * Shared by the AFL and MiLB adapters. Any malformed player or statistic holds the WHOLE
@@ -214,10 +225,14 @@ export function normalizeBoxscore(
           home: z.object({
             team: z.object({ id: apiId }),
             players: z.record(z.string(), z.unknown()),
+            batters: z.array(apiId).optional(),
+            pitchers: z.array(apiId).optional(),
           }),
           away: z.object({
             team: z.object({ id: apiId }),
             players: z.record(z.string(), z.unknown()),
+            batters: z.array(apiId).optional(),
+            pitchers: z.array(apiId).optional(),
           }),
         }),
       })
@@ -251,6 +266,19 @@ export function normalizeBoxscore(
         for (const kind of ["battingGame", "pitchingGame"] as const) {
           const stats = kind === "battingGame" ? row.stats.batting : row.stats.pitching;
           if (!stats || !Object.keys(stats).length) continue;
+          // The API occasionally also lists a player under the OTHER club with an all-zero line
+          // (e.g. MiLB gamePk 817667). Skip such a line only when that side supplies its
+          // batters/pitchers list, the player is not in it, and the line records no
+          // participation; anything else is emitted and still goes through conflict quarantine.
+          const listed = kind === "battingGame" ? side.batters : side.pitchers;
+          if (listed && !listed.includes(row.person.id) && noParticipation(kind, stats)) {
+            n.notices.push({
+              recordKey: `${kind}:${gamePk}:${row.person.id}`,
+              reason: "unlisted-empty-line",
+              message: `Empty ${kind === "battingGame" ? "batting" : "pitching"} entry for a player not in team ${side.team.id}'s ${kind === "battingGame" ? "batters" : "pitchers"} list; not stored`,
+            });
+            continue;
+          }
           try {
             lines.push(
               recordSchema.parse({
@@ -335,10 +363,17 @@ export function projectBoxscore(body: unknown): unknown {
       }),
     );
   const t = parsed.data.teams;
+  // The batters/pitchers lists are kept: normalizeBoxscore uses them to recognise empty entries
+  // listed under the wrong club.
+  const lists = (s: Record<string, unknown>) => ({
+    ...(Array.isArray(s.batters) ? { batters: s.batters } : {}),
+    ...(Array.isArray(s.pitchers) ? { pitchers: s.pitchers } : {}),
+  });
+  const raw = body as { teams: { home: Record<string, unknown>; away: Record<string, unknown> } };
   return {
     teams: {
-      home: { team: { id: t.home.team.id }, players: players(t.home.players) },
-      away: { team: { id: t.away.team.id }, players: players(t.away.players) },
+      home: { team: { id: t.home.team.id }, players: players(t.home.players), ...lists(raw.teams.home) },
+      away: { team: { id: t.away.team.id }, players: players(t.away.players), ...lists(raw.teams.away) },
     },
   };
 }

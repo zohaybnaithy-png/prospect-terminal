@@ -321,14 +321,23 @@ export class PostgresIngestionSink implements IngestionSink {
       progress("preview:compare", { records: batch.records.length });
       const states = new Map(prior.map((r) => [r.recordKey, r]));
       const counts = { insert: 0, update: 0, unchanged: 0 };
+      // Inserts/updates per record kind, so callers can tell line changes from game-row changes.
+      const byKind: Record<string, { insert: number; update: number }> = {};
+      const bump = (kind: string, op: "insert" | "update") =>
+        ((byKind[kind] ??= { insert: 0, update: 0 })[op] += 1);
       for (const r of batch.records) {
         const key =
           recordKey(r) +
           (r.kind === "rosterObservation" ? `:${snapshot.observedAt}` : "");
         const old = states.get(key);
-        if (!old) counts.insert++;
-        else if (old.contentHash === fingerprint(r)) counts.unchanged++;
-        else counts.update++;
+        if (!old) {
+          counts.insert++;
+          bump(r.kind, "insert");
+        } else if (old.contentHash === fingerprint(r)) counts.unchanged++;
+        else {
+          counts.update++;
+          bump(r.kind, "update");
+        }
       }
       progress("preview:done", counts);
       return {
@@ -343,7 +352,7 @@ export class PostgresIngestionSink implements IngestionSink {
           : "dry-run",
         records: batch.records.length,
         issues: batch.issues.length,
-        databaseComparison: counts,
+        databaseComparison: { ...counts, byKind },
         ...(batch.issues.length
           ? { diagnostics: batch.issues.slice(0, 100) }
           : {}),

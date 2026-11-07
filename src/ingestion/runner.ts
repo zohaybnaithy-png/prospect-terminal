@@ -26,7 +26,13 @@ export interface IngestionReport {
   runId?: string;
   diagnostics?: IngestionIssue[];
   operations?: Record<string, number>;
-  databaseComparison?: { insert: number; update: number; unchanged: number };
+  databaseComparison?: {
+    insert: number;
+    update: number;
+    unchanged: number;
+    /** Preview only: inserts/updates per record kind (unchanged records are not listed). */
+    byKind?: Record<string, { insert: number; update: number }>;
+  };
 }
 export interface IngestionSink {
   preview?(

@@ -14,8 +14,14 @@ database, at increasing scale.
 
 - **Secrets.** Connection strings live only in your shell environment. Never echo them, paste them
   into tickets or chat, or commit them. Every command below references `"$INGESTION_DATABASE_URL"`
-  without printing it. CLI errors are redacted; `psql` errors may name the host, so keep its
-  output private.
+  without printing it. CLI errors are redacted; database errors may name the host, so keep
+  their output private.
+- **Read-only queries without psql.** `scripts/ops/pg-readonly.mjs` runs the read-only checks
+  with the project's `pg` package (no `psql`/Homebrew needed). It refuses to connect unless the
+  host matches `PT_EXPECTED_ENDPOINT` (set it first, e.g. `export PT_EXPECTED_ENDPOINT=ep-spring-cake-ak5jqlqp`
+  for the test branch), `sslmode` is `require`/`verify-full`/`verify-ca` and the TLS certificate
+  verifies; it accepts only `SELECT`/`WITH` and runs inside a `READ ONLY` transaction that is
+  rolled back. `node scripts/ops/pg-readonly.mjs selftest` checks its guards offline.
 - **Two URLs.** `INGESTION_DATABASE_URL` is the writer, used by `ingest:*` and migrations.
   `DATABASE_URL` is the web app's reader. For production, give the app a Neon role that can only
   `SELECT`. The app's queries already run in `READ ONLY` transactions; a read-only role makes
@@ -36,7 +42,9 @@ mkdir -p ~/pt-runs
 `scripts/ops/milb-week-test.sh` runs Steps 1–4 for the Triple-A week (Sep 15–21) against the test
 branch. It stops on the first failed check.
 
-- **Endpoint gate:** the endpoint must be `ep-lucky-sea-akc835g5` and the connection must use SSL.
+- **Endpoint gate:** the endpoint must be `ep-spring-cake-ak5jqlqp` (the replacement test branch; the
+  old `ep-lucky-sea-akc835g5` is retired) and the connection must use SSL. The script also requires
+  the 4 migrations and the 26 tables they create, and names any missing table.
 - **Before any write:** it checks migrations, takes a baseline, and checks the saved dry run.
   `scripts/ops/milb-notices.ts` then re-reads the week from the Stats API without any database and
   lists every notice reason; unknown kinds stop the script.
@@ -67,11 +75,11 @@ through the site's own read path: one directory row per player and correct profi
 ## Step 1 — verify the target database and schema (read-only)
 
 ```bash
-psql "$INGESTION_DATABASE_URL" -X -A -t -c "select current_database(), current_user, now()"
+node scripts/ops/pg-readonly.mjs query "select current_database(), current_user, now()"
 ```
 
 ```bash
-psql "$INGESTION_DATABASE_URL" -X -A -t -c "select count(*) from drizzle.__drizzle_migrations"
+node scripts/ops/pg-readonly.mjs query "select count(*) from drizzle.__drizzle_migrations"
 ```
 
 - **Database name:** confirm it is the intended Neon branch database, not production, while you
@@ -89,7 +97,7 @@ psql "$INGESTION_DATABASE_URL" -X -A -t -c "select count(*) from drizzle.__drizz
   in `ROLLBACK`).
 
   ```bash
-  psql "$INGESTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/sql/milb-integrity-checks.sql > ~/pt-runs/00-baseline.txt
+  node scripts/ops/pg-readonly.mjs file scripts/sql/milb-integrity-checks.sql > ~/pt-runs/00-baseline.txt
   ```
 
   The expected AFL baseline is unchanged: the live AFL snapshot has 2,680 records and 0 issues.
@@ -119,7 +127,7 @@ psql "$INGESTION_DATABASE_URL" -X -A -t -c "select count(*) from drizzle.__drizz
 ## Step 3 — check integrity, counts and player statistics
 
 ```bash
-psql "$INGESTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/sql/milb-integrity-checks.sql > ~/pt-runs/03-after-week.txt
+node scripts/ops/pg-readonly.mjs file scripts/sql/milb-integrity-checks.sql > ~/pt-runs/03-after-week.txt
 ```
 
 ```bash
@@ -153,7 +161,7 @@ npm run -s ingest:milb -- --season=2026 --level=aaa --from=2026-09-15 --to=2026-
 ```
 
 ```bash
-psql "$INGESTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/sql/milb-integrity-checks.sql > ~/pt-runs/04-after-replay.txt
+node scripts/ops/pg-readonly.mjs file scripts/sql/milb-integrity-checks.sql > ~/pt-runs/04-after-replay.txt
 ```
 
 ```bash
@@ -170,43 +178,34 @@ diff ~/pt-runs/03-after-week.txt ~/pt-runs/04-after-replay.txt
   capture time, so it adds one observation per rostered player. That is expected, not
   duplication.
 
-## Step 5 — full 2026 backfill in resumable chunks
+## Step 5 — full 2026 backfill (guarded runner)
 
-Go level by level, so each step is reviewable and a failure is contained. The default range is
-Mar 1 – Oct 31, in 7-day chunks with one transaction each.
-
-```bash
-npm run -s ingest:milb -- --season=2026 --level=aaa --apply > ~/pt-runs/10-aaa.json 2> ~/pt-runs/10-aaa.log
-```
-
-```bash
-npm run -s ingest:milb -- --season=2026 --level=aa --apply > ~/pt-runs/11-aa.json 2> ~/pt-runs/11-aa.log
-```
+Use `npm run backfill:milb`. Details, gates, checks and outputs are in
+[MILB-BACKFILL.md](./MILB-BACKFILL.md). It processes one level at a time in 7-day chunks over the
+real schedule coverage, which it reads from the Stats API. After every chunk and level it runs
+read-only integrity checks, re-previews sample chunks read-only to prove idempotency, and checks
+that the AFL data and the Triple-A week are unchanged. Restarting skips only chunks that the
+database verifies as complete.
 
 ```bash
-npm run -s ingest:milb -- --season=2026 --level=high-a --apply > ~/pt-runs/12-high-a.json 2> ~/pt-runs/12-high-a.log
+# 1. Read-only plan against the test branch (no writes anywhere):
+npm run -s backfill:milb -- --season=2026 > ~/pt-runs/backfill-plan.json 2> ~/pt-runs/backfill-plan.log
+# 2. Apply one level at a time (WRITES; explicit approval required):
+npm run -s backfill:milb -- --season=2026 --level=aaa --apply --confirm=ep-spring-cake-ak5jqlqp > ~/pt-runs/backfill-aaa.json 2> ~/pt-runs/backfill-aaa.log
+npm run -s backfill:milb -- --season=2026 --level=aa --apply --confirm=ep-spring-cake-ak5jqlqp > ~/pt-runs/backfill-aa.json 2> ~/pt-runs/backfill-aa.log
+npm run -s backfill:milb -- --season=2026 --level=high-a --apply --confirm=ep-spring-cake-ak5jqlqp > ~/pt-runs/backfill-high-a.json 2> ~/pt-runs/backfill-high-a.log
+npm run -s backfill:milb -- --season=2026 --level=single-a --apply --confirm=ep-spring-cake-ak5jqlqp > ~/pt-runs/backfill-single-a.json 2> ~/pt-runs/backfill-single-a.log
+# 3. Read-only analytics readiness for every level:
+npm run -s check:milb:readiness > ~/pt-runs/readiness.json
 ```
 
-```bash
-npm run -s ingest:milb -- --season=2026 --level=single-a --apply > ~/pt-runs/13-single-a.json 2> ~/pt-runs/13-single-a.log
-```
-
-- **After each level:**
-  - Rerun the integrity script and diff it against the previous output.
-  - Check that `status` is `ok` or `ok-with-quarantine`. Review every quarantine in
-    `ingestion_issues`.
-  - Re-check Step 3's spot checks for that level.
-- **If a chunk fails:** the summary's `resumeFrom` gives the first date of the failed chunk.
-  Resume with the same level and that date. Finished chunks are never redone:
-
-  ```bash
-  npm run ingest:milb -- --season=2026 --level=aa --from=<resumeFrom> --apply
-  ```
-
-- **Expected volume:**
-  - About 9k requests and about 15 minutes for all four levels at the default concurrency
-    of 4. A single level takes roughly a quarter of that.
-  - Each chunk takes about 30 database round trips.
+- **After each level:** check `status` in the JSON (`complete`, or `complete-with-review` with the
+  items under `levelReports[].review`), and diff `integrity-<level>.txt` against the previous
+  report in `~/pt-runs/milb-backfill-2026/`.
+- **If it stops:** `stop.reason`, `stop.level` and `stop.from` say why and where. Fix the cause and
+  re-run the same command.
+- **Expected volume** (from the real 2026 schedule): 96 chunks, about 8.3k games and roughly 10k
+  Stats API requests. That is about 40–60 minutes for all four levels.
 - **Ongoing updates** (no scheduler is installed; run it manually or wire a cron later):
 
   ```bash

@@ -534,3 +534,45 @@ describe("capture identity and request volume", () => {
     assert.equal(find(batch, "game", String(G.aaLate))?.status, "final");
   });
 });
+
+test("box score: an unlisted all-zero entry under the other club is skipped with a notice; real conflicts still quarantine", async () => {
+  const { MlbNormalizer, normalizeBoxscore: normalizeRaw, projectBoxscore } = await import("../src/ingestion/sources/mlb-normalize");
+  // Through the same projection the MiLB adapter applies to every fetched box score.
+  const normalizeBoxscore = (n: InstanceType<typeof MlbNormalizer>, pk: number, body: unknown, s: { home: number; away: number }) =>
+    normalizeRaw(n, pk, projectBoxscore(JSON.parse(JSON.stringify(body))), s);
+  const person = (id: number) => ({ id, fullName: `P ${id}`, primaryPosition: { abbreviation: "P" } });
+  const line = (bf: number, ip: string, extra: Record<string, number> = {}) => ({
+    gamesPlayed: bf ? 1 : 0, gamesPitched: bf ? 1 : 0, battersFaced: bf, outs: Number(ip.split(".")[0]) * 3 + Number(ip.split(".")[1]),
+    inningsPitched: ip, numberOfPitches: bf * 4, hits: bf ? 1 : 0, earnedRuns: 0, runs: 0, baseOnBalls: 0, strikeOuts: 0, homeRuns: 0, ...extra,
+  });
+  const box = (homeExtra: Record<string, unknown>) => ({
+    teams: {
+      away: { team: { id: 2 }, batters: [], pitchers: [20], players: { ID20: { person: person(20), stats: { batting: {}, pitching: line(7, "1.0") } } } },
+      home: {
+        team: { id: 1 }, batters: [], pitchers: [10],
+        players: { ID10: { person: person(10), stats: { batting: {}, pitching: line(30, "9.0") } }, ID20: { person: person(20), stats: { batting: {}, pitching: homeExtra } } },
+      },
+    },
+  });
+  // Shape of gamePk 817667: zero line, not in the home pitchers list (inherited runners are not participation).
+  const ok = new MlbNormalizer();
+  normalizeBoxscore(ok, 817667, box(line(0, "0.0", { inheritedRunners: 2 })), { home: 1, away: 2 });
+  assert.deepEqual(ok.issues, []);
+  assert.deepEqual(ok.notices.map((x) => [x.reason, x.recordKey]), [["unlisted-empty-line", "pitchingGame:817667:20"]]);
+  const pitching = [...ok.records.values()].filter((r) => r.kind === "pitchingGame");
+  assert.deepEqual(pitching.map((r) => ("team" in r ? `${r.player}@${r.team}` : "")).sort(), ["10@1", "20@2"]);
+  const set = [...ok.records.values()].find((r) => r.kind === "gameLineSet");
+  assert.ok(set && "pitchingPlayers" in set && set.pitchingPlayers.join() === "10,20");
+  // An unlisted entry WITH participation is not skipped: the duplicate still quarantines.
+  const bad = new MlbNormalizer();
+  normalizeBoxscore(bad, 817667, box(line(3, "1.0")), { home: 1, away: 2 });
+  assert.deepEqual(bad.notices, []);
+  assert.ok(bad.issues.some((i) => i.recordKey === "pitchingGame:817667:20" && /Conflicting/.test(i.message)));
+  // Without the lists (older payload shape) nothing is skipped either.
+  const noLists = box(line(0, "0.0"));
+  for (const side of [noLists.teams.home, noLists.teams.away] as Record<string, unknown>[]) delete side.pitchers;
+  const legacy = new MlbNormalizer();
+  normalizeBoxscore(legacy, 817667, noLists, { home: 1, away: 2 });
+  assert.deepEqual(legacy.notices, []);
+  assert.ok(legacy.issues.some((i) => /Conflicting/.test(i.message)));
+});

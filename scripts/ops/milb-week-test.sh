@@ -12,12 +12,15 @@
 set -euo pipefail
 set +x
 
-EXPECTED_ENDPOINT="ep-lucky-sea-akc835g5"
+# Replacement Neon test branch (the old test endpoint ep-lucky-sea-akc835g5 no longer exists).
+# Exact match only: any other endpoint, including production, stops the script before any query.
+EXPECTED_ENDPOINT="ep-spring-cake-ak5jqlqp"
 SEASON=2026
 LEVEL=aaa
 FROM=2026-09-15
 TO=2026-09-21
 EXPECTED_MIGRATIONS=4
+EXPECTED_TABLES=26
 # Informational notice kinds that are harmless for an affiliated level (docs/MILB-INGESTION.md).
 HARMLESS_NOTICES="reconciled-reschedule outside-scope discovery-fallback reused-boxscores"
 
@@ -37,11 +40,17 @@ jv() {
     console.log(typeof v === "string" ? v : JSON.stringify(v));
   ' "$1" "$2"
 }
-q() { psql "$INGESTION_DATABASE_URL" -X -A -t -q -v ON_ERROR_STOP=1 -c "$1"; }
+# Database reads go through scripts/ops/pg-readonly.mjs (the project's `pg` package, no psql): it
+# re-checks the endpoint and sslmode, requires a verified TLS socket, allows only SELECT/WITH and
+# runs everything in a READ ONLY transaction that is rolled back.
+export PT_EXPECTED_ENDPOINT="$EXPECTED_ENDPOINT"
+q() { node scripts/ops/pg-readonly.mjs query "$1"; }
+qfile() { node scripts/ops/pg-readonly.mjs file "$1"; }
 
-command -v psql >/dev/null || stop "psql not found (brew install libpq && brew link --force libpq)"
 command -v node >/dev/null || stop "node not found"
 [ -f package.json ] && grep -q '"ingest:milb"' package.json || stop "run from the prospect-terminal checkout"
+[ -f node_modules/pg/package.json ] || stop "node_modules/pg missing (run npm install)"
+node scripts/ops/pg-readonly.mjs selftest >&2 || stop "read-only database helper failed its self-test"
 
 step "1. Credential"
 if [ -z "${INGESTION_DATABASE_URL:-}" ]; then
@@ -55,20 +64,33 @@ unset DATABASE_URL
 echo "INGESTION_DATABASE_URL: set (not shown)" >&2
 
 step "2. Endpoint check"
-ENDPOINT=$(node -e '
-  const u = new URL(process.env.INGESTION_DATABASE_URL);
-  console.log(u.hostname.split(".")[0].replace(/-pooler$/, ""));')
-SSLMODE=$(node -e 'console.log(new URL(process.env.INGESTION_DATABASE_URL).searchParams.get("sslmode") ?? "")')
+# A malformed URL must not reach Node's default error output, which would echo the whole string.
+url_part() { node -e '
+  let u; try { u = new URL(process.env.INGESTION_DATABASE_URL); } catch { process.exit(3); }
+  console.log(process.argv[1] === "endpoint" ? u.hostname.split(".")[0].replace(/-pooler$/, "") : u.searchParams.get("sslmode") ?? "");
+' "$1" 2>/dev/null; }
+ENDPOINT=$(url_part endpoint) || stop "connection string is not a valid URL (not shown)"
+SSLMODE=$(url_part sslmode) || stop "connection string is not a valid URL (not shown)"
 echo "endpoint: $ENDPOINT  sslmode: ${SSLMODE:-<none>}" >&2
 [ "$ENDPOINT" = "$EXPECTED_ENDPOINT" ] || stop "endpoint $ENDPOINT is not the test branch $EXPECTED_ENDPOINT"
 case "$SSLMODE" in require | verify-full | verify-ca) ;; *) stop "connection string must set sslmode=require" ;; esac
 
 step "3. Read-only database and migration checks"
-q "select current_database(), current_user" >&2
-MIGRATIONS=$(q "select count(*) from drizzle.__drizzle_migrations")
+q "select current_database(), current_user" >&2 || stop "read-only connection check failed"
+MIGRATIONS=$(q "select count(*) from drizzle.__drizzle_migrations") || stop "migration count failed"
 echo "applied migrations: $MIGRATIONS" >&2
-[ "$MIGRATIONS" = "$EXPECTED_MIGRATIONS" ] || stop "expected $EXPECTED_MIGRATIONS migrations, found $MIGRATIONS"
-psql "$INGESTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/sql/milb-integrity-checks.sql > "$OUT/10-before-apply.txt"
+[ "$MIGRATIONS" = "$EXPECTED_MIGRATIONS" ] || stop "expected $EXPECTED_MIGRATIONS migrations, found $MIGRATIONS — apply them to the test branch with: DATABASE_URL=\"\$INGESTION_DATABASE_URL\" npm run db:migrate"
+# The expected tables are the ones the checked-in migrations create.
+EXPECTED_TABLE_NAMES=$(grep -ho 'CREATE TABLE "[a-z_]*"' drizzle/*.sql | sed 's/CREATE TABLE "\(.*\)"/\1/' | sort -u)
+[ "$(printf '%s\n' "$EXPECTED_TABLE_NAMES" | grep -c .)" = "$EXPECTED_TABLES" ] || stop "checked-in migrations do not define $EXPECTED_TABLES tables"
+TABLE_VALUES=$(printf "('%s')," $EXPECTED_TABLE_NAMES); TABLE_VALUES=${TABLE_VALUES%,}
+TABLES=$(q "select count(*) from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'") || stop "table count failed"
+MISSING_TABLES=$(q "select coalesce(string_agg(v.t, ', ' order by v.t), '') from (values $TABLE_VALUES) as v(t)
+  where not exists (select 1 from information_schema.tables x where x.table_schema = 'public' and x.table_type = 'BASE TABLE' and x.table_name = v.t)") || stop "table check failed"
+echo "public tables: $TABLES" >&2
+[ -z "$MISSING_TABLES" ] || stop "missing tables: $MISSING_TABLES"
+[ "$TABLES" = "$EXPECTED_TABLES" ] || stop "expected $EXPECTED_TABLES public tables, found $TABLES (all expected tables exist; extra tables need review)"
+qfile scripts/sql/milb-integrity-checks.sql > "$OUT/10-before-apply.txt" || stop "baseline integrity checks failed"
 echo "baseline: $OUT/10-before-apply.txt" >&2
 
 step "4. Saved dry run"
@@ -103,16 +125,16 @@ COUNTS_SQL="select json_build_object(
   'batting', (select count(*) from player_batting_games), 'pitching', (select count(*) from player_pitching_games),
   'identities', (select count(*) from source_identities), 'rosterObs', (select count(*) from source_roster_observations),
   'issues', (select count(*) from ingestion_issues))"
-q "$COUNTS_SQL" > "$OUT/06-counts-before.json"
+q "$COUNTS_SQL" > "$OUT/06-counts-before.json" || stop "row counts before apply failed"
 npm run -s ingest:milb -- --season=$SEASON --level=$LEVEL --from=$FROM --to=$TO --apply \
   > "$OUT/02-aaa-week-apply.json" 2> "$OUT/02-aaa-week-apply.log" || stop "apply failed (see $OUT/02-aaa-week-apply.log)"
 echo "$(jv "$OUT/02-aaa-week-apply.json" '({status: j.status, apply: j.apply, totals: j.totals, resumeFrom: j.resumeFrom ?? null})')" >&2
 [ "$(jv "$OUT/02-aaa-week-apply.json" 'j.status')" = "ok" ] || stop "apply status is not ok (no replay run)"
 [ "$(jv "$OUT/02-aaa-week-apply.json" 'j.resumeFrom ?? ""')" = "" ] || stop "apply left a resumeFrom"
-q "$COUNTS_SQL" > "$OUT/06-counts-after-apply.json"
+q "$COUNTS_SQL" > "$OUT/06-counts-after-apply.json" || stop "row counts after apply failed"
 
 step "7. Integrity and statistics checks"
-psql "$INGESTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/sql/milb-integrity-checks.sql > "$OUT/03-after-apply.txt"
+qfile scripts/sql/milb-integrity-checks.sql > "$OUT/03-after-apply.txt" || stop "post-apply integrity checks failed"
 AAA_LEAGUES="select lv.league_id from source_identities si join levels lv on lv.id = si.internal_id
   where si.provider = 'mlb-stats-api' and si.entity_kind = 'level' and si.external_id like 'milb:11:%'"
 WEEK="g.league_id in ($AAA_LEAGUES) and coalesce(g.official_date, g.starts_at::date) between '$FROM' and '$TO'"
@@ -138,7 +160,7 @@ CHECKS_SQL="select json_build_object(
   'runsAllowedVsScoreMismatch', (select count(*) from games g where $WEEK and g.status = 'final' and g.boxscore_complete and (
       (select sum(p.runs) from player_pitching_games p where p.game_id = g.id and p.team_id = g.home_team_id) <> g.away_score
    or (select sum(p.runs) from player_pitching_games p where p.game_id = g.id and p.team_id = g.away_team_id) <> g.home_score)))"
-q "$CHECKS_SQL" > "$OUT/07-checks.json"
+q "$CHECKS_SQL" > "$OUT/07-checks.json" || stop "statistics checks failed"
 jv "$OUT/07-checks.json" 'j' >&2
 for key in dupIdentities dupBatting dupPitching completeMissingSide lineTeamNotInGame implausibleLines; do
   [ "$(jv "$OUT/07-checks.json" "j.$key")" = "0" ] || stop "integrity check $key failed"
@@ -147,13 +169,13 @@ done
 # The week's three busiest Triple-A hitters, for a manual MiLB.com spot check (names only, no IDs).
 q "select p.name || ': ' || count(*) || ' G, ' || sum(b.plate_appearances) || ' PA, ' || sum(b.hits) || ' H, ' || sum(b.home_runs) || ' HR'
    from player_batting_games b join games g on g.id = b.game_id join players p on p.id = b.player_id
-   where $WEEK group by p.name order by sum(b.plate_appearances) desc, p.name limit 3" > "$OUT/07-spot-check.txt"
+   where $WEEK group by p.name order by sum(b.plate_appearances) desc, p.name limit 3" > "$OUT/07-spot-check.txt" || stop "spot check query failed"
 cat "$OUT/07-spot-check.txt" >&2
 
 step "8. Idempotency: games-only replay of the same week"
 npm run -s ingest:milb -- --season=$SEASON --level=$LEVEL --from=$FROM --to=$TO --games-only --apply \
   > "$OUT/04-aaa-week-replay.json" 2> "$OUT/04-aaa-week-replay.log" || stop "replay failed (see $OUT/04-aaa-week-replay.log)"
-q "$COUNTS_SQL" > "$OUT/06-counts-after-replay.json"
+q "$COUNTS_SQL" > "$OUT/06-counts-after-replay.json" || stop "row counts after replay failed"
 echo "$(jv "$OUT/04-aaa-week-replay.json" '({status: j.status, totals: j.totals})')" >&2
 [ "$(jv "$OUT/04-aaa-week-replay.json" 'j.status')" = "ok" ] || stop "replay status is not ok"
 [ "$(jv "$OUT/04-aaa-week-replay.json" 'j.totals.changed')" = "0" ] || stop "replay changed rows (not idempotent)"

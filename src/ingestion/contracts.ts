@@ -209,7 +209,8 @@ export interface IngestionNotice {
     | "outside-scope"
     | "reused-boxscores"
     | "unresolved-affiliation"
-    | "discovery-fallback";
+    | "discovery-fallback"
+    | "unlisted-empty-line";
   message: string;
 }
 export interface NormalizedBatch {

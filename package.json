@@ -16,6 +16,8 @@
     "ingest:afl": "node --import tsx scripts/ingest-afl.ts",
     "ingest:probe:afl": "node --use-env-proxy --import tsx scripts/probe-afl-source.ts",
     "ingest:milb": "node --import tsx scripts/ingest-milb.ts",
+    "backfill:milb": "node --import tsx scripts/ops/milb-backfill.ts",
+    "check:milb:readiness": "node --import tsx scripts/ops/milb-readiness.ts",
     "analytics:compare": "node --import tsx scripts/analytics-compare.ts",
     "test:ingestion:db": "node --import tsx --test scripts/ingestion-db.integration.ts",
     "test:mlb:db": "node --import tsx --test scripts/mlb-db.integration.ts",
