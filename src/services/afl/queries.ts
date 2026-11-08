@@ -9,7 +9,9 @@ import {
   min,
   or,
   sql,
+  type SQL,
 } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as core from "@/db/schema";
 import * as meta from "@/db/ingestion-schema";
@@ -21,6 +23,7 @@ import {
   type MilbLevelId,
 } from "@/domain/levels";
 import type { AflSnapshot } from "./types";
+import { decodeColumnarLines } from "./columnar";
 
 type Database = NodePgDatabase<typeof core>;
 type ReadTx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -227,50 +230,36 @@ async function loadSeason(
     .groupBy(r.playerId, r.teamId, r.organizationId, r.rosterStatus);
 
   const b = core.playerBattingGames;
-  const batting = await tx
-    .select({
-      playerId: b.playerId,
-      gameId: b.gameId,
-      teamId: b.teamId,
-      plateAppearances: b.plateAppearances,
-      atBats: b.atBats,
-      hits: b.hits,
-      doubles: b.doubles,
-      triples: b.triples,
-      homeRuns: b.homeRuns,
-      walks: b.walks,
-      strikeouts: b.strikeouts,
-      hitByPitch: b.hitByPitch,
-      sacrificeFlies: b.sacrificeFlies,
-      stolenBases: b.stolenBases,
-      runs: b.runs,
-      rbi: b.rbi,
-      caughtStealing: b.caughtStealing,
-    })
-    .from(b)
-    .innerJoin(g, eq(g.id, b.gameId))
-    .where(inSeason);
+  const batting = await columnarLines(tx, b, inSeason, {
+    plateAppearances: b.plateAppearances,
+    atBats: b.atBats,
+    hits: b.hits,
+    doubles: b.doubles,
+    triples: b.triples,
+    homeRuns: b.homeRuns,
+    walks: b.walks,
+    strikeouts: b.strikeouts,
+    hitByPitch: b.hitByPitch,
+    sacrificeFlies: b.sacrificeFlies,
+    stolenBases: b.stolenBases,
+    runs: b.runs,
+    rbi: b.rbi,
+    caughtStealing: b.caughtStealing,
+  }) as AflSnapshot["batting"];
 
   const p = core.playerPitchingGames;
-  const pitching = await tx
-    .select({
-      playerId: p.playerId,
-      gameId: p.gameId,
-      teamId: p.teamId,
-      outsRecorded: p.outsRecorded,
-      battersFaced: p.battersFaced,
-      hitsAllowed: p.hitsAllowed,
-      earnedRuns: p.earnedRuns,
-      walks: p.walks,
-      strikeouts: p.strikeouts,
-      homeRunsAllowed: p.homeRunsAllowed,
-      runs: p.runs,
-      hitBatters: p.hitBatters,
-      pitches: p.pitches,
-    })
-    .from(p)
-    .innerJoin(g, eq(g.id, p.gameId))
-    .where(inSeason);
+  const pitching = await columnarLines(tx, p, inSeason, {
+    outsRecorded: p.outsRecorded,
+    battersFaced: p.battersFaced,
+    hitsAllowed: p.hitsAllowed,
+    earnedRuns: p.earnedRuns,
+    walks: p.walks,
+    strikeouts: p.strikeouts,
+    homeRunsAllowed: p.homeRunsAllowed,
+    runs: p.runs,
+    hitBatters: p.hitBatters,
+    pitches: p.pitches,
+  }) as AflSnapshot["pitching"];
 
   const teamIds = new Set<string>();
   for (const game of games) teamIds.add(game.homeTeamId).add(game.awayTeamId);
@@ -362,4 +351,81 @@ async function loadSeason(
     pitching,
     lastIngestedAt: lastRun?.completedAt ? iso(lastRun.completedAt) : null,
   };
+}
+
+type LineTable = typeof core.playerBattingGames | typeof core.playerPitchingGames;
+
+/**
+ * The scope's per-game lines of one table in the compact columnar form decoded by
+ * decodeColumnarLines (src/services/afl/columnar.ts): one result row of parallel arrays instead
+ * of one row per line, which cuts the transfer for a MiLB level by roughly two thirds. Same
+ * inclusion rule as the row query it replaces (lines joined to the scope's games). Line order is
+ * not meaningful (the row query had no ORDER BY either).
+ */
+async function columnarLines<K extends string>(
+  tx: ReadTx,
+  table: LineTable,
+  inSeason: SQL | undefined,
+  columns: Record<K, AnyPgColumn>,
+) {
+  const g = core.games;
+  const keys = Object.keys(columns) as K[];
+  const stat = (k: K) => sql.identifier(`s_${k}`);
+  // Small dictionaries (distinct ids, a few thousand rows) are numbered and hash-joined back, so
+  // no sort ever runs over the wide line rows. All arrays come from ONE aggregate pass without
+  // ORDER BY: PostgreSQL feeds every input row to every aggregate of that pass in the same order,
+  // so the arrays are aligned by construction (an ordered aggregate would sort per column).
+  const { rows } = await tx.execute<Record<string, unknown>>(sql`
+    with x as materialized (
+      select ${table.playerId} as pid, ${table.gameId} as gid, ${table.teamId} as tid,
+        ${sql.join(keys.map((k) => sql`${columns[k]} as ${stat(k)}`), sql`, `)}
+      from ${table} inner join ${g} on ${g.id} = ${table.gameId}
+      where ${inSeason}
+    ),
+    dp as (select pid, (row_number() over (order by pid))::int - 1 as i from (select distinct pid from x) d),
+    dg as (select gid, (row_number() over (order by gid))::int - 1 as i from (select distinct gid from x) d),
+    dt as (select tid, (row_number() over (order by tid))::int - 1 as i from (select distinct tid from x) d),
+    lines as (
+      select dp.i as pi, dg.i as gi, dt.i as ti, x.*
+      from x join dp using (pid) join dg using (gid) join dt using (tid)
+    )
+    select
+      coalesce((select array_agg(pid::text order by i) from dp), '{}') as players,
+      coalesce((select array_agg(gid::text order by i) from dg), '{}') as games,
+      coalesce((select array_agg(tid::text order by i) from dt), '{}') as teams,
+      agg.*
+    from (
+      select
+        coalesce(array_agg(pi), '{}') as p,
+        coalesce(array_agg(gi), '{}') as g,
+        coalesce(array_agg(ti), '{}') as t,
+        ${sql.join(keys.map((k) => sql`coalesce(array_agg(${stat(k)}), '{}') as ${sql.identifier(k)}`), sql`, `)}
+      from lines
+    ) agg
+  `);
+  return decodeColumnarLines(rows[0], keys, keys.filter((k) => columns[k].notNull));
+}
+
+/**
+ * Cheap identifier of the applied ingestion state (every provider): the number of applied runs
+ * and the latest completion time. Applies are the only writes to the tables the site reads, so an
+ * unchanged value means every loaded snapshot is still current. One tiny read-only query.
+ */
+export async function loadIngestionVersion(db: Database): Promise<string> {
+  return db.transaction(
+    async (tx) => {
+      const r = meta.ingestionRuns;
+      const [row] = await tx
+        .select({ runs: sql<number>`count(*)::int`, latest: max(r.completedAt) })
+        .from(r)
+        .where(
+          and(
+            inArray(r.status, ["applied", "applied-with-quarantine"]),
+            isNotNull(r.completedAt),
+          ),
+        );
+      return `${row?.runs ?? 0}:${row?.latest ? iso(row.latest) : "none"}`;
+    },
+    { accessMode: "read only" },
+  );
 }

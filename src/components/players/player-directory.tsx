@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { Role } from "@/analytics/config";
 import {
   MIN_SAMPLE_OPTIONS,
@@ -265,6 +265,7 @@ export function PlayerDirectory({
   organizations,
   positions,
   levels,
+  unavailableLevels = [],
 }: {
   /** Rows for the server-selected role and level scope. */
   rows: Row[];
@@ -276,8 +277,13 @@ export function PlayerDirectory({
   positions: PositionGroup[];
   /** Levels with ingested data. */
   levels: LevelId[];
+  /** Levels whose data failed to load in this request (temporary). */
+  unavailableLevels?: LevelId[];
 }) {
   const router = useRouter();
+  // Role, level and window are fetched by the server; keep the current table (dimmed, busy)
+  // until the new rows arrive instead of freezing without feedback.
+  const [pending, startTransition] = useTransition();
   const [state, setState] = useState<DirectoryState>(initial);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const update = (patch: Partial<DirectoryState>) => {
@@ -286,9 +292,11 @@ export function PlayerDirectory({
   };
   // Role, level and window select which rows the server sends; they navigate.
   const navigate = (patch: Partial<DirectoryState>, w: StatWindow = window) =>
-    router.push(`/players${toSearch({ ...state, ...patch }, w)}`, {
-      scroll: false,
-    });
+    startTransition(() =>
+      router.push(`/players${toSearch({ ...state, ...patch }, w)}`, {
+        scroll: false,
+      }),
+    );
 
   // Keep the URL shareable without a server round trip for client-side filters.
   useEffect(() => {
@@ -348,7 +356,11 @@ export function PlayerDirectory({
     });
 
   return (
-    <section className="explorer directory" aria-label="Player directory">
+    <section
+      className={pending ? "explorer directory is-pending" : "explorer directory"}
+      aria-label="Player directory"
+      aria-busy={pending || undefined}
+    >
       <div className="directory-controls">
         <div
           className="button-group"
@@ -390,7 +402,11 @@ export function PlayerDirectory({
             {LEVELS.map((l) => (
               <option key={l.id} value={l.id} disabled={!levels.includes(l.id)}>
                 {l.label}
-                {levels.includes(l.id) ? "" : " — not ingested"}
+                {levels.includes(l.id)
+                  ? ""
+                  : unavailableLevels.includes(l.id)
+                    ? " — temporarily unavailable"
+                    : " — not ingested"}
               </option>
             ))}
           </select>
@@ -479,6 +495,7 @@ export function PlayerDirectory({
           ? LEVELS.find((l) => l.id === state.level)?.label
           : "all levels"}{" "}
         · {STAT_WINDOW_LABELS[window]} · sorted by {column.label}
+        {pending && " · updating…"}
         {sort.direction === "desc" ? " ↓" : " ↑"}
         {sorted.length > shown.length &&
           ` · showing ${shown.length.toLocaleString()}`}

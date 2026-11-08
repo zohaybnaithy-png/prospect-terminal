@@ -2,7 +2,11 @@ import "server-only";
 import { connection } from "next/server";
 import { getDatabase } from "@/db/client";
 import { AFL } from "@/ingestion/sources/mlb-config";
+import { loadIngestionVersion } from "@/services/afl/queries";
+import { LEVEL_IDS } from "@/services/players/levels";
+import { createLevelCache, type LevelCache } from "./cache";
 import { dbLevelLoader, loadCompetition } from "./load";
+import { prepareSnapshot } from "./prepare";
 import type { CompetitionDataResult } from "./types";
 
 export type { CompetitionDataResult, LevelSnapshot } from "./types";
@@ -13,13 +17,6 @@ export type { CompetitionDataResult, LevelSnapshot } from "./types";
  */
 export const DATA_SEASON: number = AFL.defaultSeason;
 
-/**
- * Ingestion writes only on explicit CLI applies, so a short process-level reuse window avoids
- * re-reading every level on every request while keeping data effectively current.
- */
-const REUSE_MS = 60_000;
-let cached: { at: number; promise: Promise<CompetitionDataResult> } | undefined;
-
 /** Only a coarse, credential-free code is ever logged. */
 export function safeErrorCode(error: unknown) {
   if (error && typeof error === "object" && "code" in error)
@@ -27,11 +24,42 @@ export function safeErrorCode(error: unknown) {
   return error instanceof Error ? error.name : "unknown";
 }
 
+/**
+ * How often a loaded level checks (one tiny query) whether a new ingestion run was applied. Data
+ * never expires on a timer: an unchanged database keeps being served from memory, and a changed
+ * one is reloaded in the background while the previous snapshot is still served. See cache.ts.
+ */
+const CHECK_MS = 60_000;
+
+/**
+ * One cache per server process. Next.js bundles src/instrumentation.ts (which starts the warm-up)
+ * separately from the route handlers, so a module-level variable would give each bundle its own
+ * cache and every level would load twice; the process-global slot is shared by both.
+ */
+const CACHE_KEY = Symbol.for("prospect-terminal.competition-level-cache");
+const processGlobal = globalThis as typeof globalThis & { [CACHE_KEY]?: LevelCache };
+
+function levelCache(): LevelCache {
+  return (processGlobal[CACHE_KEY] ??= createLevelCache({
+    load: dbLevelLoader(getDatabase(), DATA_SEASON),
+    version: () => loadIngestionVersion(getDatabase()),
+    checkMs: CHECK_MS,
+    prepare: (_level, snapshot) => {
+      // Build the analytics context and Momentum caches before the snapshot is served, so the
+      // first request after a (re)load does not pay the cold compute (~0.5 s per MiLB level).
+      if (snapshot) prepareSnapshot(snapshot);
+    },
+    onBackgroundError: (level, error) =>
+      console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`),
+  }));
+}
+
 async function read(): Promise<CompetitionDataResult> {
   if (!process.env.DATABASE_URL) return { status: "not-configured" };
   try {
+    const c = levelCache();
     return await loadCompetition(
-      dbLevelLoader(getDatabase(), DATA_SEASON),
+      (level) => c.get(level),
       (level, error) =>
         console.error(`[competition-data] ${level} read failed (${safeErrorCode(error)})`),
     );
@@ -47,17 +75,18 @@ async function read(): Promise<CompetitionDataResult> {
  */
 export async function getCompetitionData(): Promise<CompetitionDataResult> {
   await connection(); // request-time data; never prerendered into the build output
-  const now = Date.now();
-  if (!cached || now - cached.at > REUSE_MS) {
-    const promise = read();
-    cached = { at: now, promise };
-    // Failed or partial reads are not reused, so the next request retries immediately.
-    promise.then((r) => {
-      const partial =
-        r.status === "ok" && Object.values(r.levelStatus).includes("unavailable");
-      if ((r.status !== "ok" && r.status !== "empty") || partial)
-        if (cached?.promise === promise) cached = undefined;
-    });
+  return read();
+}
+
+/**
+ * Starts loading every level in the background (called once at server start from
+ * src/instrumentation.ts), so the first visitor does not wait for the initial load. Never throws.
+ */
+export function warmCompetitionData() {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    levelCache().warm(LEVEL_IDS);
+  } catch (error) {
+    console.error(`[competition-data] warm-up failed (${safeErrorCode(error)})`);
   }
-  return cached.promise;
 }

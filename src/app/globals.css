@@ -1526,6 +1526,11 @@ a.reset-button {
 }
 
 /* Player directory */
+/* Server-scoped change (role, level, window) in flight: keep the table, dimmed, until rows arrive. */
+.directory.is-pending .table-scroll {
+  opacity: 0.55;
+  transition: opacity 120ms ease-in;
+}
 .directory-meta {
   margin-top: -8px;
 }

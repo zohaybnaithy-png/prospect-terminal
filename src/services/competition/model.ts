@@ -13,7 +13,7 @@ import {
 } from "@/services/afl/read-model";
 import { aggregateBatting, aggregatePitching } from "@/statistics/aggregate";
 import { coverageSummary, type CoverageSummary } from "@/services/home";
-import { LEVELS, levelOrder, type LevelDefinition, type LevelId } from "@/services/players/levels";
+import { LEVELS, isLevelId, levelOrder, type LevelDefinition, type LevelId } from "@/services/players/levels";
 import type { AflOrganization, AflTeam } from "@/services/afl/types";
 import type { LevelLoadStatus, LevelSnapshot } from "./types";
 
@@ -59,6 +59,7 @@ export interface LevelCoverage {
 export function levelCoverage(
   levels: LevelSnapshot[],
   levelStatus: Partial<Record<LevelId, LevelLoadStatus>>,
+  summarize: (s: LevelSnapshot["snapshot"]) => CoverageSummary = coverageSummary,
 ): LevelCoverage[] {
   return LEVELS.map((level) => {
     const ls = levels.find((l) => l.level === level.id);
@@ -68,7 +69,7 @@ export function levelCoverage(
         status: levelStatus[level.id] === "unavailable" ? "unavailable" : "not-ingested",
         coverage: null,
       };
-    const coverage = coverageSummary(ls.snapshot);
+    const coverage = summarize(ls.snapshot);
     return { level, status: coverage.gamesFinal ? "live" : "no-games", coverage };
   });
 }
@@ -143,3 +144,30 @@ export function profileLevel(
 ): LevelId | null {
   return (presence.find((p) => p.level === requested) ?? presence[0])?.level ?? null;
 }
+
+export interface LevelFallback {
+  requested: LevelId;
+  /** "unavailable" = the level's read failed (temporary); "not-ingested" = no season data. */
+  reason: "unavailable" | "not-ingested";
+}
+
+/**
+ * Why a page is not showing the level the URL asked for (`?level=`), or null when it is (or no
+ * valid level was asked for). Pages fall back to another level instead of failing; this lets them
+ * say so instead of silently showing different data.
+ */
+export function levelFallback(
+  requested: string | undefined,
+  shown: LevelId | "",
+  levelStatus: Partial<Record<LevelId, LevelLoadStatus>>,
+): LevelFallback | null {
+  if (!requested || !isLevelId(requested) || requested === shown) return null;
+  return {
+    requested,
+    reason: levelStatus[requested] === "unavailable" ? "unavailable" : "not-ingested",
+  };
+}
+
+/** Levels whose read failed in this request (shown as temporarily unavailable, not "no data"). */
+export const unavailableLevels = (levelStatus: Partial<Record<LevelId, LevelLoadStatus>>) =>
+  LEVELS.filter((l) => levelStatus[l.id] === "unavailable").map((l) => l.id);

@@ -430,10 +430,22 @@ export function playerProfile(
 ): AflPlayerProfile | null {
   const player = s.players.find((p) => p.id === playerId);
   if (!player) return null;
+  // Window aggregates from this player's lines only, with buildPlayerRows' inclusion rule
+  // (completed games inside the window), instead of building every player's rows per window.
+  const ownBatting = s.batting.filter((l) => l.playerId === playerId);
+  const ownPitching = s.pitching.filter((l) => l.playerId === playerId);
   const windows = Object.fromEntries(
     (["7d", "14d", "30d", "season"] as const).map((w) => {
-      const row = buildPlayerRows(s, w).find((r) => r.id === playerId)!;
-      return [w, { batting: row.batting, pitching: row.pitching }];
+      const games = completedGameDates(s, w);
+      const b = ownBatting.filter((l) => games.has(l.gameId));
+      const p = ownPitching.filter((l) => games.has(l.gameId));
+      return [
+        w,
+        {
+          batting: b.length ? aggregateBatting(b) : null,
+          pitching: p.length ? aggregatePitching(p) : null,
+        },
+      ];
     }),
   ) as AflPlayerProfile["windows"];
   const row = buildPlayerRows(s, "season").find((r) => r.id === playerId)!;
@@ -444,15 +456,15 @@ export function playerProfile(
     string,
     { batting?: AflBattingLine; pitching?: AflPitchingLine; teamId: string }
   >();
-  for (const line of s.batting)
-    if (line.playerId === playerId && complete.has(line.gameId))
+  for (const line of ownBatting)
+    if (complete.has(line.gameId))
       entries.set(line.gameId, {
         ...entries.get(line.gameId),
         batting: line,
         teamId: line.teamId,
       });
-  for (const line of s.pitching)
-    if (line.playerId === playerId && complete.has(line.gameId))
+  for (const line of ownPitching)
+    if (complete.has(line.gameId))
       entries.set(line.gameId, {
         ...entries.get(line.gameId),
         pitching: line,

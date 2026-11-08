@@ -3,9 +3,12 @@ import { getCompetitionData } from "@/services/competition";
 import {
   defaultLevel,
   levelCoverage,
+  levelFallback,
   selectLevel,
+  unavailableLevels,
 } from "@/services/competition/model";
-import { latestTopLines, trendingSets } from "@/services/home";
+import { LevelFallbackNotice } from "@/components/levels/level-fallback";
+import { homeTopLines, homeTrending, levelCoverageSummary } from "@/services/competition/prepare";
 import { getTopProspects } from "@/services/rankings";
 import { levelById } from "@/services/players/levels";
 import { AflDataNotice } from "@/components/afl/data-notice";
@@ -78,19 +81,24 @@ async function HomeDashboard({ searchParams }: { searchParams: SearchParams }) {
         basePath="/"
         current={ls.level}
         available={available}
+        unavailable={unavailableLevels(data.levelStatus)}
         label={
           ls.level === defaultLevel(data.levels) ? "Level (latest)" : "Level"
         }
       />
+      <LevelFallbackNotice
+        fallback={levelFallback(requested, ls.level, data.levelStatus)}
+        shown={ls.level}
+      />
       <div className="homepage-grid">
         <div className="homepage-main">
           <TrendingProspects
-            sets={trendingSets(ls.snapshot)}
+            sets={homeTrending(ls.snapshot)}
             level={ls.level}
             levelLabel={level.label}
           />
           <LatestLines
-            {...latestTopLines(ls.snapshot)}
+            {...homeTopLines(ls.snapshot)}
             level={ls.level}
             levelLabel={level.label}
           />
@@ -101,7 +109,7 @@ async function HomeDashboard({ searchParams }: { searchParams: SearchParams }) {
         >
           <RecentPerformersSection snapshot={ls.snapshot} level={ls.level} />
           <TopProspectsPanel result={topProspects} />
-          <CoveragePanel coverage={levelCoverage(data.levels, data.levelStatus)} />
+          <CoveragePanel coverage={levelCoverage(data.levels, data.levelStatus, levelCoverageSummary)} />
         </aside>
       </div>
     </>

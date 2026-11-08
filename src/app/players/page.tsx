@@ -4,7 +4,8 @@ import { z } from "zod";
 import { MOMENTUM_WINDOWS } from "@/analytics/config";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";
-import { levelAsOf } from "@/services/competition/model";
+import { levelAsOf, levelFallback, unavailableLevels } from "@/services/competition/model";
+import { LevelFallbackNotice } from "@/components/levels/level-fallback";
 import {
   MIN_SAMPLE_OPTIONS,
   STAT_WINDOWS,
@@ -13,7 +14,7 @@ import {
   type PositionGroup,
 } from "@/services/players/directory";
 import { directoryRows } from "@/services/players/adapter";
-import { isLevelId, levelById, type LevelId } from "@/services/players/levels";
+import { LEVELS, isLevelId, levelById, type LevelId } from "@/services/players/levels";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import {
   PlayerDirectory,
@@ -99,10 +100,14 @@ async function Directory({ searchParams }: { searchParams: SearchParams }) {
   });
   return (
     <>
+      <LevelFallbackNotice
+        fallback={levelFallback(requested, level, data.levelStatus)}
+        shown={level}
+      />
       <p className="table-note directory-meta">
         {level
           ? `${levelById(level).label} · ${scoped[0].snapshot.season.name}`
-          : `All levels · ${data.levels.length} of 5 ingested`}
+          : `All levels · ${data.levels.length} of ${LEVELS.length} loaded`}
         {" · "}stats through {through.join(", ")}
         {" · "}Momentum window:{" "}
         {MOMENTUM_WINDOWS[mWindow].label.toLowerCase()}
@@ -127,6 +132,7 @@ async function Directory({ searchParams }: { searchParams: SearchParams }) {
         organizations={options.organizations}
         positions={options.positions}
         levels={available}
+        unavailableLevels={unavailableLevels(data.levelStatus)}
       />
     </>
   );
