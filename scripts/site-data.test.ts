@@ -4,7 +4,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createLevelCache } from "../src/services/competition/cache";
+import { createLevelCache, LevelLoadTimeoutError } from "../src/services/competition/cache";
 import { ColumnarDecodeError, decodeColumnarLines } from "../src/services/afl/columnar";
 import { buildPlayerRows, playerProfile } from "../src/services/afl/read-model";
 import { levelFallback, unavailableLevels } from "../src/services/competition/model";
@@ -70,7 +70,7 @@ test("level cache: loads once, shares an in-flight load and prepares before serv
   assert.deepEqual(h.prepared, ["aaa@v1"]);
   assert.equal(await h.cache.get("aaa"), a);
   assert.deepEqual(h.loads, ["aaa"]);
-  assert.deepEqual(h.cache.state("aaa"), { loaded: true, version: "v1", loading: false });
+  assert.deepEqual(h.cache.state("aaa"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0 });
 });
 
 test("level cache: within the check window no probe runs; after it an unchanged version keeps the snapshot", async () => {
@@ -115,12 +115,13 @@ test("level cache: a changed version reloads in the background while the previou
   await tick();
   const fresh = await cache.get("high-a");
   assert.equal(fresh?.league.id, "high-a@v2");
-  assert.deepEqual(cache.state("high-a"), { loaded: true, version: "v2", loading: false });
+  assert.deepEqual(cache.state("high-a"), { loaded: true, version: "v2", loading: false, failures: 0, retryInMs: 0 });
 });
 
-test("level cache: a failed first load is not reused; the next request retries", async () => {
+test("level cache: a failed first load is not reused; retries back off (no retry storm) and reset on success", async () => {
   let fail = true;
   let calls = 0;
+  let clock = 0;
   const cache = createLevelCache({
     load: async (level) => {
       calls++;
@@ -129,12 +130,96 @@ test("level cache: a failed first load is not reused; the next request retries",
     },
     version: async () => "v1",
     checkMs: 60_000,
+    now: () => clock,
+    retryBaseMs: 5_000,
+    retryMaxMs: 20_000,
   });
   await assert.rejects(cache.get("single-a"), /boom/);
-  assert.deepEqual(cache.state("single-a"), { loaded: false, version: null, loading: false });
+  assert.deepEqual(cache.state("single-a"), { loaded: false, version: null, loading: false, failures: 1, retryInMs: 5_000 });
+  // Inside the backoff window every request fails fast with the last error and starts no load.
+  for (let i = 0; i < 20; i++) await assert.rejects(cache.get("single-a"), /boom/);
+  cache.warm(["single-a"]);
+  assert.equal(calls, 1, "no new load during backoff");
+  // Consecutive failures double the wait, capped.
+  clock += 5_000;
+  await assert.rejects(cache.get("single-a"), /boom/);
+  assert.equal(cache.state("single-a").retryInMs, 10_000);
+  clock += 10_000;
+  await assert.rejects(cache.get("single-a"), /boom/);
+  assert.equal(cache.state("single-a").retryInMs, 20_000);
+  clock += 20_000;
+  await assert.rejects(cache.get("single-a"), /boom/);
+  assert.equal(cache.state("single-a").retryInMs, 20_000, "capped");
+  assert.equal(calls, 4);
+  // After the window the next request retries; success clears the failure state.
   fail = false;
+  clock += 20_000;
   assert.equal((await cache.get("single-a"))!.league.id, "single-a");
-  assert.equal(calls, 2);
+  assert.equal(calls, 5);
+  assert.deepEqual(cache.state("single-a"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0 });
+});
+
+test("level cache: a load that never finishes is abandoned after loadTimeoutMs (cold and background)", async () => {
+  let hang = true;
+  let version = "v1";
+  let clock = 0;
+  const errors: unknown[] = [];
+  const cache = createLevelCache({
+    load: (level) => (hang ? new Promise<never>(() => {}) : Promise.resolve(snap(`${level}@${version}`))),
+    version: async () => version,
+    checkMs: 1_000,
+    now: () => clock,
+    loadTimeoutMs: 30,
+    retryBaseMs: 0,
+    onBackgroundError: (_l, e) => errors.push(e),
+  });
+  // Cold: the request is released with a timeout error instead of waiting forever.
+  await assert.rejects(cache.get("aa"), LevelLoadTimeoutError);
+  assert.equal(cache.state("aa").loading, false);
+  hang = false;
+  const first = await cache.get("aa");
+  assert.equal(first!.league.id, "aa@v1");
+  // Background: a hanging reload times out, the previous snapshot stays, and a later window retries.
+  hang = true;
+  version = "v2";
+  clock += 1_000;
+  assert.equal(await cache.get("aa"), first);
+  await new Promise((r) => setTimeout(r, 60));
+  assert.ok(errors[0] instanceof LevelLoadTimeoutError);
+  assert.equal(await cache.get("aa"), first, "previous snapshot still served");
+  assert.equal(cache.state("aa").version, "v1");
+  assert.equal(cache.state("aa").loading, false, "a timed-out reload does not block later refreshes");
+  hang = false;
+  clock += 1_000;
+  await cache.get("aa");
+  await tick();
+  await tick();
+  assert.equal(cache.state("aa").version, "v2");
+});
+
+test("level cache: a reload whose result fails to prepare keeps the previous snapshot", async () => {
+  let version = "v1";
+  let clock = 0;
+  const errors: LevelId[] = [];
+  const cache = createLevelCache({
+    load: async (level) => snap(`${level}@${version}`),
+    version: async () => version,
+    checkMs: 1_000,
+    now: () => clock,
+    prepare: (_l, s) => {
+      if (s?.league.id.endsWith("v2")) throw new Error("bad snapshot");
+    },
+    onBackgroundError: (level) => errors.push(level),
+  });
+  const first = await cache.get("aaa");
+  version = "v2";
+  clock += 1_000;
+  await cache.get("aaa");
+  await tick();
+  await tick();
+  assert.deepEqual(errors, ["aaa"]);
+  assert.equal(await cache.get("aaa"), first);
+  assert.equal(cache.state("aaa").version, "v1");
 });
 
 test("level cache: probe or reload failures keep serving the previous snapshot and are reported", async () => {
@@ -404,4 +489,168 @@ test("process memo: every lookup of a name returns the same WeakMap, and names a
   a.set(key, 7);
   assert.equal(processWeakMap<object, number>("test-slot-a").get(key), 7);
   assert.equal(processWeakMap<object, number>("test-slot-b").get(key), undefined);
+});
+
+// ---------------------------------------------------------------------------------------------
+// Query watchdog and timing (fake pool: no database)
+
+import { EventEmitter } from "node:events";
+import type { Pool } from "pg";
+import {
+  currentTrace,
+  instrumentPool,
+  newTrace,
+  queryLabel,
+  summarizeTrace,
+  withTrace,
+} from "../src/db/instrument";
+import { closedByWatchdog, tracedLevelLoader } from "../src/services/competition/load";
+
+function fakePool() {
+  const stream = Object.assign(new EventEmitter(), { destroyed: false, destroy() {} });
+  const client = Object.assign(new EventEmitter(), {
+    connection: { stream },
+    pending: undefined as undefined | { resolve: (v: unknown) => void; reject: (e: Error) => void },
+    query(text: string) {
+      void text;
+      return new Promise((resolve, reject) => (client.pending = { resolve, reject }));
+    },
+  });
+  stream.destroy = () => {
+    stream.destroyed = true;
+    // What pg does when its socket closes under an active query.
+    client.emit("error", new Error("Connection terminated unexpectedly"));
+    client.pending?.reject(new Error("Connection terminated unexpectedly"));
+  };
+  const pool = { connect: async () => client } as unknown as Pool;
+  return { pool, client, stream };
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test("watchdog: a query whose connection goes silent is closed as stalled, and the process survives", async () => {
+  const { pool, client, stream } = fakePool();
+  const closed: string[] = [];
+  const stop = instrumentPool(pool, { queryDeadlineMs: 0, stallMs: 60, sweepMs: 10, onDeadline: (l, _ms, r) => closed.push(`${r}:${l}`) });
+  const trace = newTrace("aaa");
+  await withTrace(trace, async () => {
+    const c = await pool.connect();
+    const q = (c as unknown as typeof client).query('select "a" from "player_batting_games" where x = $1');
+    stream.emit("data", Buffer.alloc(100));
+    await assert.rejects(q, /terminated/);
+  });
+  stop();
+  assert.equal(stream.destroyed, true);
+  assert.deepEqual(closed, ["stalled:select:player_batting_games"]);
+  assert.equal(trace.queries[0].outcome, "stalled");
+  assert.equal(trace.queries[0].bytes, 100);
+  assert.ok(closedByWatchdog(trace));
+  // The client 'error' was handled (an unhandled one would have thrown here).
+  assert.ok(client.listenerCount("error") >= 1);
+});
+
+test("watchdog: steady progress is never closed; the total deadline still applies", async () => {
+  const { pool, stream } = fakePool();
+  type FakeClient = ReturnType<typeof fakePool>["client"];
+  const closed: string[] = [];
+  const stop = instrumentPool(pool, { queryDeadlineMs: 300, stallMs: 80, sweepMs: 10, onDeadline: (_l, _ms, r) => closed.push(r) });
+  const c = (await pool.connect()) as unknown as FakeClient;
+  const q = c.query("select 1");
+  const feed = setInterval(() => stream.emit("data", Buffer.alloc(10)), 20);
+  await sleep(150);
+  assert.deepEqual(closed, [], "bytes keep arriving: not a stall");
+  await assert.rejects(q, /terminated/);
+  clearInterval(feed);
+  stop();
+  assert.deepEqual(closed, ["deadline"]);
+});
+
+test("watchdog: a process pause (blocked event loop or sleep) is not mistaken for a stall", async () => {
+  const { pool, client, stream } = fakePool();
+  const closed: string[] = [];
+  const stop = instrumentPool(pool, { queryDeadlineMs: 0, stallMs: 100, sweepMs: 20, onDeadline: (_l, _ms, r) => closed.push(r) });
+  const c = (await pool.connect()) as unknown as typeof client;
+  const q = c.query("select 1");
+  await sleep(30);
+  const until = performance.now() + 250; // block the event loop longer than stallMs
+  while (performance.now() < until);
+  await sleep(40); // the late sweep resets the idle clock instead of closing
+  stream.emit("data", Buffer.alloc(10));
+  client.pending!.resolve({ rows: [] });
+  await q;
+  stop();
+  assert.deepEqual(closed, []);
+  assert.equal(stream.destroyed, false);
+});
+
+test("query timing: labels and summaries never include SQL parameters or connection details", () => {
+  assert.equal(queryLabel(`select "x" from "players" where "id" in ($1, $2)`), "select:players");
+  assert.equal(queryLabel(" with x as materialized ( select 1 from \"player_pitching_games\" )"), "with:player_pitching_games");
+  assert.equal(queryLabel("begin isolation level repeatable read read only"), "begin");
+  const t = newTrace("aaa");
+  t.queries.push({ label: "select:games", firstByteMs: 80, lastByteMs: 900, totalMs: 910, bytes: 400_000, chunks: 30, maxGapMs: 50, bytesBeforeMaxGap: 1000, outcome: "ok" });
+  const line = summarizeTrace(t, 1_000);
+  assert.match(line, /^aaa 1\.00s: .*select:games/);
+  assert.doesNotMatch(line, /postgres|password|\$1|neon\.tech/i);
+});
+
+test("traced loader: a load failed by a stalled connection is retried once; other failures are not", async () => {
+  const markStalled = () =>
+    currentTrace()!.queries.push({ label: "with:player_batting_games", firstByteMs: 1, lastByteMs: 9, totalMs: 9000, bytes: 10, chunks: 1, maxGapMs: 8000, bytesBeforeMaxGap: 10, outcome: "stalled" });
+  const traces: string[] = [];
+  const onTrace = (t: { name: string }, _ms: number, ok: boolean) => traces.push(`${t.name}:${ok ? "ok" : "failed"}`);
+
+  let calls = 0;
+  const recovers = tracedLevelLoader(async (level) => {
+    if (++calls === 1) {
+      markStalled();
+      throw new Error("Connection terminated");
+    }
+    return snap(level);
+  }, { onTrace });
+  assert.equal((await recovers("aaa"))!.league.id, "aaa");
+  assert.deepEqual(traces, ["aaa:failed", "aaa (retry 1):ok"]);
+
+  traces.length = 0;
+  const alwaysStalls = tracedLevelLoader(async () => {
+    markStalled();
+    throw new Error("Connection terminated");
+  }, { onTrace });
+  await assert.rejects(alwaysStalls("aa"), /terminated/);
+  assert.deepEqual(traces, ["aa:failed", "aa (retry 1):failed"], "at most one retry");
+
+  traces.length = 0;
+  let sqlCalls = 0;
+  const sqlError = tracedLevelLoader(async () => {
+    sqlCalls++;
+    throw Object.assign(new Error("relation does not exist"), { code: "42P01" });
+  }, { onTrace });
+  await assert.rejects(sqlError("afl"), /does not exist/);
+  assert.equal(sqlCalls, 1, "non-stall failures are not retried");
+});
+
+test("watchdog: a connection that keeps trickling below the minimum rate is closed as slow; a fast one is not", async () => {
+  const run = async (bytesPerTick: number) => {
+    const { pool, client, stream } = fakePool();
+    const closed: string[] = [];
+    const stop = instrumentPool(pool, {
+      queryDeadlineMs: 0,
+      stallMs: 1_000,
+      slowAfterMs: 100,
+      minBytesPerSec: 50_000,
+      sweepMs: 10,
+      onDeadline: (_l, _ms, r) => closed.push(r),
+    });
+    const c = (await pool.connect()) as unknown as typeof client;
+    const q = c.query("select 1");
+    q.catch(() => {});
+    const feed = setInterval(() => stream.emit("data", Buffer.alloc(bytesPerTick)), 10);
+    await sleep(220);
+    clearInterval(feed);
+    if (!stream.destroyed) client.pending!.resolve({ rows: [] });
+    await q.catch(() => {});
+    stop();
+    return closed;
+  };
+  assert.deepEqual(await run(50), ["slow"], "~5 kB/s: degraded");
+  assert.deepEqual(await run(5_000), [], "~500 kB/s: healthy");
 });

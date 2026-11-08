@@ -5,7 +5,8 @@ import { AFL } from "@/ingestion/sources/mlb-config";
 import { loadIngestionVersion } from "@/services/afl/queries";
 import { LEVEL_IDS } from "@/services/players/levels";
 import { createLevelCache, type LevelCache } from "./cache";
-import { dbLevelLoader, loadCompetition } from "./load";
+import { dbLevelLoader, loadCompetition, tracedLevelLoader } from "./load";
+import { summarizeTrace } from "@/db/instrument";
 import { prepareSnapshot } from "./prepare";
 import type { CompetitionDataResult } from "./types";
 
@@ -39,19 +40,35 @@ const CHECK_MS = 60_000;
 const CACHE_KEY = Symbol.for("prospect-terminal.competition-level-cache");
 const processGlobal = globalThis as typeof globalThis & { [CACHE_KEY]?: LevelCache };
 
+/** A level load slower than this is logged with its timing breakdown (credential-free). */
+const SLOW_LOAD_MS = 15_000;
+const timingLogs = () => process.env.PT_DATA_TIMING === "1";
+
 function levelCache(): LevelCache {
   return (processGlobal[CACHE_KEY] ??= createLevelCache({
-    load: dbLevelLoader(getDatabase(), DATA_SEASON),
-    version: () => loadIngestionVersion(getDatabase()),
-    checkMs: CHECK_MS,
-    prepare: (_level, snapshot) => {
+    load: tracedLevelLoader(dbLevelLoader(getDatabase(), DATA_SEASON), {
       // Build the analytics context and Momentum caches before the snapshot is served, so the
       // first request after a (re)load does not pay the cold compute (~0.5 s per MiLB level).
-      if (snapshot) prepareSnapshot(snapshot);
-    },
+      prepare: (_level, snapshot) => snapshot && prepareSnapshot(snapshot),
+      onTrace: (trace, totalMs, ok) => {
+        if (!ok || totalMs > SLOW_LOAD_MS || timingLogs())
+          console.error(`[competition-data] ${ok ? "loaded" : "load failed:"} ${summarizeTrace(trace, totalMs)}`);
+      },
+    }),
+    version: () => loadIngestionVersion(getDatabase()),
+    checkMs: CHECK_MS,
     onBackgroundError: (level, error) =>
       console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`),
   }));
+}
+
+// A level that keeps failing is reported at most once a minute, not once per request.
+const lastFailureLog = new Map<string, number>();
+function logReadFailure(level: string, error: unknown) {
+  const t = Date.now();
+  if (t - (lastFailureLog.get(level) ?? 0) < 60_000) return;
+  lastFailureLog.set(level, t);
+  console.error(`[competition-data] ${level} read failed (${safeErrorCode(error)})`);
 }
 
 async function read(): Promise<CompetitionDataResult> {
@@ -60,8 +77,7 @@ async function read(): Promise<CompetitionDataResult> {
     const c = levelCache();
     return await loadCompetition(
       (level) => c.get(level),
-      (level, error) =>
-        console.error(`[competition-data] ${level} read failed (${safeErrorCode(error)})`),
+      logReadFailure,
     );
   } catch (error) {
     console.error(`[competition-data] read failed (${safeErrorCode(error)})`);

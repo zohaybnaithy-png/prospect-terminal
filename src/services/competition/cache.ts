@@ -9,7 +9,12 @@
  *  - at most every `checkMs`, runs a cheap version probe (the latest applied ingestion run) in the
  *    background, and reloads the level only when the version changed;
  *  - serves the previous snapshot while a reload runs, and keeps it when a probe or reload fails;
- *  - never reuses a failed first load: the next request tries again.
+ *  - bounds every load (`loadTimeoutMs`): a load that has not finished is abandoned and counts as
+ *    a failure, so no request and no refresh can wait on it indefinitely;
+ *  - never reuses a failed first load, but backs off (`retryBaseMs`, doubling up to `retryMaxMs`)
+ *    before trying again; requests in the backoff window fail fast instead of each starting a load,
+ *    so a database outage cannot turn traffic into a retry storm. Background refreshes are
+ *    naturally spaced by `checkMs`.
  *
  * The version is read BEFORE the level loads, so an apply that commits during a load is detected by
  * the next probe instead of being masked.
@@ -28,6 +33,18 @@ export interface LevelCacheOptions {
   prepare?: (level: LevelId, snapshot: AflSnapshot | null) => void;
   /** Background failures (probe or reload); the previous snapshot keeps being served. */
   onBackgroundError?: (level: LevelId, error: unknown) => void;
+  /** Upper bound for one load (probe + level read + prepare). Default 90 s; 0 disables. */
+  loadTimeoutMs?: number;
+  /** Backoff after a failed first load: first wait, doubling per consecutive failure, capped. */
+  retryBaseMs?: number;
+  retryMaxMs?: number;
+}
+
+export class LevelLoadTimeoutError extends Error {
+  constructor(level: LevelId, ms: number) {
+    super(`${level} load did not finish within ${Math.round(ms / 1000)}s`);
+    this.name = "LevelLoadTimeoutError";
+  }
 }
 
 interface Entry {
@@ -35,6 +52,10 @@ interface Entry {
   checkedAt: number;
   /** Load in progress (first load or reload). */
   inflight?: Promise<AflSnapshot | null>;
+  /** Consecutive failed first loads, the last error, and when the next attempt may start. */
+  failures: number;
+  lastError?: unknown;
+  retryAt: number;
 }
 
 export interface LevelCache {
@@ -43,16 +64,36 @@ export interface LevelCache {
   /** Starts loading levels that have no snapshot yet (fire-and-forget warm-up). */
   warm(levels: readonly LevelId[]): void;
   /** For tests and diagnostics. */
-  state(level: LevelId): { loaded: boolean; version: string | null; loading: boolean };
+  state(level: LevelId): {
+    loaded: boolean;
+    version: string | null;
+    loading: boolean;
+    failures: number;
+    retryInMs: number;
+  };
 }
 
 export function createLevelCache(opts: LevelCacheOptions): LevelCache {
   const now = opts.now ?? Date.now;
+  const loadTimeoutMs = opts.loadTimeoutMs ?? 90_000;
+  const retryBaseMs = opts.retryBaseMs ?? 5_000;
+  const retryMaxMs = opts.retryMaxMs ?? 60_000;
   const entries = new Map<LevelId, Entry>();
   const entry = (level: LevelId) => {
     let e = entries.get(level);
-    if (!e) entries.set(level, (e = { checkedAt: 0 }));
+    if (!e) entries.set(level, (e = { checkedAt: 0, failures: 0, retryAt: 0 }));
     return e;
+  };
+
+  const bounded = <T>(level: LevelId, work: Promise<T>): Promise<T> => {
+    if (!loadTimeoutMs) return work;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new LevelLoadTimeoutError(level, loadTimeoutMs)), loadTimeoutMs);
+      timer.unref?.();
+    });
+    work.catch(() => {}); // an abandoned load may still fail later; that is not unhandled
+    return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
   };
 
   // Probes started at the same moment (every level after one idle period) share one query.
@@ -70,14 +111,32 @@ export function createLevelCache(opts: LevelCacheOptions): LevelCache {
   };
 
   const load = (level: LevelId, e: Entry, knownVersion?: string) => {
-    const promise = (async () => {
-      const v = knownVersion ?? (await version());
-      const snapshot = await opts.load(level);
-      opts.prepare?.(level, snapshot);
-      e.value = { snapshot, version: v };
-      e.checkedAt = now();
-      return snapshot;
-    })();
+    const promise = bounded(
+      level,
+      (async () => {
+        const v = knownVersion ?? (await version());
+        const snapshot = await opts.load(level);
+        return { snapshot, v };
+      })(),
+    ).then(
+      ({ snapshot, v }) => {
+        // Only a load that finished in time is applied (an abandoned one never overwrites).
+        opts.prepare?.(level, snapshot);
+        e.value = { snapshot, version: v };
+        e.checkedAt = now();
+        e.failures = 0;
+        e.lastError = undefined;
+        return snapshot;
+      },
+      (error: unknown) => {
+        if (!e.value) {
+          e.failures++;
+          e.lastError = error;
+          e.retryAt = now() + Math.min(retryBaseMs * 2 ** (e.failures - 1), retryMaxMs);
+        }
+        throw error;
+      },
+    );
     e.inflight = promise;
     promise
       .finally(() => {
@@ -106,17 +165,26 @@ export function createLevelCache(opts: LevelCacheOptions): LevelCache {
         if (!e.inflight && now() - e.checkedAt >= opts.checkMs) revalidate(level, e);
         return Promise.resolve(e.value.snapshot);
       }
-      return e.inflight ?? load(level, e);
+      if (e.inflight) return e.inflight;
+      if (e.failures && now() < e.retryAt) return Promise.reject(e.lastError);
+      return load(level, e);
     },
     warm(levels) {
       for (const level of levels) {
         const e = entry(level);
-        if (!e.value && !e.inflight) load(level, e).catch(() => {});
+        if (!e.value && !e.inflight && !(e.failures && now() < e.retryAt))
+          load(level, e).catch(() => {});
       }
     },
     state(level) {
       const e = entries.get(level);
-      return { loaded: !!e?.value, version: e?.value?.version ?? null, loading: !!e?.inflight };
+      return {
+        loaded: !!e?.value,
+        version: e?.value?.version ?? null,
+        loading: !!e?.inflight,
+        failures: e?.failures ?? 0,
+        retryInMs: e && e.failures ? Math.max(0, e.retryAt - now()) : 0,
+      };
     },
   };
 }

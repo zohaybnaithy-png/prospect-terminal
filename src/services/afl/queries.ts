@@ -24,6 +24,7 @@ import {
 } from "@/domain/levels";
 import type { AflSnapshot } from "./types";
 import { decodeColumnarLines } from "./columnar";
+import { timePhase } from "@/db/instrument";
 
 type Database = NodePgDatabase<typeof core>;
 type ReadTx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -45,6 +46,7 @@ export async function loadAflSnapshot(
 ): Promise<AflSnapshot | null> {
   return db.transaction(
     async (tx) => {
+      await boundStatements(tx);
       const identities = await tx
         .select({
           kind: meta.sourceIdentities.entityKind,
@@ -109,6 +111,7 @@ export async function loadMilbLevelSnapshot(
   const def = MILB_LEVELS[level];
   return db.transaction(
     async (tx) => {
+      await boundStatements(tx);
       const si = meta.sourceIdentities;
       const identities = await tx
         .select({ kind: si.entityKind, externalId: si.externalId, internalId: si.internalId })
@@ -154,6 +157,17 @@ export async function loadMilbLevelSnapshot(
     },
     { accessMode: "read only", isolationLevel: "repeatable read" },
   );
+}
+
+/**
+ * Server-side bound for every statement of a level read (the transaction is READ ONLY; SET LOCAL
+ * changes nothing persistent and ends with the transaction). A normal level read's slowest
+ * statement takes well under a second on the server, so 30 s only stops runaway execution; the
+ * client-side watchdog (src/db/instrument.ts) bounds network stalls.
+ */
+export const LEVEL_STATEMENT_TIMEOUT = "30s";
+async function boundStatements(tx: ReadTx) {
+  await tx.execute(sql.raw(`SET LOCAL statement_timeout = '${LEVEL_STATEMENT_TIMEOUT}'`));
 }
 
 interface SeasonScope {
@@ -403,7 +417,7 @@ async function columnarLines<K extends string>(
       from lines
     ) agg
   `);
-  return decodeColumnarLines(rows[0], keys, keys.filter((k) => columns[k].notNull));
+  return timePhase("decode", () => decodeColumnarLines(rows[0], keys, keys.filter((k) => columns[k].notNull)));
 }
 
 /**

@@ -230,8 +230,11 @@ transferred in a compact columnar form (`src/services/afl/columnar.ts`), about a
 row form's bytes. View models are memoized per loaded snapshot and the Momentum caches are
 warmed before a snapshot is served.
 
-Measure with `npm run -s profile:site` (read-only; per-level load time and per-page view-model
-compute). On a home connection to Neon (~1 MB/s), a level loads in about 3-5 s and all levels in
-parallel in about 6-13 s; requests after the warm-up are served from memory. If cold loads must
-get faster still, the next step is precomputed per-level aggregates, a separate change to
-discuss.
+Measure with `npm run -s profile:site` (read-only). Each level load is traced: pool acquire,
+per-query first byte, transfer and parse, decode, and warm-up compute. `PROFILE_ROUNDS=N` repeats
+cold loads with a fresh pool each time. On a home connection to Neon (~1 MB/s), a level loads in
+about 3-5 s and all levels in parallel in about 8-16 s. Requests after the warm-up are served from
+memory, and the process holds about 325 MB of heap with every level loaded. Every load is bounded,
+and degraded connections are closed and retried. Hosting, timeouts and the measurements behind
+them are in `docs/DEPLOYMENT.md`. If cold loads must get faster still, the next step is
+precomputed per-level aggregates, a separate change to discuss.
