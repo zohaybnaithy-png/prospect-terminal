@@ -12,7 +12,7 @@ import { RisersFallers } from "@/components/analytics/risers-fallers";
 import { PerformanceMap } from "@/components/analytics/performance-map";
 import { MOMENTUM_SETTINGS } from "@/analytics/config";
 import { analyticsContextFor } from "@/analytics/views";
-import { trendMap, trendRisers } from "@/services/competition/prepare";
+import { trendComparable, trendMapPoints, trendRiserLists } from "@/services/competition/prepare";
 import { shortDate } from "@/lib/format";
 import { analyticsDebugEnabled } from "@/analytics/debug";
 
@@ -74,7 +74,7 @@ async function Trends({ searchParams }: { searchParams: SearchParams }) {
         </p>
       </>
     );
-  const risers = trendRisers(ls.snapshot);
+  const comparable = trendComparable(ls.snapshot);
   return (
     <div className="trends-stack">
       {nav}
@@ -93,15 +93,16 @@ async function Trends({ searchParams }: { searchParams: SearchParams }) {
         )}
       </p>
       <RisersFallers
-        sets={risers}
+        initial={{ role: "hitter", window: "14d", lists: trendRiserLists(ls.snapshot, "hitter", "14d") }}
+        comparable={comparable}
         level={ls.level}
         minRecent={MOMENTUM_SETTINGS.sample.leaderboardMinRecent}
         minBaseline={MOMENTUM_SETTINGS.sample.leaderboardMinBaseline}
         minMagnitude={MOMENTUM_SETTINGS.sample.leaderboardMinMagnitude}
       />
       <PerformanceMap
-        sets={trendMap(ls.snapshot)}
-        comparable={risers.comparable}
+        initial={{ role: "hitter", window: "14d", points: trendMapPoints(ls.snapshot, "hitter", "14d") }}
+        comparable={comparable}
         level={ls.level}
       />
     </div>

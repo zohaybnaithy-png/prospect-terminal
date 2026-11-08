@@ -9,6 +9,7 @@ import {
 } from "@/analytics/config";
 import type { TrendingEntry, TrendingSets } from "@/services/home";
 import { PlayerLink } from "@/components/ui/entity-links";
+import { SourceTag } from "./source-tag";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
 import type { LevelId } from "@/services/players/levels";
 import {
@@ -33,7 +34,9 @@ export function TrendingProspects({
   return (
     <section className="home-panel" aria-labelledby="trending-title">
       <div className="home-section-heading">
-        <h2 id="trending-title">Trending Prospects</h2>
+        <h2 id="trending-title">
+          Trending Prospects <SourceTag kind="live" />
+        </h2>
         <Link href={`/trends?level=${level}`}>All risers &amp; fallers →</Link>
       </div>
       <div className="panel-controls">

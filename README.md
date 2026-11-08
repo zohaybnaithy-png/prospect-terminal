@@ -8,10 +8,10 @@ Prospect Terminal is a player-first prospect analytics product. The core loop is
 
 | Route           | What it shows                                                                                                                                                                                                                                                            | Data            |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
-| `/`             | Score strip, **Trending Prospects** (Momentum risers/cooling, hitters/pitchers, 7D/14D/30D), Latest Results (top box-score lines from the latest game date), Recent Leaders (OPS / strikeouts), MLB Top Prospects (unavailable state), Data Coverage                     | Real AFL + MiLB |
-| `/players`      | Scouting-style directory: search, level, team, organization, position, min PA/BF, stat window, sortable columns incl. Momentum; URL-shareable state                                                                                                                      | Real AFL + MiLB |
+| `/`             | Score strip, **Trending Prospects** (Momentum risers/cooling, hitters/pitchers, 7D/14D/30D), Latest Results (top box-score lines from the latest game date), Recent Leaders (OPS / strikeouts), **Level Moves** (first game at a new MiLB level, from box scores), Data Coverage, Not Yet Available (news, video, transactions, rankings: need a source). Live panels are tagged | Real AFL + MiLB |
+| `/players`      | Scouting-style directory: search, level, team, organization, position, min PA/BF, stat window, sortable columns incl. Momentum, pages of 50/100/250. Filtered, sorted and paginated on the server; all state in the URL (works without JavaScript) | Real AFL + MiLB |
 | `/players/[id]` | Identity/bio, season + last-14-day stat strips, Momentum panel (value, band, confidence, persistence, 7D/14D/30D, decomposition), recent games, Momentum and recent-vs-earlier charts, What changed?, window splits, same-level percentiles, levels this season, full game log, roster observations | Real AFL + MiLB |
-| `/trends`       | Biggest Risers & Fallers by component, Performance × Momentum map                                                                                                                                                                                                        | Real AFL + MiLB |
+| `/trends`       | Biggest Risers & Fallers by component, Performance × Momentum map. The page embeds hitters · 14D; other role/window selections load from `/trends/data` | Real AFL + MiLB |
 | `/data`         | Coverage, level status, Momentum methodology, statistics glossary, metrics in development                                                                                                                                                                                | Real AFL + MiLB + docs |
 
 **Real data:** 2026 Triple-A, Double-A, High-A, Single-A and Arizona Fall League (MLB Stats API, development use), each loaded as its own level: schedule/scores, rosters and MLB organization observations, player bio fields, and per-game batting/pitching lines. Stats count only final games with complete box scores. Without `DATABASE_URL` (or if the database is unreachable) every real-data section shows a not-connected / temporarily-unavailable notice in place; the layout stays intact and nothing falls back to fictional data.
@@ -111,11 +111,11 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 | Path                     | Responsibility                                                           |
 | ------------------------ | ------------------------------------------------------------------------ |
 | `src/app`                | Routes: `/`, `/players`, `/players/[id]`, `/trends`, `/data`             |
-| `src/components/home`    | Homepage panels (Trending Prospects, Latest Results, rankings, coverage) |
-| `src/components/players` | Player directory (client-side filters/sort over server-built rows)       |
+| `src/components/home`    | Homepage panels (Trending Prospects, Latest Results, Level Moves, coverage, not-yet-available) |
+| `src/components/players` | Player directory controls and one server-queried page of rows            |
 | `src/components/player`  | Player profile                                                           |
 | `src/services/afl`       | Server-only AFL read layer and pure selectors                            |
-| `src/services/players`   | Level registry, directory contract, level adapter                        |
+| `src/services/players`   | Level registry, directory contract, level adapter, `directory-query.ts` (URL state, filter/sort/pagination) |
 | `src/services/competition` | All-level loading (AFL + MiLB) and cross-level selectors               |
 | `src/services/home.ts`   | Homepage view models; `rankings.ts` is the top-prospects boundary        |
 | `src/analytics`          | Momentum V1 (unchanged)                                                  |

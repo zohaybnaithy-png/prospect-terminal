@@ -4,6 +4,7 @@ import type { LevelCoverage } from "@/services/competition/model";
 import type { LevelId } from "@/services/players/levels";
 import type { TopProspectsResult } from "@/services/rankings";
 import { PlayerLink } from "@/components/ui/entity-links";
+import { SourceTag } from "./source-tag";
 import { AflTeamLink } from "@/components/afl/links";
 import { shortDate } from "@/lib/format";
 
@@ -24,7 +25,9 @@ export function LatestLines({
   return (
     <section className="home-panel" aria-labelledby="latest-lines-title">
       <div className="home-section-heading">
-        <h2 id="latest-lines-title">Latest Results</h2>
+        <h2 id="latest-lines-title">
+          Latest Results <SourceTag kind="live" />
+        </h2>
         <span className="small-muted">
           {date
             ? `Top ${levelLabel} box-score lines · ${shortDate(date)}`
