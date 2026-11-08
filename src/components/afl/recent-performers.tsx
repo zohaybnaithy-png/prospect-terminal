@@ -1,4 +1,5 @@
 "use client";
+import { SourceTag } from "@/components/home/source-tag";
 import Link from "next/link";
 import { useState } from "react";
 import type { RecentPerformer } from "@/services/afl/read-model";
@@ -34,7 +35,9 @@ export function AflRecentPerformers({
   return (
     <section className="home-panel" aria-labelledby="performers-title">
       <div className="home-section-heading">
-        <h2 id="performers-title">Recent Leaders</h2>
+        <h2 id="performers-title">
+          Recent Leaders <SourceTag kind="live" />
+        </h2>
       </div>
       <div className="panel-controls">
         <div

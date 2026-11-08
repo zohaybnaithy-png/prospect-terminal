@@ -6,6 +6,8 @@ export interface Column<T> {
   numeric?: boolean;
   render: (row: T) => ReactNode;
   sortValue?: (row: T) => string | number | null;
+  /** Shows a sort control when `onSort` is given; defaults to having a `sortValue`. */
+  sortable?: boolean;
 }
 export interface TableSort {
   key: string;
@@ -54,7 +56,7 @@ export function DataTable<T>({
                     : undefined
                 }
               >
-                {onSort && c.sortValue ? (
+                {onSort && (c.sortable ?? Boolean(c.sortValue)) ? (
                   <button type="button" onClick={() => onSort(c.key)}>
                     {c.label}
                     <span aria-hidden="true">

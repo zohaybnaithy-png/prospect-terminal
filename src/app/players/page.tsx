@@ -1,25 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { z } from "zod";
 import { MOMENTUM_WINDOWS } from "@/analytics/config";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";
 import { levelAsOf, levelFallback, unavailableLevels } from "@/services/competition/model";
 import { LevelFallbackNotice } from "@/components/levels/level-fallback";
+import { directoryOptions, momentumWindowFor } from "@/services/players/directory";
 import {
-  MIN_SAMPLE_OPTIONS,
-  STAT_WINDOWS,
-  directoryOptions,
-  momentumWindowFor,
-  type PositionGroup,
-} from "@/services/players/directory";
+  parseDirectoryScope,
+  parseDirectoryState,
+  queryDirectory,
+} from "@/services/players/directory-query";
 import { directoryRows } from "@/services/players/adapter";
-import { LEVELS, isLevelId, levelById, type LevelId } from "@/services/players/levels";
+import { LEVELS, levelById } from "@/services/players/levels";
 import { AflDataNotice } from "@/components/afl/data-notice";
-import {
-  PlayerDirectory,
-  type DirectoryState,
-} from "@/components/players/player-directory";
+import { PlayerDirectory } from "@/components/players/player-directory";
 import { shortDate } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -29,10 +24,6 @@ export const metadata: Metadata = {
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-const one = (v: string | string[] | undefined) =>
-  typeof v === "string" ? v : "";
-const uuidOr = (v: string) => (z.uuid().safeParse(v).success ? v : "");
-const SORT_KEY = /^[a-z0-9]{1,8}$/;
 
 export default function PlayersPage({
   searchParams,
@@ -43,7 +34,7 @@ export default function PlayersPage({
     <>
       <PageHeading
         title="Players"
-        description="Every prospect with recorded game lines at Triple-A, Double-A, High-A, Single-A and the Arizona Fall League. Search, filter by level, team, organization and position, and sort any column — including Momentum, which compares each player's recent games with the player's own earlier games at the same level."
+        description="Every prospect with recorded 2026 game lines at Triple-A, Double-A, High-A, Single-A and the Arizona Fall League. Search, filter and sort any column — including Momentum, which compares a player's recent games with their own earlier games at the same level."
       />
       <Suspense
         fallback={
@@ -64,34 +55,14 @@ async function Directory({ searchParams }: { searchParams: SearchParams }) {
     searchParams,
   ]);
   if (data.status !== "ok") return <AflDataNotice status={data.status} />;
-  const window = STAT_WINDOWS.find((w) => w === one(params.window)) ?? "season";
-  const role = one(params.role) === "pitchers" ? "pitcher" : "hitter";
   const available = data.levels.map((l) => l.level);
-  const requested = one(params.level);
-  const level: LevelId | "" =
-    isLevelId(requested) && available.includes(requested) ? requested : "";
+  const scope = parseDirectoryScope(params, available);
+  const { role, level, window } = scope;
   const rows = directoryRows(data.levels, { level, window, role });
   const options = directoryOptions(rows);
-  const position = one(params.pos) as PositionGroup;
-  const sortKey = one(params.sort);
-  const teamId = uuidOr(one(params.team));
-  const organizationId = uuidOr(one(params.org));
-  const initial: DirectoryState = {
-    role,
-    query: one(params.q).slice(0, 80),
-    level,
-    // Context filters only apply when they occur in this scope (e.g. a team from another level).
-    teamId: options.teams.some((t) => t.id === teamId) ? teamId : "",
-    organizationId: options.organizations.some((o) => o.id === organizationId)
-      ? organizationId
-      : "",
-    position: options.positions.includes(position) ? position : "",
-    minSample:
-      MIN_SAMPLE_OPTIONS.find((n) => String(n) === one(params.min)) ?? 0,
-    sort: SORT_KEY.test(sortKey)
-      ? { key: sortKey, direction: one(params.dir) === "asc" ? "asc" : "desc" }
-      : null,
-  };
+  const state = parseDirectoryState(params, scope, options);
+  // Filter, sort and paginate here: only one page of rows is sent to the browser.
+  const result = queryDirectory(rows, state);
   const mWindow = momentumWindowFor(window);
   const scoped = level ? data.levels.filter((l) => l.level === level) : data.levels;
   const through = scoped.map((ls) => {
@@ -101,7 +72,7 @@ async function Directory({ searchParams }: { searchParams: SearchParams }) {
   return (
     <>
       <LevelFallbackNotice
-        fallback={levelFallback(requested, level, data.levelStatus)}
+        fallback={levelFallback(scope.requestedLevel, level, data.levelStatus)}
         shown={level}
       />
       <p className="table-note directory-meta">
@@ -114,19 +85,21 @@ async function Directory({ searchParams }: { searchParams: SearchParams }) {
       </p>
       {!level && data.levels.length > 1 && (
         <p className="mixed-level-note">
-          All levels: each player appears once, with statistics and Momentum
-          from the level of their most recent game (Lvl column; other levels
-          are listed beside it). Statistics are not adjusted for level of
-          competition and windows end on each level&apos;s own latest game —
-          choose a level for like-for-like comparison.
+          <strong>All levels:</strong> each player appears once, with statistics
+          and Momentum from the level of their most recent game (Lvl column).
+          Statistics are not adjusted for level of competition — choose a level
+          for like-for-like comparison.
         </p>
       )}
       <PlayerDirectory
-        // Role, level and window are server scopes: remount so client state starts from them.
-        key={`${role}|${level}|${window}`}
-        rows={rows}
-        initial={initial}
-        window={window}
+        state={state}
+        rows={result.rows}
+        offset={result.offset}
+        matched={result.matched}
+        total={result.total}
+        page={result.page}
+        pageCount={result.pageCount}
+        sort={result.sort}
         momentumShort={MOMENTUM_WINDOWS[mWindow].short}
         teams={options.teams}
         organizations={options.organizations}

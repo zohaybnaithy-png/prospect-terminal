@@ -34,6 +34,7 @@ import {
 } from "@/components/analytics/momentum-parts";
 import { WhatChanged } from "@/components/analytics/what-changed";
 import { DevelopmentTimeline } from "@/components/analytics/development-timeline";
+import { timelineViews } from "@/analytics/trend-views";
 import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
@@ -124,18 +125,19 @@ export function AflPlayerProfileView({
             )}
           </div>
           {presence.length > 1 && (
-            <nav className="level-nav" aria-label="Player level">
-              <span className="level-nav-label">Levels</span>
+            <nav className="level-nav profile-levels" aria-label="Player level">
+              <span className="level-nav-label">{snapshot.season.year} levels</span>
               <div className="button-group">
                 {presence.map((p) => (
                   <Link
                     key={p.level}
                     href={playerHref(player.id, p.level)}
                     className="button-link"
-                    title={`${levelById(p.level).label} — ${p.games} games`}
+                    title={`${levelById(p.level).label} — ${p.games} games${p.firstGame && p.lastGame ? `, ${shortDate(p.firstGame)} – ${shortDate(p.lastGame)}` : ""}`}
                     aria-current={p.level === level ? "page" : undefined}
                   >
                     {levelById(p.level).short}
+                    <span className="level-games"> · {p.games} G</span>
                   </Link>
                 ))}
               </div>
@@ -264,7 +266,7 @@ export function AflPlayerProfileView({
             {analytics.roles.map(({ role, timelines }) => (
               <DevelopmentTimeline
                 key={role}
-                timelines={timelines}
+                timelines={timelineViews(timelines)}
                 label={ROLE_LABEL[role]}
               />
             ))}
@@ -299,7 +301,7 @@ export function AflPlayerProfileView({
               <BattingWindowTable
                 rows={windows.map((w) => ({
                   id: w,
-                  label: aflWindowLabels[w],
+                  label: w === "season" ? `${lvl.short} season` : aflWindowLabels[w],
                   stats: profile.windows[w].batting,
                 }))}
               />
@@ -311,7 +313,7 @@ export function AflPlayerProfileView({
               <PitchingWindowTable
                 rows={windows.map((w) => ({
                   id: w,
-                  label: aflWindowLabels[w],
+                  label: w === "season" ? `${lvl.short} season` : aflWindowLabels[w],
                   stats: profile.windows[w].pitching,
                 }))}
               />
@@ -597,7 +599,7 @@ function LevelHistory({
           <thead>
             <tr>
               <th scope="col">Level</th>
-              <th scope="col">Season</th>
+              <th scope="col" className="hide-narrow">Season</th>
               <th scope="col">Team</th>
               <th scope="col" className="numeric">G</th>
               <th scope="col">Games</th>
@@ -617,7 +619,7 @@ function LevelHistory({
                     </Link>
                   )}
                 </th>
-                <td>{p.season}</td>
+                <td className="hide-narrow">{p.season}</td>
                 <td>
                   {p.team ? (
                     <AflTeamLink team={p.team} level={p.level} />

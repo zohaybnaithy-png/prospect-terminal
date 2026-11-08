@@ -20,6 +20,9 @@ import {
   TopProspectsPanel,
 } from "@/components/home/sections";
 import { LevelNav } from "@/components/levels/level-nav";
+import { LevelMoves } from "@/components/home/level-moves";
+import { ComingSoonPanel } from "@/components/home/coming-soon";
+import { levelMoves } from "@/services/competition/moves";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -64,7 +67,8 @@ async function HomeDashboard({ searchParams }: { searchParams: SearchParams }) {
           </section>
         </div>
         <aside className="homepage-sidebar" aria-label="Rankings">
-          <TopProspectsPanel result={topProspects} />
+          {topProspects.status === "ok" && <TopProspectsPanel result={topProspects} />}
+          <ComingSoonPanel showRankings={topProspects.status !== "ok"} />
           {data.status === "empty" && (
             <CoveragePanel coverage={levelCoverage([], data.levelStatus)} />
           )}
@@ -102,14 +106,22 @@ async function HomeDashboard({ searchParams }: { searchParams: SearchParams }) {
             level={ls.level}
             levelLabel={level.label}
           />
+          <LevelMoves
+            moves={levelMoves(data.levels, {
+              limit: 10,
+              involving: ls.level === "afl" ? undefined : ls.level,
+            })}
+            level={ls.level}
+          />
         </div>
         <aside
           className="homepage-sidebar"
           aria-label="Performance and rankings"
         >
           <RecentPerformersSection snapshot={ls.snapshot} level={ls.level} />
-          <TopProspectsPanel result={topProspects} />
+          {topProspects.status === "ok" && <TopProspectsPanel result={topProspects} />}
           <CoveragePanel coverage={levelCoverage(data.levels, data.levelStatus, levelCoverageSummary)} />
+          <ComingSoonPanel showRankings={topProspects.status !== "ok"} />
         </aside>
       </div>
     </>

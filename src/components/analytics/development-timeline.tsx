@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -16,7 +16,11 @@ import {
   MOMENTUM_WINDOW_IDS,
   type MomentumWindow,
 } from "@/analytics/config";
-import type { PlayerTimeline, TimelinePoint } from "@/analytics/engine";
+import {
+  timelinePoints,
+  type TimelinePointView as TimelinePoint,
+  type TimelineView,
+} from "@/analytics/trend-views";
 import { formatMetric, metricDefinition } from "@/analytics/metrics";
 import { shortDate } from "@/lib/format";
 import { signedText } from "./momentum-parts";
@@ -30,12 +34,13 @@ export function DevelopmentTimeline({
   timelines,
   label,
 }: {
-  timelines: Record<MomentumWindow, PlayerTimeline>;
+  timelines: Record<MomentumWindow, TimelineView>;
   label: string;
 }) {
   const [window, setWindow] = useState<MomentumWindow>("14d");
   const [view, setView] = useState<"momentum" | "metric">("momentum");
-  const t = timelines[window];
+  const selected = timelines[window];
+  const t = useMemo(() => ({ ...selected, points: timelinePoints(selected) }), [selected]);
   const scored = t.points.filter((p) => p.score !== null);
   const keyLabel = metricDefinition(t.keyMetric).label;
   return (

@@ -4,7 +4,8 @@
  * whole), so a view model computed once per snapshot object is reused by every request until the
  * level reloads. Formulas are untouched: these call the same functions the pages called before.
  */
-import { MOMENTUM_WINDOW_IDS } from "@/analytics/config";
+import { MOMENTUM_WINDOW_IDS, type MomentumWindow, type Role } from "@/analytics/config";
+import { mapPointsView, riserListsView, type MapPointCompact } from "@/analytics/trend-views";
 import { analyticsContextFor, comparableCount, mapSets, riserSets } from "@/analytics/views";
 import { coverageSummary, latestTopLines, trendingSets } from "@/services/home";
 import type { AflSnapshot } from "@/services/afl/types";
@@ -25,6 +26,21 @@ export const homeTrending = memoBySnapshot("home-trending", (s) => trendingSets(
 export const homeTopLines = memoBySnapshot("home-top-lines", (s) => latestTopLines(s));
 export const trendRisers = memoBySnapshot("trend-risers", (s) => riserSets(s));
 export const trendMap = memoBySnapshot("trend-map", (s) => mapSets(s));
+/** Display-ready Trends models (what the client components receive). */
+const trendRiserView = memoBySnapshot("trend-riser-view", (s) => riserListsView(trendRisers(s)));
+/** Players with a valid comparison per role × window (0 = window unavailable). */
+export const trendComparable = (s: AflSnapshot) => trendRisers(s).comparable;
+/** Risers / fallers for every category of one role × window. */
+export const trendRiserLists = (s: AflSnapshot, role: Role, window: MomentumWindow) =>
+  trendRiserView(s).lists[role][window];
+const mapPointMemo = memoBySnapshot("trend-map-points", () => new Map<string, MapPointCompact[]>());
+export function trendMapPoints(s: AflSnapshot, role: Role, window: MomentumWindow) {
+  const memo = mapPointMemo(s);
+  const key = `${role}|${window}`;
+  let points = memo.get(key);
+  if (!points) memo.set(key, (points = mapPointsView(trendMap(s), role, window)));
+  return points;
+}
 export const levelCoverageSummary = memoBySnapshot("coverage", (s) => coverageSummary(s));
 
 /**

@@ -7,10 +7,10 @@ import {
   type MomentumWindow,
   type Role,
 } from "@/analytics/config";
-import type { RankedEntry, RiserCategory } from "@/analytics/engine";
+import type { RiserCategory } from "@/analytics/engine";
 import { COMPONENT_LABELS } from "@/analytics/explain";
-import { formatMetric, metricDefinition } from "@/analytics/metrics";
-import type { RiserSets } from "@/analytics/views";
+import type { RiserCategoryLists, RiserEntryView } from "@/analytics/trend-views";
+import { useTrendData } from "./use-trend-data";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
 import type { LevelId } from "@/services/players/levels";
@@ -20,30 +20,41 @@ import {
   MomentumValue,
   PERSISTENCE_HELP,
   PersistenceMeter,
-  persistenceText,
 } from "./momentum-parts";
 
 /** Biggest Risers / Fallers: ranked by change relative to each player's own baseline at one level. */
 export function RisersFallers({
-  sets,
+  initial,
+  comparable,
   minRecent,
   minBaseline,
   minMagnitude,
   level,
 }: {
   level: LevelId;
-  sets: RiserSets;
+  /** Lists embedded in the page for the default selection; others load on demand. */
+  initial: { role: Role; window: MomentumWindow; lists: RiserCategoryLists };
+  /** Players with a valid comparison per role/window; 0 = window unavailable. */
+  comparable: Record<Role, Record<MomentumWindow, number>>;
   minRecent: Record<Role, Record<MomentumWindow, number>>;
   minBaseline: Record<Role, number>;
   minMagnitude: number;
 }) {
-  const [window, setWindow] = useState<MomentumWindow>("14d");
-  const [role, setRole] = useState<Role>("hitter");
+  const [window, setWindow] = useState<MomentumWindow>(initial.window);
+  const [role, setRole] = useState<Role>(initial.role);
   const [category, setCategory] = useState<RiserCategory>("overall");
   const cats: RiserCategory[] = ["overall", ...COMPONENTS_BY_ROLE[role]];
   const cat = cats.includes(category) ? category : "overall";
-  const data = sets.lists[role][window][cat] ?? { risers: [], fallers: [] };
-  const unavailable = sets.comparable[role][window] === 0;
+  const unavailable = comparable[role][window] === 0;
+  const loaded = useTrendData<RiserCategoryLists>(
+    "risers",
+    level,
+    role,
+    window,
+    { role: initial.role, window: initial.window, data: initial.lists },
+    unavailable,
+  );
+  const data = (loaded.status === "ok" && loaded.data[cat]) || { risers: [], fallers: [] };
   const unit = role === "hitter" ? "PA" : "BF";
   return (
     <section className="explorer" aria-label="Biggest risers and fallers">
@@ -80,6 +91,17 @@ export function RisersFallers({
           {role === "hitter" ? "hitter" : "pitcher"} has enough games at this level
           before this window to compare with yet. No change is estimated.
         </p>
+      ) : loaded.status === "loading" ? (
+        <p className="empty-state" aria-busy="true">
+          Loading {role === "hitter" ? "hitters" : "pitchers"}…
+        </p>
+      ) : loaded.status === "error" ? (
+        <p className="empty-state" role="alert">
+          These lists could not be loaded.{" "}
+          <button type="button" className="reset-button" onClick={loaded.retry}>
+            Try again
+          </button>
+        </p>
       ) : (
         <div className="riser-columns">
           <RankList title="Risers" entries={data.risers} cat={cat} level={level} />
@@ -106,7 +128,7 @@ function RankList({
   level,
 }: {
   title: string;
-  entries: RankedEntry[];
+  entries: RiserEntryView[];
   cat: RiserCategory;
   level: LevelId;
 }) {
@@ -127,14 +149,9 @@ function RankList({
                   </span>
                 </div>
                 <div className="performance-summary">
-                  {metricDefinition(e.keyMetric).label} {formatMetric(e.keyMetric, e.keyBefore)} →{" "}
-                  {formatMetric(e.keyMetric, e.keyNow)} · {e.sample.recent}/{e.sample.baseline} {e.sample.unit}
+                  {e.keyChange} · {e.sample.recent}/{e.sample.baseline} {e.sample.unit}
                   {" · "}
-                  {persistenceText({
-                    state: e.persistenceState,
-                    direction: e.persistenceDirection,
-                    trendLengthDays: e.trendLengthDays,
-                  })}
+                  {e.persistence}
                 </div>
                 <div className="rank-meta">
                   <ConfidenceMeter

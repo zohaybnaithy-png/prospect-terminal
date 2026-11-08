@@ -2,6 +2,7 @@
 import type { LevelId } from "@/services/players/levels";
 import { playerHref } from "@/components/ui/entity-links";
 import { useMemo, useState } from "react";
+import { useTrendData } from "./use-trend-data";
 import { useRouter } from "next/navigation";
 import {
   CartesianGrid,
@@ -22,14 +23,15 @@ import {
   type MomentumWindow,
   type Role,
 } from "@/analytics/config";
-import { formatMetric, metricDefinition } from "@/analytics/metrics";
-import type { MapPointView, MapSets } from "@/analytics/views";
+import { metricDefinition } from "@/analytics/metrics";
+import type { MapPointCompact } from "@/analytics/trend-views";
 import { signedText } from "./momentum-parts";
 
-interface Point extends MapPointView {
+interface Point extends MapPointCompact {
   x: number;
-  xValue: number;
+  xText: string;
 }
+
 
 const QUADRANTS = [
   { label: "Breakout / emerging", x: 2, y: 96, anchor: "start" },
@@ -43,26 +45,38 @@ const QUADRANTS = [
  * Quadrant names are descriptive UI categories, not scouting judgments.
  */
 export function PerformanceMap({
-  sets,
+  initial,
   comparable,
   level,
 }: {
   level: LevelId;
-  sets: MapSets;
+  /** Points embedded in the page for the default selection; others load on demand. */
+  initial: { role: Role; window: MomentumWindow; points: MapPointCompact[] };
   /** Players with a valid comparison per role/window; 0 = window unavailable. */
   comparable: Record<Role, Record<MomentumWindow, number>>;
 }) {
   const router = useRouter();
-  const [role, setRole] = useState<Role>("hitter");
-  const [window, setWindow] = useState<MomentumWindow>("14d");
-  const [metric, setMetric] = useState<string>(MAP_PERFORMANCE_METRICS.hitter[0]);
+  const [role, setRole] = useState<Role>(initial.role);
+  const [window, setWindow] = useState<MomentumWindow>(initial.window);
+  const [metric, setMetric] = useState<string>(MAP_PERFORMANCE_METRICS[initial.role][0]);
+  const unavailable = comparable[role][window] === 0;
+  const current = useTrendData<MapPointCompact[]>(
+    "map",
+    level,
+    role,
+    window,
+    { role: initial.role, window: initial.window, data: initial.points },
+    unavailable,
+  );
   const xMetric = MAP_PERFORMANCE_METRICS[role].includes(metric) ? metric : MAP_PERFORMANCE_METRICS[role][0];
   const points: Point[] = useMemo(
     () =>
-      sets[role][window].flatMap((p) =>
-        p.xs[xMetric] ? [{ ...p, x: p.xs[xMetric][0], xValue: p.xs[xMetric][1] }] : [],
-      ),
-    [sets, role, window, xMetric],
+      current.status === "ok"
+        ? current.data.flatMap((p) =>
+            p.xs[xMetric] ? [{ ...p, x: p.xs[xMetric][0], xText: p.xs[xMetric][1] }] : [],
+          )
+        : [],
+    [current, xMetric],
   );
   const xLabel = metricDefinition(xMetric).label;
   return (
@@ -122,22 +136,33 @@ export function PerformanceMap({
                 isAnimationActive={false}
                 cursor="pointer"
                 onClick={(d: unknown) => {
-                  const id = (d as { payload?: Point; playerId?: string })?.payload?.playerId ?? (d as Point)?.playerId;
+                  const id = (d as { payload?: Point; id?: string })?.payload?.id ?? (d as Point)?.id;
                   if (id) router.push(playerHref(id, level));
                 }}
               />
             </ScatterChart>
           </ResponsiveContainer>
         </div>
-      ) : (
+      ) : unavailable ? (
         <p className="empty-state">
-          {comparable[role][window] === 0
-            ? `${MOMENTUM_WINDOWS[window].short} unavailable — no player has enough games at this level before this window to compare with yet. No change is estimated.`
-            : "No players meet the sample minimums for this window yet."}
+          {MOMENTUM_WINDOWS[window].short} unavailable — no player has enough games at this level before this window to compare with yet. No change is estimated.
         </p>
+      ) : current.status === "loading" ? (
+        <p className="empty-state map-loading" aria-busy="true">
+          Loading {role === "hitter" ? "hitters" : "pitchers"}…
+        </p>
+      ) : current.status === "error" ? (
+        <p className="empty-state" role="alert">
+          The map points could not be loaded.{" "}
+          <button type="button" className="reset-button" onClick={current.retry}>
+            Try again
+          </button>
+        </p>
+      ) : (
+        <p className="empty-state">No players meet the sample minimums for this window yet.</p>
       )}
       <p className="table-note">
-        {points.length} qualified players. x is the player&apos;s percentile at this level
+        {current.status === "ok" ? `${points.length} qualified players. ` : ""}x is the player&apos;s percentile at this level
         for one season statistic (not a composite performance model); y is{" "}
         {MOMENTUM_WINDOWS[window].short} Momentum.
         Quadrant names are descriptive categories, not scouting conclusions.
@@ -152,23 +177,16 @@ function MapTooltip({ active, payload, xMetric }: { active?: boolean; payload?: 
   return (
     <div className="chart-tooltip">
       <strong>{p.name}</strong>
-      <div className="small-muted">
-        {[p.team?.abbreviation, p.organization?.abbreviation, p.position].filter(Boolean).join(" · ")}
-      </div>
+      <div className="small-muted">{p.context}</div>
       <div>
-        {metricDefinition(xMetric).label} {formatMetric(xMetric, p.xValue)} · {Math.round(p.x)} pctl
+        {metricDefinition(xMetric).label} {p.xText} · {Math.round(p.x)} pctl
       </div>
       <div>
         Momentum {signedText(p.y)} · Confidence {p.confidence} · Persistence {p.persistenceLevel}
       </div>
-      <div className="small-muted">{p.persistenceLabel}
-      </div>
-      <div>
-        {metricDefinition(p.keyMetric).label} {formatMetric(p.keyMetric, p.keyBefore)} → {formatMetric(p.keyMetric, p.keyNow)}
-      </div>
-      <div className="small-muted">
-        {p.sample.recent} recent / {p.sample.baseline} earlier {p.sample.unit}
-      </div>
+      <div className="small-muted">{p.persistenceLabel}</div>
+      <div>{p.keyChange}</div>
+      <div className="small-muted">{p.sample}</div>
     </div>
   );
 }

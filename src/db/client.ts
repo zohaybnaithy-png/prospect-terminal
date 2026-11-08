@@ -37,7 +37,9 @@ export const DB_POOL_OPTIONS = {
 export const QUERY_DEADLINE_MS = 45_000;
 
 /**
- * A query whose connection receives nothing for this long is treated as stalled and closed (see
+ * A query whose connection receives nothing for this long, counted in time the process was free to
+ * read it (event-loop idle, so CPU-heavy startup work does not count), is treated as stalled and
+ * closed (see
  * src/db/instrument.ts for the measurements behind it: healthy transfers pause < 1 s; degraded
  * connections paused 4.5-18 s). Covers server execution too: the slowest level statement runs in
  * ~0.1 s on the server and statement_timeout is 30 s, but no level statement legitimately runs
@@ -46,7 +48,8 @@ export const QUERY_DEADLINE_MS = 45_000;
 export const QUERY_STALL_MS = 8_000;
 
 /**
- * A query that has been receiving for 6 s at under 50 kB/s is on a degraded connection and is
+ * A query that has been receiving for 6 s at under 50 kB/s (both measured in event-loop idle time,
+ * not wall time: a busy process cannot read its socket) is on a degraded connection and is
  * closed (then retried on a fresh one). Healthy level queries ran at >=127 kB/s and finished in
  * <=4.1 s on a ~1 MB/s home link; degraded ones ran at 10-19 kB/s for 20-45 s.
  */
