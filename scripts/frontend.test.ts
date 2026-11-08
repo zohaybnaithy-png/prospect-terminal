@@ -5,7 +5,9 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { MOMENTUM_WINDOW_IDS } from "../src/analytics/config";
+import { MOMENTUM_WINDOW_IDS, type MomentumWindow, type Role } from "../src/analytics/config";
+import { TrendDataStore } from "../src/components/analytics/trend-data-store";
+import type { LevelId } from "../src/services/players/levels";
 import { formatMetric, metricDefinition } from "../src/analytics/metrics";
 import { persistenceLabel } from "../src/analytics/persistence";
 import { mapSets, playerAnalyticsView, riserSets } from "../src/analytics/views";
@@ -266,5 +268,92 @@ describe("level moves observed in box scores", () => {
     assert.equal(levelMoves(levels, { involving: "aaa" }).length, 2);
     assert.equal(levelMoves(levels, { limit: 1 }).length, 1);
     assert.deepEqual(levelMoves([levels[0]]), []);
+  });
+});
+
+describe("Trends on-demand data cache (per level × role × window)", () => {
+  type Pending = { url: string; resolve: (v: unknown) => void; reject: (e: Error) => void };
+  const setup = () => {
+    const pending: Pending[] = [];
+    const store = new TrendDataStore<string>("risers", (url) => new Promise((resolve, reject) => pending.push({ url, resolve, reject })));
+    let renders = 0;
+    store.subscribe(() => renders++);
+    const param = (p: Pending, k: string) => new URL(p.url, "http://x").searchParams.get(k);
+    return { store, pending, param, renders: () => renders };
+  };
+  const sel = (level: LevelId, role: Role = "hitter", window: MomentumWindow = "14d") => ({ level, role, window });
+  const flush = () => new Promise((r) => setImmediate(r));
+
+  test("switching level never shows another level's data; the new page's embedded data is used at once", async () => {
+    const { store, pending, param } = setup();
+    const aaa = { ...sel("aaa"), data: "AAA hitters 14d" };
+    // On AAA the user opens pitchers 30D: fetched for AAA.
+    store.ensure(sel("aaa", "pitcher", "30d"), aaa);
+    assert.deepEqual([param(pending[0], "level"), param(pending[0], "role"), param(pending[0], "window")], ["aaa", "pitcher", "30d"]);
+    pending[0].resolve("AAA pitchers 30d");
+    await flush();
+    assert.deepEqual(store.state(sel("aaa", "pitcher", "30d"), aaa), { status: "ok", data: "AAA pitchers 30d" });
+    // Navigate to AA (component state survives): same role × window is NOT the AAA entry.
+    const aa = { ...sel("aa"), data: "AA hitters 14d" };
+    assert.deepEqual(store.state(sel("aa", "pitcher", "30d"), aa), { status: "loading" });
+    store.ensure(sel("aa", "pitcher", "30d"), aa);
+    assert.equal(param(pending[1], "level"), "aa");
+    // The default selection comes from the new page's props, not from the first level's.
+    assert.deepEqual(store.state(sel("aa"), aa), { status: "ok", data: "AA hitters 14d" });
+    pending[1].resolve("AA pitchers 30d");
+    await flush();
+    assert.deepEqual(store.state(sel("aa", "pitcher", "30d"), aa), { status: "ok", data: "AA pitchers 30d" });
+    // Back on AAA, its own cached entry and its own embedded data.
+    assert.deepEqual(store.state(sel("aaa", "pitcher", "30d"), aaa), { status: "ok", data: "AAA pitchers 30d" });
+    assert.deepEqual(store.state(sel("aaa"), aaa), { status: "ok", data: "AAA hitters 14d" });
+  });
+
+  test("rapid switching: one request per selection, and late responses fill only their own entry", async () => {
+    const { store, pending } = setup();
+    const initial = { ...sel("aa"), data: "embedded" };
+    store.ensure(sel("aa", "hitter", "7d"), initial);
+    store.ensure(sel("aa", "hitter", "30d"), initial);
+    store.ensure(sel("aa", "hitter", "7d"), initial); // back again while in flight: no duplicate
+    store.ensure(sel("aa"), initial); // the embedded selection is never fetched
+    assert.equal(pending.length, 2);
+    // The user is now on 30D; the 30D answer arrives first, the stale 7D answer last.
+    pending[1].resolve("30d");
+    await flush();
+    pending[0].resolve("7d");
+    await flush();
+    assert.deepEqual(store.state(sel("aa", "hitter", "30d"), initial), { status: "ok", data: "30d" });
+    assert.deepEqual(store.state(sel("aa", "hitter", "7d"), initial), { status: "ok", data: "7d" });
+    // Same role × window at another level is a separate request.
+    store.ensure(sel("high-a", "hitter", "30d"), sel("high-a"));
+    assert.equal(pending.length, 3);
+  });
+
+  test("a failed request shows an error for that selection only, and retry requests it again", async () => {
+    const { store, pending, renders } = setup();
+    const initial = { ...sel("single-a"), data: "embedded" };
+    store.ensure(sel("single-a", "pitcher", "7d"), initial);
+    store.ensure(sel("single-a", "pitcher", "14d"), initial);
+    pending[0].reject(new Error("503"));
+    pending[1].resolve("pitchers 14d");
+    await flush();
+    const failed = store.state(sel("single-a", "pitcher", "7d"), initial);
+    assert.equal(failed.status, "error");
+    assert.deepEqual(store.state(sel("single-a", "pitcher", "14d"), initial), { status: "ok", data: "pitchers 14d" });
+    assert.deepEqual(store.state(sel("aa", "pitcher", "7d"), { ...sel("aa"), data: "y" }), { status: "loading" });
+    // A failure is not re-requested on its own (no retry loop)…
+    store.ensure(sel("single-a", "pitcher", "7d"), initial);
+    assert.equal(pending.length, 2);
+    // …only when the user retries.
+    const before = renders();
+    if (failed.status === "error") failed.retry();
+    assert.ok(renders() > before);
+    assert.deepEqual(store.state(sel("single-a", "pitcher", "7d"), initial), { status: "loading" });
+    store.ensure(sel("single-a", "pitcher", "7d"), initial);
+    assert.equal(pending.length, 3);
+    pending[2].resolve("pitchers 7d");
+    await flush();
+    assert.deepEqual(store.state(sel("single-a", "pitcher", "7d"), initial), { status: "ok", data: "pitchers 7d" });
+    // An unavailable window is neither requested by the hook nor reported from the cache.
+    assert.deepEqual(store.state(sel("single-a", "pitcher", "7d"), initial, true), { status: "loading" });
   });
 });

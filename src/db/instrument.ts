@@ -24,8 +24,18 @@
  * silent long enough for the stall rule), while every healthy query >100 kB ran at >=127 kB/s and
  * finished within ~4 s. A fresh connection does not inherit the degradation (retries completed in
  * 4-6 s), so closing early and retrying (tracedLevelLoader) recovers in seconds.
+ *
+ * Silence and throughput are measured in time the process was available to read the socket (event
+ * loop idle, from performance.eventLoopUtilization), not wall time. While synchronous work runs
+ * (e.g. other levels decoding or warming up on a cold start) bytes wait in the socket buffer and
+ * the server is throttled by TCP flow control, so wall-clock silence or a low wall-clock rate says
+ * nothing about the connection. Observed on a cold start: a healthy 165 kB games query delivered
+ * over 6 s while sub-second blocks (each below the pause rule below) kept the loop busy, and was
+ * closed as "slow". A degraded connection on an idle process is measured as before; the deadline
+ * stays in wall time, so every query is still bounded.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
+import { performance } from "node:perf_hooks";
 import type { Pool, PoolClient } from "pg";
 
 export interface QueryTiming {
@@ -97,10 +107,11 @@ export function queryLabel(text: string): string {
 export interface InstrumentOptions {
   /** Destroy the connection of a query still running after this long. 0 disables. */
   queryDeadlineMs: number;
-  /** Destroy the connection of a query that received no bytes for this long. 0 disables. */
+  /** Destroy the connection of a query that received no bytes while the process was available
+   *  (event loop idle) for this long. 0 disables. */
   stallMs?: number;
-  /** Destroy the connection of a query receiving for longer than `slowAfterMs` (measured from its
-   *  first byte) at an average below `minBytesPerSec`. Either 0 disables. */
+  /** Destroy the connection of a query receiving for longer than `slowAfterMs` (available time
+   *  since its first byte) at an average below `minBytesPerSec` over that time. Either 0 disables. */
   slowAfterMs?: number;
   minBytesPerSec?: number;
   /** Watchdog sweep interval. */
@@ -113,11 +124,14 @@ const INSTRUMENTED = Symbol.for("prospect-terminal.pg-instrumented");
 interface Active {
   label: string;
   sentAt: number;
-  /** Last time bytes arrived (or the watchdog last observed the process running). */
+  /** Last time bytes arrived (or the watchdog restarted the clocks after a pause). */
   lastDataAt: number;
   /** First response byte, and bytes received since. */
   firstDataAt: number | null;
   bytes: number;
+  /** Event-loop idle time since the last bytes (or since sent), and since the first byte. */
+  quietMs: number;
+  receivingMs: number;
   client: PoolClient;
   destroyed: WatchdogReason | null;
 }
@@ -191,6 +205,8 @@ export function instrumentPool(pool: Pool, opts: InstrumentOptions): () => void 
         lastDataAt: sentAt,
         firstDataAt: null,
         bytes: 0,
+        quietMs: 0,
+        receivingMs: 0,
         client,
         destroyed: null,
       };
@@ -218,30 +234,45 @@ export function instrumentPool(pool: Pool, opts: InstrumentOptions): () => void 
   const minRate = opts.minBytesPerSec ?? 0;
   if (opts.queryDeadlineMs > 0 || stallMs > 0 || (slowAfterMs > 0 && minRate > 0)) {
     let lastSweep = performance.now();
+    let lastElu = performance.eventLoopUtilization();
     timer = setInterval(() => {
       const now = performance.now();
       const late = now - lastSweep - sweepMs;
+      const prevSweep = lastSweep;
       lastSweep = now;
+      const elu = performance.eventLoopUtilization();
+      // Time the event loop waited for I/O since the previous sweep: when any byte that arrived
+      // would have been read at once. Busy time (our own row parsing included) is not counted.
+      const idle = Math.max(0, elu.idle - lastElu.idle);
+      lastElu = elu;
+      // Available time since `t` within this interval (all of it if `t` is earlier).
+      const availableSince = (t: number) => (t > prevSweep ? Math.min(idle, now - t) : idle);
       for (const a of active) {
         if (a.destroyed) continue;
-        // The process itself did not run (machine asleep or event loop blocked): bytes could not
-        // be observed, so silence is not evidence of a stall. Restart the idle clocks.
+        // The process itself did not run for a whole sweep (machine asleep or event loop blocked):
+        // bytes could not be observed, so silence is not evidence of a stall. Restart the clocks.
         if (late > sweepMs) {
           a.lastDataAt = now;
+          a.quietMs = 0;
           if (a.firstDataAt !== null) {
             // Restart the rate window too: bytes could not be read while paused.
             a.firstDataAt = now;
             a.bytes = 0;
+            a.receivingMs = 0;
           }
           continue;
         }
-        const receiving = a.firstDataAt === null ? 0 : now - a.firstDataAt;
+        a.quietMs = (a.lastDataAt > prevSweep ? 0 : a.quietMs) + availableSince(a.lastDataAt);
+        if (a.firstDataAt !== null) a.receivingMs += availableSince(a.firstDataAt);
         const reason: WatchdogReason | null =
           opts.queryDeadlineMs > 0 && now - a.sentAt > opts.queryDeadlineMs
             ? "deadline"
-            : stallMs > 0 && now - a.lastDataAt > stallMs
+            : stallMs > 0 && a.quietMs > stallMs
               ? "stalled"
-              : slowAfterMs > 0 && minRate > 0 && receiving > slowAfterMs && (a.bytes * 1000) / receiving < minRate
+              : slowAfterMs > 0 &&
+                  minRate > 0 &&
+                  a.receivingMs > slowAfterMs &&
+                  (a.bytes * 1000) / a.receivingMs < minRate
                 ? "slow"
                 : null;
         if (!reason) continue;

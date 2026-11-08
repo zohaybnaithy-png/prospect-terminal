@@ -55,9 +55,9 @@ Every level load is bounded, and failures are contained:
 |---|---|---|
 | Connect / pool acquire | 15 s | `DB_POOL_OPTIONS.connectionTimeoutMillis` (`src/db/client.ts`) |
 | Server execution | 30 s per statement | `SET LOCAL statement_timeout` in each read-only level transaction |
-| No bytes received | 8 s → connection closed | Query watchdog (`src/db/instrument.ts`) |
-| Degraded transfer | < 50 kB/s after 6 s → closed | Query watchdog |
-| Any single query | 45 s → closed | Query watchdog |
+| No bytes received | 8 s of event-loop idle time → connection closed | Query watchdog (`src/db/instrument.ts`) |
+| Degraded transfer | < 50 kB/s over 6 s of event-loop idle time → closed | Query watchdog |
+| Any single query | 45 s wall time → closed | Query watchdog |
 | Whole level load | 90 s → abandoned | `loadTimeoutMs` (`src/services/competition/cache.ts`) |
 
 - **One retry:** a level whose connection the watchdog closed is retried once, on a fresh

@@ -654,3 +654,36 @@ test("watchdog: a connection that keeps trickling below the minimum rate is clos
   assert.deepEqual(await run(50), ["slow"], "~5 kB/s: degraded");
   assert.deepEqual(await run(5_000), [], "~500 kB/s: healthy");
 });
+
+test("watchdog: CPU contention (sub-second blocks) is not mistaken for a stalled or slow connection", async () => {
+  const { pool, stream } = fakePool();
+  const closed: string[] = [];
+  const stop = instrumentPool(pool, {
+    queryDeadlineMs: 0,
+    stallMs: 100,
+    slowAfterMs: 100,
+    minBytesPerSec: 50_000,
+    sweepMs: 50,
+    onDeadline: (_l, _ms, r) => closed.push(r),
+  });
+  const c = (await pool.connect()) as unknown as ReturnType<typeof fakePool>["client"];
+  const q = c.query("select 1");
+  q.catch(() => {});
+  // Other work keeps the event loop ~90% busy in 40 ms blocks: shorter than a sweep, so not a
+  // pause. In wall time the connection is silent for 150 ms at a time and delivers ~13 kB/s.
+  const busy = setInterval(() => {
+    const until = performance.now() + 40;
+    while (performance.now() < until);
+  }, 45);
+  const feed = setInterval(() => stream.emit("data", Buffer.alloc(2_000)), 150);
+  await sleep(900);
+  clearInterval(feed);
+  clearInterval(busy);
+  assert.deepEqual(closed, [], "bytes arrive whenever the process can read them");
+  assert.equal(stream.destroyed, false);
+  // Once the process is free again, a connection that really stops is still closed.
+  await sleep(400);
+  stop();
+  assert.deepEqual(closed, ["stalled"]);
+  await assert.rejects(q, /terminated/);
+});
