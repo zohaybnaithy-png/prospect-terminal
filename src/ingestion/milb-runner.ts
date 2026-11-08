@@ -69,7 +69,11 @@ export interface ChunkSummary {
   changed?: number;
   unchanged?: number;
   notices?: number;
+  /** Notice count per reason (informational; see docs/MILB-INGESTION.md). */
+  noticeReasons?: Record<string, number>;
   reusedBoxscores?: number;
+  /** ingestion_runs id of an applied chunk (absent for dry runs). */
+  runId?: string;
   operations?: Record<string, number>;
   databaseComparison?: IngestionReport["databaseComparison"];
   diagnostics?: IngestionReport["diagnostics"];
@@ -147,6 +151,15 @@ function summarize(phase: ChunkSummary["phase"], r: IngestionReport, range?: { f
     issues: r.issues,
     ...(r.changed !== undefined ? { changed: r.changed, unchanged: r.unchanged } : {}),
     notices: r.notices?.length ?? 0,
+    ...(r.notices?.length
+      ? {
+          noticeReasons: r.notices.reduce<Record<string, number>>((acc, n) => {
+            acc[n.reason] = (acc[n.reason] ?? 0) + 1;
+            return acc;
+          }, {}),
+        }
+      : {}),
+    ...(r.runId ? { runId: r.runId } : {}),
     reusedBoxscores: Number(
       r.notices?.find((n) => n.reason === "reused-boxscores")?.message.match(/^\d+/)?.[0] ?? 0,
     ),

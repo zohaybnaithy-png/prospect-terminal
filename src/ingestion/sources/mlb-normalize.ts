@@ -195,6 +195,29 @@ export function foundationalRecords(
 }
 
 /**
+ * True only when a box score stat line provably carries nothing: every participation count is 0
+ * AND every statistic the importer would store (battingStats/pitchingStats) is 0 or absent. A line
+ * with any nonzero stored value (e.g. a pinch runner's run or stolen base with 0 PA), or one that
+ * cannot be normalized, is never treated as empty.
+ */
+function noParticipation(kind: "battingGame" | "pitchingGame", stats: Record<string, unknown>) {
+  const fields =
+    kind === "battingGame"
+      ? ["gamesPlayed", "plateAppearances", "atBats"]
+      : ["gamesPlayed", "gamesPitched", "battersFaced", "outs", "numberOfPitches", "pitchesThrown"];
+  const present = fields.filter((f) => stats[f] !== undefined);
+  if (!present.length || !present.every((f) => stats[f] === 0)) return false;
+  if (kind === "pitchingGame" && stats.inningsPitched !== undefined && stats.inningsPitched !== "0.0") return false;
+  let stored: unknown;
+  try {
+    stored = kind === "battingGame" ? battingStats(stats) : pitchingStats(stats);
+  } catch {
+    return false;
+  }
+  return Object.values(stored as Record<string, unknown>).every((v) => v === undefined || v === 0);
+}
+
+/**
  * Normalizes one completed-game boxscore into batting/pitching lines plus a gameLineSet.
  * Shared by the AFL and MiLB adapters. Any malformed player or statistic holds the WHOLE
  * boxscore (no lines, no line set) so a partial boxscore can never be marked complete.
@@ -214,10 +237,14 @@ export function normalizeBoxscore(
           home: z.object({
             team: z.object({ id: apiId }),
             players: z.record(z.string(), z.unknown()),
+            batters: z.array(apiId).optional(),
+            pitchers: z.array(apiId).optional(),
           }),
           away: z.object({
             team: z.object({ id: apiId }),
             players: z.record(z.string(), z.unknown()),
+            batters: z.array(apiId).optional(),
+            pitchers: z.array(apiId).optional(),
           }),
         }),
       })
@@ -229,7 +256,8 @@ export function normalizeBoxscore(
       throw new Error("Boxscore teams disagree with schedule");
     const lines: IngestionRecord[] = [];
     let bad = false;
-    for (const side of [box.teams.home, box.teams.away])
+    for (const side of [box.teams.home, box.teams.away]) {
+      const other = side === box.teams.home ? box.teams.away : box.teams.home;
       for (const [key, raw] of Object.entries(side.players)) {
         const entry = z
           .object({
@@ -251,6 +279,27 @@ export function normalizeBoxscore(
         for (const kind of ["battingGame", "pitchingGame"] as const) {
           const stats = kind === "battingGame" ? row.stats.batting : row.stats.pitching;
           if (!stats || !Object.keys(stats).length) continue;
+          // The API occasionally also lists a player under the OTHER club with an all-zero line
+          // (e.g. MiLB gamePk 817667). Skip such a line only when this side's batters/pitchers
+          // list omits the player, the other side's list includes him (so a real line exists
+          // there), and the line stores nothing (noParticipation). Anything else is emitted and
+          // still goes through conflict quarantine.
+          const listed = kind === "battingGame" ? side.batters : side.pitchers;
+          const otherListed = kind === "battingGame" ? other.batters : other.pitchers;
+          if (
+            listed &&
+            otherListed &&
+            !listed.includes(row.person.id) &&
+            otherListed.includes(row.person.id) &&
+            noParticipation(kind, stats)
+          ) {
+            n.notices.push({
+              recordKey: `${kind}:${gamePk}:${row.person.id}`,
+              reason: "unlisted-empty-line",
+              message: `Empty ${kind === "battingGame" ? "batting" : "pitching"} entry for a player not in team ${side.team.id}'s ${kind === "battingGame" ? "batters" : "pitchers"} list; not stored`,
+            });
+            continue;
+          }
           try {
             lines.push(
               recordSchema.parse({
@@ -271,6 +320,7 @@ export function normalizeBoxscore(
           }
         }
       }
+    }
     if (!bad) {
       for (const line of lines) n.add(line);
       n.add({
@@ -335,10 +385,17 @@ export function projectBoxscore(body: unknown): unknown {
       }),
     );
   const t = parsed.data.teams;
+  // The batters/pitchers lists are kept: normalizeBoxscore uses them to recognise empty entries
+  // listed under the wrong club.
+  const lists = (s: Record<string, unknown>) => ({
+    ...(Array.isArray(s.batters) ? { batters: s.batters } : {}),
+    ...(Array.isArray(s.pitchers) ? { pitchers: s.pitchers } : {}),
+  });
+  const raw = body as { teams: { home: Record<string, unknown>; away: Record<string, unknown> } };
   return {
     teams: {
-      home: { team: { id: t.home.team.id }, players: players(t.home.players) },
-      away: { team: { id: t.away.team.id }, players: players(t.away.players) },
+      home: { team: { id: t.home.team.id }, players: players(t.home.players), ...lists(raw.teams.home) },
+      away: { team: { id: t.away.team.id }, players: players(t.away.players), ...lists(raw.teams.away) },
     },
   };
 }
