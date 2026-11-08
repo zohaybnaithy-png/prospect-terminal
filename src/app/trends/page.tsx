@@ -3,14 +3,16 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";
-import { selectLevel } from "@/services/competition/model";
+import { levelFallback, selectLevel, unavailableLevels } from "@/services/competition/model";
+import { LevelFallbackNotice } from "@/components/levels/level-fallback";
 import { levelById } from "@/services/players/levels";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { LevelNav } from "@/components/levels/level-nav";
 import { RisersFallers } from "@/components/analytics/risers-fallers";
 import { PerformanceMap } from "@/components/analytics/performance-map";
 import { MOMENTUM_SETTINGS } from "@/analytics/config";
-import { analyticsContextFor, mapSets, riserSets } from "@/analytics/views";
+import { analyticsContextFor } from "@/analytics/views";
+import { trendMap, trendRisers } from "@/services/competition/prepare";
 import { shortDate } from "@/lib/format";
 import { analyticsDebugEnabled } from "@/analytics/debug";
 
@@ -49,11 +51,18 @@ async function Trends({ searchParams }: { searchParams: SearchParams }) {
   const ls = selectLevel(data.levels, requested)!;
   const level = levelById(ls.level);
   const nav = (
-    <LevelNav
-      basePath="/trends"
-      current={ls.level}
-      available={data.levels.map((l) => l.level)}
-    />
+    <>
+      <LevelNav
+        basePath="/trends"
+        current={ls.level}
+        available={data.levels.map((l) => l.level)}
+        unavailable={unavailableLevels(data.levelStatus)}
+      />
+      <LevelFallbackNotice
+        fallback={levelFallback(requested, ls.level, data.levelStatus)}
+        shown={ls.level}
+      />
+    </>
   );
   const ctx = analyticsContextFor(ls.snapshot);
   if (!ctx.ds.asOf)
@@ -65,7 +74,7 @@ async function Trends({ searchParams }: { searchParams: SearchParams }) {
         </p>
       </>
     );
-  const risers = riserSets(ls.snapshot);
+  const risers = trendRisers(ls.snapshot);
   return (
     <div className="trends-stack">
       {nav}
@@ -91,7 +100,7 @@ async function Trends({ searchParams }: { searchParams: SearchParams }) {
         minMagnitude={MOMENTUM_SETTINGS.sample.leaderboardMinMagnitude}
       />
       <PerformanceMap
-        sets={mapSets(ls.snapshot)}
+        sets={trendMap(ls.snapshot)}
         comparable={risers.comparable}
         level={ls.level}
       />

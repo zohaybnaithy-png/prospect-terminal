@@ -32,8 +32,9 @@ import {
   type RiserCategory,
 } from "./engine";
 import { COMPONENT_LABELS } from "./explain";
+import { processWeakMap } from "@/lib/process-memo";
 
-const contexts = new WeakMap<AflSnapshot, AnalyticsContext>();
+const contexts = processWeakMap<AflSnapshot, AnalyticsContext>("analytics-context");
 /** One analytics context per loaded snapshot object (the AFL data layer reuses snapshots). */
 export function analyticsContextFor(snapshot: AflSnapshot): AnalyticsContext {
   let ctx = contexts.get(snapshot);

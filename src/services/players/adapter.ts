@@ -18,8 +18,9 @@ import {
   type StatWindow,
 } from "./directory";
 import { levelOrder, type LevelId } from "./levels";
+import { processWeakMap } from "@/lib/process-memo";
 
-const memo = new WeakMap<AflSnapshot, Map<string, PlayerDirectoryRow[]>>();
+const memo = processWeakMap<AflSnapshot, Map<string, PlayerDirectoryRow[]>>("directory-rows");
 
 /** Rows for one level and stat window (memoized per loaded snapshot object). */
 export function levelDirectoryRows(

@@ -13,6 +13,7 @@ import {
 import { COMPONENT_LABELS } from "@/analytics/explain";
 import { getCompetitionData } from "@/services/competition";
 import { levelCoverage, type LevelCoverage } from "@/services/competition/model";
+import { levelCoverageSummary } from "@/services/competition/prepare";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { shortDate } from "@/lib/format";
@@ -353,7 +354,7 @@ async function Coverage() {
     return <AflDataNotice status={data.status} />;
   const rows =
     data.status === "ok"
-      ? levelCoverage(data.levels, data.levelStatus)
+      ? levelCoverage(data.levels, data.levelStatus, levelCoverageSummary)
       : levelCoverage([], data.levelStatus);
   return (
     <>

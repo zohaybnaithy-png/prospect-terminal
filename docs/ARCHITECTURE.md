@@ -2,7 +2,7 @@
 
 ## Product and read-model boundaries (Showcase V1)
 
-Prospect Terminal is player-first: discovery → player → performance/trajectory → context. All user-facing routes read real data through the server-only `src/services/afl` layer (one cached, read-only snapshot per 60 s) and pure view-model functions:
+Prospect Terminal is player-first: discovery → player → performance/trajectory → context. All user-facing routes read real data through the server-only `src/services/afl` layer (one cached, read-only snapshot per level, kept until a new ingestion run is applied — see `src/services/competition/cache.ts`) and pure view-model functions:
 
 - `src/services/home.ts` — Trending Prospects (V1 risers/fallers + recent-window stat lines), Latest Results, coverage.
 - `src/services/players/` — level registry (derived from `src/domain/levels.ts`), the client-safe `PlayerDirectoryRow` contract, and the level adapter used for the AFL and every MiLB level.

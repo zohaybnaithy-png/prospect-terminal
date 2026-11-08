@@ -12,6 +12,7 @@ export function LevelNav({
   params = {},
   allLabel,
   label = "Level",
+  unavailable = [],
 }: {
   basePath: string;
   /** "" = all levels (only when `allLabel` is given). */
@@ -20,6 +21,8 @@ export function LevelNav({
   params?: Record<string, string>;
   allLabel?: string;
   label?: string;
+  /** Levels whose data failed to load in this request (temporary), as opposed to not ingested. */
+  unavailable?: LevelId[];
 }) {
   const href = (level: LevelId | "") => {
     const q = new URLSearchParams(params);
@@ -56,7 +59,11 @@ export function LevelNav({
             <span
               key={l.id}
               className="button-link disabled"
-              title={`${l.label} — no 2026 data ingested`}
+              title={
+                unavailable.includes(l.id)
+                  ? `${l.label} — temporarily unavailable`
+                  : `${l.label} — no 2026 data ingested`
+              }
               aria-disabled="true"
             >
               {l.short}

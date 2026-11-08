@@ -221,11 +221,20 @@ npm run -s check:milb:readiness > ~/pt-runs/readiness.json
 
 ## Web app sizing note
 
-The site reads each level's full season into memory, and the result is reused for 60 s per
-server process. A full MiLB season is about 9k games and about 250k stat lines across the four
-levels. Measured locally on a synthetic Triple-A-scale level (2,115 games, 46k lines), the
-directory, trending and profile view models cost about 0.5 s of CPU on a cold start. They are
-memoized per load after that. The first request after a reload also transfers every level's
-rows from Neon. Before a public launch, load-test `/players` against the backfilled branch. If
-cold loads are too slow, the next step is precomputed per-level aggregates, which is a separate
-change to discuss.
+The site reads each level's full season into memory (about 8.4k games and 222k stat lines across
+the five levels for 2026). Each server process loads every level once, starting at server start
+(`src/instrumentation.ts`), and keeps it: at most every 60 s a one-row probe of `ingestion_runs`
+checks whether a run was applied, and only then is that level reloaded in the background while
+the previous snapshot keeps being served (`src/services/competition/cache.ts`). Stat lines are
+transferred in a compact columnar form (`src/services/afl/columnar.ts`), about a third of the
+row form's bytes. View models are memoized per loaded snapshot and the Momentum caches are
+warmed before a snapshot is served.
+
+Measure with `npm run -s profile:site` (read-only). Each level load is traced: pool acquire,
+per-query first byte, transfer and parse, decode, and warm-up compute. `PROFILE_ROUNDS=N` repeats
+cold loads with a fresh pool each time. On a home connection to Neon (~1 MB/s), a level loads in
+about 3-5 s and all levels in parallel in about 8-16 s. Requests after the warm-up are served from
+memory, and the process holds about 325 MB of heap with every level loaded. Every load is bounded,
+and degraded connections are closed and retried. Hosting, timeouts and the measurements behind
+them are in `docs/DEPLOYMENT.md`. If cold loads must get faster still, the next step is
+precomputed per-level aggregates, a separate change to discuss.
