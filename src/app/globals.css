@@ -284,13 +284,19 @@ h3 {
   min-height: 24px;
   font-size: 9px;
 }
+/*
+ * Cards snap into place, so a card is never left cut off at the scroller's edge. Without it, at
+ * phone width, Shift+Tab could focus a team link that was only 1–5px visible (WCAG 2.4.11).
+ */
 .score-games {
   display: flex;
   flex: 1;
   min-width: 0;
   overflow: auto;
+  scroll-snap-type: x mandatory;
 }
 .score-game {
+  scroll-snap-align: center;
   flex: 1 0 155px;
   padding: 4px 14px 3px;
   border-right: 1px solid var(--border);
@@ -772,7 +778,15 @@ a.reset-button {
   gap: 8px;
   font-size: 9px;
 }
+/* Short team/org abbreviations still get a 24×24 hit area (WCAG 2.5.8); the negative margin keeps
+ * the row height unchanged. */
 .trending-context a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  margin: -7px 0;
   color: var(--muted);
 }
 .performance-summary {

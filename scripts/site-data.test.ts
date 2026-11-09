@@ -2,7 +2,7 @@
  * Site data layer: per-level stale-while-revalidate cache, compact columnar line decoding,
  * per-player profile windows, level fallback notices and process-wide memo slots.
  */
-import { test } from "node:test";
+import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import { createLevelCache, LevelLoadTimeoutError } from "../src/services/competition/cache";
 import { ColumnarDecodeError, decodeColumnarLines } from "../src/services/afl/columnar";
@@ -14,6 +14,16 @@ import type { LevelId } from "../src/services/players/levels";
 
 // ---------------------------------------------------------------------------------------------
 // Level cache
+
+/*
+ * The level-cache load timeout and the query watchdog unref their timers, so they never keep a
+ * process alive. Several tests here wait on work that only those timers settle (a load that never
+ * finishes, a silent connection). Without another referenced handle, Node sees an idle event loop
+ * before the timer fires and CANCELS the test and every later test in this file (this hid 20
+ * tests until Phase 5A). A running server always has one, its listening socket; this stands in.
+ */
+const keepAlive = setInterval(() => {}, 1_000);
+after(() => clearInterval(keepAlive));
 
 const snap = (tag: string) => ({ league: { id: tag, name: tag } }) as unknown as AflSnapshot;
 const tick = () => new Promise((r) => setImmediate(r));

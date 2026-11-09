@@ -139,17 +139,25 @@ describe("links and focus (WCAG 1.4.1 / 2.4.7)", () => {
     assert.match(CSS, /\.global-search:focus-within\s*\{[^}]*outline:\s*2px solid var\(--focus\)/);
   });
 
-  test("score strip links have a 24px target (WCAG 2.5.8)", () => {
-    for (const sel of [".score-strip-label a", ".score-game > div:not(:first-child) > a"]) {
+  test("small standalone links have a 24px target (WCAG 2.5.8)", () => {
+    // Score strip, and the team/org abbreviations in Trends and Recent Leaders lists (found on
+    // populated data: short abbreviations 8px apart overlapped each other's 24px spacing zone).
+    for (const sel of [".score-strip-label a", ".score-game > div:not(:first-child) > a", ".trending-context a"]) {
       const rule = rules.find((r) => r.selector === sel);
       assert.ok(rule, `${sel} rule exists`);
       const body = CSS.slice(CSS.indexOf(`${sel} {`)).split("}")[0];
       assert.match(body, /min-height:\s*24px/, `${sel} has a 24px minimum height`);
+      if (sel === ".trending-context a") assert.match(body, /min-width:\s*24px/, `${sel} has a 24px minimum width`);
     }
   });
 });
 
 describe("keyboard access to scrollable content (WCAG 2.1.1)", () => {
+  test("scoreboard cards snap, so a focused team link is never left clipped at the edge (2.4.11)", () => {
+    assert.match(CSS, /\.score-games\s*\{[^}]*scroll-snap-type:\s*x mandatory/);
+    assert.match(CSS, /\.score-game\s*\{[^}]*scroll-snap-align:\s*center/);
+  });
+
   test("ScrollRegion is a named, focusable region", () => {
     const html = renderToStaticMarkup(ScrollRegion({ label: "Game log", children: "x" }));
     assert.match(html, /^<div class="table-scroll" tabindex="0" role="region" aria-label="Game log">/);

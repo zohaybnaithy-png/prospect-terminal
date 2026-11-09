@@ -15,7 +15,8 @@ dense, Savant/FanGraphs-style design.
 | Focus | Global `:focus-visible` ring (`--focus`, 2 px) | Never set `outline: none` without giving a parent a ring (see `.global-search:focus-within`). |
 | Scrolling tables | `<ScrollRegion label=…>` (`src/components/ui/scroll-region.tsx`) or `DataTable` | A focusable, named region, so keyboard users can scroll a table that has no links (WCAG 2.1.1). Never hand-write `className="table-scroll"`. |
 | Sticky headers | `.table-scroll` and pages with `.profile-tabs` set `scroll-padding-top` | Focused elements never land under sticky headers or tabs (WCAG 2.4.11). |
-| Small links | Keep a 24 px hit area (`min-height: 24px`) or 24 px between targets | WCAG 2.5.8; inline links in sentences are exempt. |
+| Small links | Keep a 24 px hit area (`min-height`/`min-width: 24px`, with a negative margin if the row must not grow) or 24 px between targets | WCAG 2.5.8; inline links in sentences are exempt. Short abbreviations side by side (`.trending-context`) need the width too. |
+| Horizontal scrollers with links | `scroll-snap` (see `.score-games`) | Browsers don't always scroll a barely visible focused link fully into view; snapping keeps whole cards in view (2.4.11). |
 | Charts | Wrapper with `role="img"` and a text summary; a keyboard route to anything clickable | The Performance × Momentum map lists its players in a collapsed table under the chart. |
 | Hover-only info | Repeat it in visible or `sr-only` text | `title` tooltips aren't available to keyboard or most screen-reader users (e.g. disabled level links say why in `sr-only` text). |
 
@@ -44,7 +45,11 @@ tick colour is 4.9:1 on white).
 
 ## Not covered by automation
 
+Data used so far: the synthetic fixtures (edge and empty states) and a generated, MiLB-scale
+fictional season (1,040 players, 1,160 box scores, run through the real ingestion pipeline into a
+disposable local database). The live Neon data has not been scanned yet; run the scan against a
+build pointed at the Neon test branch (read-only) before launch.
+
 Screen-reader announcement quality (VoiceOver/NVDA), Windows High Contrast / forced colours (selected
 toggles and tabs get an outline there, untested on Windows), 200–400 %
-zoom and text-spacing overrides, and real-data volume (the scan above ran on the small synthetic
-fixtures). Check these manually before launch.
+zoom and text-spacing overrides. Check these manually before launch.
