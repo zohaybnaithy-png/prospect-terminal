@@ -166,21 +166,13 @@ or view models in the database, or a shared cache. That is a separate change to 
 - **Machine**: a Lightsail CPU-utilization alarm with email notification; automatic daily
   snapshots (7 kept, $0.05/GB-month).
 
-## Accessibility (axe-core 4.10, WCAG 2.1 AA + best practices)
+## Accessibility
 
-Scanned: home, players, trends, data, a profile and the 404 page at 1440 px and 390 px. Three
-findings, none structural:
-
-1. **Color contrast (serious)**: small muted text (e.g. `#788582` on white at 9 px, 3.8:1; 4.5:1
-   needed) on all six pages, 208 elements. Fix: darken the muted text token and avoid text below
-   ~11 px.
-2. **Links within text (serious)**: team/organization links in trend rows differ from surrounding
-   text only by color (1.3:1). Fix: underline links inside text blocks.
-3. **Scrollable region not keyboard-focusable (serious)**: one `.table-scroll` wrapper. Fix:
-   `tabIndex={0}` with an accessible label on scrollable table wrappers.
-
-Already in place: `lang`, skip link, labelled controls, semantic tables, visible focus, correct
-404 status.
+The three findings recorded here before launch (208 low-contrast elements, links distinguished
+only by colour, a keyboard-inaccessible scrolling table) were fixed in Phase 5A (PR #11). Current
+state, conventions and the scan procedure: [ACCESSIBILITY.md](./ACCESSIBILITY.md). Re-checked on
+`main` with a populated data set: 0 axe violations (WCAG 2.0–2.2 A/AA) across 36 page-states at
+1366 px and 390 px.
 
 ## Risks before a public launch
 
@@ -196,7 +188,7 @@ Should be addressed:
 
 4. **Crawler load on profiles** (~17 profiles/s per process). Mitigations: a `robots.txt`
    policy, then a rate limit or a CDN/WAF in front if traffic warrants it.
-5. **Accessibility findings** above (small CSS changes).
+5. ~~Accessibility findings~~: fixed in Phase 5A.
 6. **Data freshness**: no scheduled ingestion in production; the data is the 2026 season as
    ingested on the test branch (AFL through 2026-11-07). Fine off-season; schedule incremental
    ingestion (writer role, separate from the web server) before the 2027 season.
