@@ -6,14 +6,28 @@
 }
 :root {
   color-scheme: light;
+  /*
+   * Colour tokens. Every text token is checked (scripts/accessibility.test.ts) to reach WCAG 2.2 AA
+   * 4.5:1 on white and on every tinted surface it sits on (table headers, zebra rows, row hover).
+   * Use these instead of new hex greys, so contrast stays enforceable in one place.
+   */
   --bg: #fff;
   --surface: #f6f8f8;
   --border: #d5dcdc;
   --text: #253033;
-  --muted: #657174;
+  /* Secondary text: labels, context lines, notes. */
+  --muted: #5d6b6e;
+  /* Tertiary text: ranks, units, timestamps. Lighter in weight/size, never below 4.5:1. */
+  --subtle: #637073;
   --link: #12676a;
+  --link-hover: #104e50;
   --positive: #267047;
   --negative: #af403c;
+  --warning: #76642f;
+  /* Inactive controls only (exempt from 1.4.3); never use for readable content. */
+  --disabled: #a3adae;
+  /* Focus ring: 3:1+ against white and every surface (WCAG 2.4.7 / 1.4.11). */
+  --focus: #1a6a6d;
   --heading:
     "Arial Narrow", "Liberation Sans Narrow", Arial, Helvetica, sans-serif;
 }
@@ -35,8 +49,23 @@ a {
   text-decoration: none;
 }
 a:hover {
-  color: #104e50;
+  color: var(--link-hover);
   text-decoration: underline;
+}
+/*
+ * Links inside running text are underlined, so they are not distinguished by colour alone
+ * (WCAG 1.4.1). Standalone links (navigation, tables, lists, controls) keep the clean look.
+ */
+:where(p, .prose, .table-note, .afl-notice, .mixed-level-note, .method-list, .method-steps, .glossary dd)
+  a:not(.button-link):not(.reset-button) {
+  text-decoration: underline;
+  text-decoration-color: rgb(18 103 106 / 0.45);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+:where(p, .prose, .table-note, .afl-notice, .mixed-level-note, .method-list, .method-steps, .glossary dd)
+  a:not(.button-link):not(.reset-button):hover {
+  text-decoration-color: currentColor;
 }
 button,
 input,
@@ -55,13 +84,9 @@ select:disabled {
   cursor: default;
   opacity: 0.75;
 }
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid #1e777a;
-  outline-offset: 3px;
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 ::selection {
   background: #cfe5e2;
@@ -169,7 +194,7 @@ h3 {
   gap: 8px;
   padding: 4px 5px 4px 11px;
   border: 1px solid #aebdbd;
-  color: #647576;
+  color: var(--muted);
   background: #fff;
   width: 340px;
 }
@@ -183,10 +208,13 @@ h3 {
   padding: 4px 0;
 }
 .global-search input::placeholder {
-  color: #657474;
+  color: var(--muted);
 }
+/* The input itself has no outline; the whole search frame shows the focus ring instead. */
 .global-search:focus-within {
-  border-color: #226b6d;
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
 }
 .global-search button {
   background: #1f6669;
@@ -242,25 +270,35 @@ h3 {
   gap: 1px;
   border-right: 1px solid var(--border);
   font-size: 9px;
-  color: #697474;
+  color: var(--muted);
 }
 .score-strip-label strong {
   color: #3e5353;
   font-size: 10px;
   letter-spacing: 0.4px;
 }
+/* Links in the strip keep a 24px-tall hit area (WCAG 2.5.8 target size) at their compact type size. */
 .score-strip-label a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   font-size: 9px;
 }
+/*
+ * Cards snap into place, so a card is never left cut off at the scroller's edge. Without it, at
+ * phone width, Shift+Tab could focus a team link that was only 1–5px visible (WCAG 2.4.11).
+ */
 .score-games {
   display: flex;
   flex: 1;
   min-width: 0;
   overflow: auto;
+  scroll-snap-type: x mandatory;
 }
 .score-game {
+  scroll-snap-align: center;
   flex: 1 0 155px;
-  padding: 5px 14px 6px;
+  padding: 4px 14px 3px;
   border-right: 1px solid var(--border);
   font-size: 10px;
   line-height: 1.35;
@@ -269,9 +307,9 @@ h3 {
   display: flex;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 3px;
-  font-size: 8px;
-  color: #677575;
+  margin-bottom: 1px;
+  font-size: 9px;
+  color: var(--muted);
   white-space: nowrap;
 }
 .score-game-heading > a {
@@ -280,10 +318,15 @@ h3 {
 }
 .score-game > div:not(:first-child) {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 25px;
+  min-height: 24px;
 }
 .score-game > div:not(:first-child) > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: #394747;
   font-weight: 600;
 }
@@ -306,7 +349,7 @@ h3 {
   max-width: 980px;
 }
 .eyebrow {
-  color: #637475;
+  color: var(--muted);
   font-size: 10px;
   margin-bottom: 5px;
   text-transform: uppercase;
@@ -422,6 +465,8 @@ select {
 .table-scroll {
   position: relative;
   overflow: auto;
+  /* Keyboard focus never lands under the sticky column headers (WCAG 2.4.11). */
+  scroll-padding-top: 36px;
   max-height: 690px;
   min-width: 0;
   width: 100%;
@@ -468,7 +513,7 @@ select {
   color: #064f53;
 }
 .data-table th button > span {
-  color: #718887;
+  color: var(--subtle);
   font-size: 9px;
 }
 .data-table td {
@@ -506,7 +551,7 @@ select {
   color: var(--negative);
 }
 .table-note {
-  color: #657174;
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.6;
   margin: 9px 0;
@@ -535,17 +580,17 @@ select {
 .placeholder-panel {
   padding: 10px 12px;
   border: 1px dashed var(--border);
-  color: #657174;
+  color: var(--muted);
   font-size: 11px;
 }
 .placeholder-value {
-  color: #8a9595;
+  color: var(--subtle);
 }
 .score-strip-empty {
   margin: 0;
   padding: 8px 14px;
   font-size: 10px;
-  color: #697474;
+  color: var(--muted);
   align-self: center;
 }
 .score-game-heading > time {
@@ -558,8 +603,8 @@ select {
 }
 .trend-value small {
   margin-left: 3px;
-  color: #788582;
-  font-size: 8px;
+  color: var(--subtle);
+  font-size: 9px;
   font-weight: 400;
 }
 a.reset-button {
@@ -584,7 +629,7 @@ a.reset-button {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 22px;
-  color: #687777;
+  color: var(--muted);
   font-size: 10px;
 }
 .site-footer > a:first-child {
@@ -646,7 +691,7 @@ a.reset-button {
 }
 .profile-tabs > span {
   padding: 8px 12px;
-  color: #6e7778;
+  color: var(--muted);
   font-size: 10px;
 }
 .table-title {
@@ -717,7 +762,7 @@ a.reset-button {
   border-bottom: 1px solid #e0e6e4;
 }
 .list-rank {
-  color: #83918f;
+  color: var(--subtle);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -733,8 +778,16 @@ a.reset-button {
   gap: 8px;
   font-size: 9px;
 }
+/* Short team/org abbreviations still get a 24×24 hit area (WCAG 2.5.8); the negative margin keeps
+ * the row height unchanged. */
 .trending-context a {
-  color: #657a79;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  margin: -7px 0;
+  color: var(--muted);
 }
 .performance-summary {
   font-size: 10px;
@@ -743,7 +796,7 @@ a.reset-button {
   font-variant-numeric: tabular-nums;
 }
 .performance-summary > span {
-  color: #788582;
+  color: var(--subtle);
   font-size: 9px;
 }
 .trend-value {
@@ -764,8 +817,8 @@ a.reset-button {
   font-size: 9px;
 }
 .widget-bottom > span {
-  color: #7a8482;
-  font-size: 8px;
+  color: var(--subtle);
+  font-size: 9px;
 }
 @media (max-width: 1439px) {
   .site-footer {
@@ -848,7 +901,7 @@ a.reset-button {
   }
   .score-strip-label {
     flex-basis: 85px;
-    font-size: 8px;
+    font-size: 9px;
   }
   .score-strip-label strong {
     font-size: 9px;
@@ -957,6 +1010,17 @@ a.reset-button {
   }
   .chart-area {
     height: 210px;
+  }
+}
+/* Forced colours (Windows High Contrast) drop backgrounds: mark the selected state another way. */
+@media (forced-colors: active) {
+  .button-group button[aria-pressed="true"],
+  .button-link[aria-current="page"],
+  .pagination-pages [aria-current="page"],
+  .site-header nav a.active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    text-decoration: underline;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1247,7 +1311,7 @@ a.reset-button {
 }
 .fingerprint-list summary .fp-label::before {
   content: "▸ ";
-  color: #7b8b89;
+  color: var(--subtle);
   font-size: 10px;
 }
 .fingerprint-list details[open] summary .fp-label::before {
@@ -1640,7 +1704,7 @@ a.reset-button {
   font-weight: 700;
 }
 .pagination > [aria-disabled="true"] {
-  color: #a3adae;
+  color: var(--disabled);
 }
 .directory-count {
   padding: 7px 12px;
@@ -1663,7 +1727,7 @@ a.reset-button {
   padding: 7px 9px;
 }
 .directory .data-table td:first-child {
-  color: #8a9595;
+  color: var(--subtle);
   font-size: 10px;
 }
 .directory .data-table td:nth-child(2) {
@@ -1814,7 +1878,7 @@ a.reset-button {
   border-right: 0;
 }
 .stat-strip dt {
-  color: #5d7173;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 700;
 }
@@ -1894,7 +1958,7 @@ a.reset-button {
   text-align: left;
 }
 .mp-windows thead th {
-  color: #5d7173;
+  color: var(--muted);
   font-size: 10px;
   border-top: 0;
 }
@@ -1920,9 +1984,21 @@ a.reset-button {
 }
 .mp-footnote {
   margin-top: 6px;
-  color: #6a7779;
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
+}
+.map-points {
+  padding: 0 13px 4px;
+}
+.map-points > summary {
+  cursor: pointer;
+  color: var(--link);
+  font-size: 12px;
+  padding: 4px 0 6px;
+}
+.map-points .table-scroll {
+  max-height: 420px;
 }
 .log-details > summary {
   cursor: pointer;
@@ -2151,7 +2227,7 @@ a.reset-button {
   grid-column: 2;
   font-style: normal;
   font-size: 10px;
-  color: #7b6a45;
+  color: var(--warning);
 }
 @media (max-width: 900px) {
   .method-grid,
@@ -2188,7 +2264,7 @@ a.reset-button {
   text-decoration: none;
 }
 .button-link.disabled {
-  color: #a3adae;
+  color: var(--disabled);
   background: #f6f8f8;
   cursor: not-allowed;
 }
@@ -2206,7 +2282,7 @@ a.reset-button {
   margin-left: 3px;
 }
 .level-also {
-  color: #657174;
+  color: var(--muted);
   font-size: 10px;
   margin-left: 4px;
   white-space: nowrap;
@@ -2236,7 +2312,7 @@ a.reset-button {
   font-variant-numeric: tabular-nums;
 }
 .status-pending {
-  color: #8a6d1f;
+  color: var(--warning);
 }
 .status-down {
   color: var(--negative);
@@ -2282,7 +2358,7 @@ a.reset-button {
   vertical-align: 1px;
 }
 .source-tag.pending {
-  color: #7a6a3e;
+  color: var(--warning);
   border-style: dashed;
 }
 .moves-scroll {
@@ -2333,9 +2409,13 @@ a.reset-button {
 .page-section {
   scroll-margin-top: 44px;
 }
+/* Pages with sticky section tabs: focused elements scroll clear of the tabs (WCAG 2.4.11). */
+html:has(.profile-tabs) {
+  scroll-padding-top: 44px;
+}
+/* Smaller type sets the game count apart; no opacity, which would cut its contrast below AA. */
 .profile-levels .level-games {
   font-size: 10px;
-  opacity: 0.8;
 }
 @media (max-width: 600px) {
   .profile-tabs {

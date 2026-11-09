@@ -17,6 +17,7 @@ import { levelCoverageSummary } from "@/services/competition/prepare";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { shortDate } from "@/lib/format";
+import { ScrollRegion } from "@/components/ui/scroll-region";
 
 export const metadata: Metadata = {
   title: "Data & methodology",
@@ -359,7 +360,7 @@ async function Coverage() {
   return (
     <>
       {data.status === "empty" && <AflDataNotice status="empty" />}
-      <div className="table-scroll">
+      <ScrollRegion label="Data coverage by level">
         <table className="method-table coverage-levels">
           <caption className="sr-only">Data coverage by level</caption>
           <thead>
@@ -405,7 +406,7 @@ async function Coverage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <LastIngestion rows={rows} />
     </>
   );

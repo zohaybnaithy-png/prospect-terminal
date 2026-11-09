@@ -67,6 +67,10 @@ export function LevelNav({
               aria-disabled="true"
             >
               {l.short}
+              {/* The title is hover-only; say the same to screen readers. */}
+              <span className="sr-only">
+                {unavailable.includes(l.id) ? " (temporarily unavailable)" : " (no 2026 data ingested)"}
+              </span>
             </span>
           ),
         )}

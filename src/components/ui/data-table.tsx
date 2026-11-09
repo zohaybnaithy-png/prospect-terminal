@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ScrollRegion } from "./scroll-region";
 export interface Column<T> {
   key: string;
   label: string;
@@ -32,12 +33,7 @@ export function DataTable<T>({
   emptyMessage?: string;
 }) {
   return (
-    <div
-      className="table-scroll"
-      tabIndex={0}
-      role="region"
-      aria-label={`${caption}; scroll horizontally for more columns`}
-    >
+    <ScrollRegion label={caption}>
       <table className="data-table">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -87,6 +83,6 @@ export function DataTable<T>({
         </tbody>
       </table>
       {!rows.length && <div className="empty-state">{emptyMessage}</div>}
-    </div>
+    </ScrollRegion>
   );
 }

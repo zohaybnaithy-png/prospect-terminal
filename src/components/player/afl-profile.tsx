@@ -25,6 +25,7 @@ import { levelById, type LevelId } from "@/services/players/levels";
 import { playerHref } from "@/components/ui/entity-links";
 import { MOMENTUM_WINDOWS, MOMENTUM_WINDOW_IDS } from "@/analytics/config";
 import { shortDate } from "@/lib/format";
+import { ScrollRegion } from "@/components/ui/scroll-region";
 import {
   ConfidenceMeter,
   Decomposition,
@@ -593,7 +594,7 @@ function LevelHistory({
     return <p className="empty-state">No level data recorded.</p>;
   return (
     <>
-      <div className="table-scroll">
+      <ScrollRegion label="Levels this season">
         <table className="coverage-levels level-history">
           <caption className="sr-only">Levels this season</caption>
           <thead>
@@ -647,7 +648,7 @@ function LevelHistory({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <p className="table-note">
         Each level&apos;s line is its own; levels are different competitions,
         so lines are not added together or compared directly. Promotion dates

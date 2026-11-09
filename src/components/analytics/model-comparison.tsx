@@ -3,13 +3,14 @@ import type { ComparisonEntry, ModelComparison } from "@/analytics/engine";
 import { formatMetric, formatMetricChange } from "@/analytics/metrics";
 import { MOMENTUM_MODELS } from "@/analytics/config";
 import { MomentumValue, signedText } from "./momentum-parts";
+import { ScrollRegion } from "@/components/ui/scroll-region";
 
 function EntryTable({ title, entries }: { title: string; entries: ComparisonEntry[] }) {
   return (
     <>
       <h4 className="table-title">{title}</h4>
       {entries.length ? (
-        <div className="table-scroll" tabIndex={0} role="region" aria-label={title}>
+        <ScrollRegion label={title}>
           <table className="data-table compact-table">
             <thead>
               <tr>
@@ -47,7 +48,7 @@ function EntryTable({ title, entries }: { title: string; entries: ComparisonEntr
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       ) : (
         <p className="empty-state">No qualified players.</p>
       )}
