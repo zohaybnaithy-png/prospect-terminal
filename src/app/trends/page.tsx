@@ -16,7 +16,7 @@ import { trendComparable, trendMapPoints, trendRiserLists } from "@/services/com
 import { shortDate } from "@/lib/format";
 import { analyticsDebugEnabled } from "@/analytics/debug";
 
-export const metadata: Metadata = { title: "Prospect trends" };
+export const metadata: Metadata = { title: "Prospect trends", alternates: { canonical: "/trends" } };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

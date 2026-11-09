@@ -194,8 +194,10 @@ Blockers:
 
 Should be addressed:
 
-4. **Crawler load on profiles** (~17 profiles/s per process). Mitigations: a `robots.txt`
-   policy, then a rate limit or a CDN/WAF in front if traffic warrants it.
+4. **Crawler load on profiles** (~17 profiles/s per process). Addressed in Phase 5B
+   ([TRAFFIC.md](./TRAFFIC.md)): robots.txt, sitemap and canonical URLs; per-client rate limits
+   with a server-wide profile budget, keyed on a header Caddy overwrites. Large or widely
+   distributed floods still need a CDN/WAF in front.
 5. **Accessibility findings** above (small CSS changes).
 6. **Data freshness**: no scheduled ingestion in production; the data is the 2026 season as
    ingested on the test branch (AFL through 2026-11-07). Fine off-season; schedule incremental

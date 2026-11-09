@@ -226,10 +226,19 @@ sudo nano /etc/prospect-terminal/env
 ```
 
 Type `DATABASE_URL=` and paste the `pt_web` pooled connection string from 1.5 (see
-`deploy/env.example` for the shape). Save. Check without printing the value:
+`deploy/env.example` for the shape). Add the two traffic settings (docs/TRAFFIC.md): the public
+origin (use the real domain once chosen in Phase 3) and the header Caddy sets:
+
+```
+PT_SITE_URL=https://example.com
+PT_CLIENT_IP_HEADER=x-pt-client-ip
+```
+
+Save. Check without printing the value:
 
 ```bash
 sudo grep -c '^DATABASE_URL=postgresql://pt_web:' /etc/prospect-terminal/env   # 1
+sudo grep -c '^PT_CLIENT_IP_HEADER=x-pt-client-ip$' /etc/prospect-terminal/env  # 1
 sudo stat -c '%a %U' /etc/prospect-terminal/env                                 # 600 root
 ```
 
@@ -297,6 +306,16 @@ From your Mac, against `https://example.com`:
 - [ ] On the server, `sudo journalctl -u prospect-terminal --since today | grep -ci postgres`
       prints `0` (no connection details in logs).
 - [ ] The uptime monitor reports up.
+- [ ] `curl -s https://example.com/robots.txt` lists `Disallow: /*?` and the sitemap at the real
+      domain; `curl -s https://example.com/sitemap.xml | grep -c '<url>'` is the number of players
+      plus 4; a profile's HTML has `<link rel="canonical" href="https://example.com/players/...">`.
+- [ ] Rate limiting is on and cannot be spoofed: fetching one profile 80 times quickly with a
+      different forged header each time still ends in 429s (this limits your own address for about
+      a minute):
+      `for i in $(seq 80); do curl -s -o /dev/null -w "%{http_code}\n" -H "X-PT-Client-IP: 10.0.0.$i" -H "X-Forwarded-For: 10.1.0.$i" https://example.com/players/<id>; done | sort | uniq -c`
+      shows both `200` and `429`.
+- [ ] On the server, `sudo journalctl -u prospect-terminal --since today | grep -c "rate limiting is OFF"`
+      prints `0`.
 
 ---
 

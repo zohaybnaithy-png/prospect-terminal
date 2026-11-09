@@ -13,6 +13,13 @@ prospectterminal.example {
 		# returning 502. The app starts listening in about a second and serves once data is loaded.
 		lb_try_duration 30s
 		lb_try_interval 250ms
+		# Client identity for the app's rate limiter (docs/TRAFFIC.md). `header_up` REPLACES any
+		# value the client sent, so this header always holds the address of the TCP connection Caddy
+		# accepted ({remote_host}: works on every Caddy 2 release; `{client_ip}` does not exist
+		# before 2.7 and would be sent literally, which turns per-client limiting off). If a CDN is
+		# ever put in front, this must change to the CDN's verified client header, nothing else.
+		# The app reads exactly this header (PT_CLIENT_IP_HEADER) and never X-Forwarded-For.
+		header_up X-PT-Client-IP {remote_host}
 	}
 
 	header {

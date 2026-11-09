@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCompetitionData } from "@/services/competition";
 import {
@@ -25,6 +26,9 @@ import { ComingSoonPanel } from "@/components/home/coming-soon";
 import { levelMoves } from "@/services/competition/moves";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+/** `?level=` views of the homepage are one page for indexing (src/lib/crawl-policy.ts). */
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function HomePage({
   searchParams,
