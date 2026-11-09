@@ -78,8 +78,12 @@ loaded data. A restart therefore never turns a database blip into downtime.
 
 - **Deploys** (`deploy/deploy.sh`): build next to the running release; switch only after install,
   tests and build pass; restart; keep the new release only if `/health` reaches 200 within 180 s,
-  otherwise switch back to the previous release automatically.
-- **Rollback** (`deploy/rollback.sh`): switch to an already-built earlier release in ~15 s.
+  otherwise switch back to the previous release automatically. A failed first deploy (nothing to
+  fall back to) removes `current` instead of leaving it on the broken build, is recorded, and the
+  next deploy starts normally (the deploy user may also clear systemd's restart limit).
+- **Rollback** (`deploy/rollback.sh`): switch to an already-built earlier release in ~15 s. If the
+  target fails its health check, the release that was running is restored and checked; a failed
+  restore is reported separately (exit 2).
 - **Restarts**: systemd `Restart=always` (crash or out-of-memory), `MemoryMax=3G`; the service
   starts at boot. Caddy holds requests for up to 30 s while the app restarts instead of returning
   502.
@@ -89,7 +93,9 @@ loaded data. A restart therefore never turns a database blip into downtime.
 Rehearsed locally against throwaway commits: first deploy, a release whose health check never
 passes (rolled back automatically, set aside so it can never be selected later), a release that
 fails to build (nothing changed, error shown), a concurrent deploy (refused), invalid refs and
-release names (refused), rollback to the previous and to a named release.
+release names (refused), rollback to the previous and to a named release. The failure paths are
+also exercised on every `npm test` (`scripts/deploy-rehearsal.test.ts`): failed first deploy and
+recovery, failed deploy rolled back, failed rollback restored, and failed restore reported.
 
 ## Security
 

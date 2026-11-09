@@ -209,6 +209,7 @@ sudo cp deploy/prospect-terminal.service /etc/systemd/system/
 sudo systemd-analyze verify /etc/systemd/system/prospect-terminal.service   # no output = OK
 sudo install -m 440 deploy/sudoers-prospect-terminal /etc/sudoers.d/prospect-terminal
 sudo visudo -cf /etc/sudoers.d/prospect-terminal                             # "parsed OK"
+sudo -l -U prospect | grep systemctl     # exactly: restart and reset-failed prospect-terminal
 shellcheck -x deploy/*.sh                                                    # no output = OK
 sudo systemctl daemon-reload && sudo systemctl enable prospect-terminal
 ```
@@ -247,7 +248,11 @@ sudo journalctl -u prospect-terminal -n 50 --no-pager
 ```
 
 If it fails: the output names the step. The build log is in `/srv/prospect-terminal/logs/`, the
-app's log in `journalctl -u prospect-terminal`.
+app's log in `journalctl -u prospect-terminal`. If the first deploy builds but never becomes
+healthy, there is nothing to fall back to: the script removes `current` (so nothing points at the
+broken build), sets the build aside in `/srv/prospect-terminal/failed/`, records it in
+`deployments.log`, and exits with status 2. Fix the cause and run the same command again; it
+starts the service normally.
 
 ---
 
@@ -316,7 +321,16 @@ changed: `sudo -u prospect git -C /srv/prospect-terminal/repo pull --ff-only`.
 A deploy builds next to the running release, so the site stays up during the build. The switch
 itself pauses requests for ~15 s while the new process loads the data, and Caddy holds those
 requests rather than failing them. A release whose health check doesn't pass is rolled back
-automatically and moved to `/srv/prospect-terminal/failed/`.
+automatically and moved to `/srv/prospect-terminal/failed/`. If a manual rollback target doesn't
+pass its health check, `rollback.sh` switches back to the release that was running and checks it.
+
+Exit status of both scripts, and what `deployments.log` records:
+
+| Exit | Meaning | Action |
+|---|---|---|
+| 0 | New release (or rollback target) is serving and healthy | None |
+| 1 | Nothing changed, or the change was undone and the earlier release is healthy again (`FAILED … rolled back to …` / `FAILED … restored …`) | Read the message and the journal; the site is up |
+| 2 | Nothing healthy is serving: a failed first deploy, or the fallback release is unhealthy too (`… also FAILED` / `… not healthy either`) | The site is down: check `journalctl -u prospect-terminal -n 200` and `/health`, then deploy a fixed release or roll back by name |
 
 ## Troubleshooting
 

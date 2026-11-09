@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Builds a release from a Git branch, tag or commit, switches to it, and keeps it only if the
 # health check passes; otherwise switches back to the previous release automatically.
+# Exit 0: deployed; 1: nothing changed (bad ref, failed build) or rolled back to the previous
+# release; 2: nothing healthy is being served (first deploy failed, or the rollback is unhealthy).
 #
 #   deploy/deploy.sh            # deploy origin/main
 #   deploy/deploy.sh v1.0.0     # a tag, branch or commit
@@ -43,10 +45,11 @@ if ! (
 fi
 
 previous="$(current_release)"
+valid_release "$previous" || previous=""
 switch_to "$release"
 restart_app
 if wait_healthy; then
-  printf '%s %s %s\n' "$(date -u +%FT%TZ)" "${sha:0:7}" "$ref" >> "$PT_ROOT/deployments.log"
+  record "${sha:0:7} $ref"
   # Keep the newest $PT_KEEP releases (always including the current and previous ones).
   ls -1d "$PT_RELEASES"/*/ 2>/dev/null | sed 's:/$::' | sort -r | tail -n +"$((PT_KEEP + 1))" |
     while read -r old; do
@@ -61,12 +64,23 @@ fi
 mkdir -p "$PT_ROOT/failed"
 failed="$PT_ROOT/failed/$(basename "$release")"
 mv "$release" "$failed"
-if [ -n "$previous" ] && [ -d "$previous" ]; then
+if [ -n "$previous" ]; then
   log "rolling back to $(basename "$previous")"
   switch_to "$previous"
   restart_app
-  wait_healthy || log "the previous release is not healthy either: check 'journalctl -u prospect-terminal'"
-  die "deploy of ${sha:0:7} failed its health check and was rolled back (kept in $failed for inspection)"
+  if wait_healthy; then
+    record "${sha:0:7} $ref FAILED health check; rolled back to $(basename "$previous")"
+    die "deploy of ${sha:0:7} failed its health check and was rolled back to $(basename "$previous") (kept in $failed for inspection)"
+  fi
+  record "${sha:0:7} $ref FAILED health check; rollback to $(basename "$previous") is not healthy either"
+  log "ERROR: deploy of ${sha:0:7} failed its health check, and $(basename "$previous") is not healthy after rolling back: the site is down. Check 'journalctl -u prospect-terminal -n 200'"
+  exit 2
 fi
-switch_to "$failed"
-die "deploy of ${sha:0:7} failed its health check and there is no previous release to return to (first deploy: check 'journalctl -u prospect-terminal -n 200', fix, deploy again)"
+# First deploy (no earlier healthy release): leave no `current` at all rather than one pointing at
+# the failed build. The restart stops the failed code; systemd cannot start the app again until a
+# later deploy creates `current` (that deploy clears systemd's restart limit and proceeds normally).
+rm -f "$PT_CURRENT"
+restart_app
+record "${sha:0:7} $ref FAILED health check; no previous release, nothing is being served"
+log "ERROR: deploy of ${sha:0:7} failed its health check and there is no previous release to return to: nothing is being served (kept in $failed). Check 'journalctl -u prospect-terminal -n 200', fix, and deploy again"
+exit 2

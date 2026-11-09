@@ -59,6 +59,12 @@ test("deploy: scripts parse, and refuse unsafe refs and release names", () => {
   assert.match(rollback, /^set -euo pipefail$/m);
   assert.match(deploy, /case "\$ref" in -\*\|\*\.\.\*/);
   assert.match(rollback, /case "\$1" in \*\/\*\|\.\*\) die/);
+  // The deploy user may run exactly two root commands: restart the app, and clear its restart limit.
+  const sudo = read("sudoers-prospect-terminal").split("\n").filter((l) => l.trim() && !l.startsWith("#"));
+  assert.deepEqual(sudo, [
+    "prospect ALL=(root) NOPASSWD: /usr/bin/systemctl restart prospect-terminal",
+    "prospect ALL=(root) NOPASSWD: /usr/bin/systemctl reset-failed prospect-terminal",
+  ]);
   // A failed release leaves releases/ so a later rollback can never select it.
   assert.match(deploy, /mv "\$release" "\$failed"/);
 });
