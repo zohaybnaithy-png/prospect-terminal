@@ -20,7 +20,7 @@ ranges). Never run against production or a third party.
 | Forged `X-Forwarded-For` / `X-Real-IP` / `Forwarded` to get a fresh budget per request | Bypass | (no limiter) | Ignored. Identity is one header Caddy overwrites; verified through Caddy |
 | Flood of distinct addresses to grow the limiter's memory | Memory | — | At most 20k clients per class, O(1) LRU eviction (eviction only forgives) |
 | Random/unknown profile IDs, bogus parameters | CPU | Already cheap: UUID check, in-memory lookup, 404; never a database query | Unchanged; also counted against the client's budget |
-| Database exhaustion | Connections | Already safe: pages never query per request (in-memory snapshot, one tiny version probe a minute while traffic flows; pool max 5) | Unchanged; a refused request never reaches any data code |
+| Database exhaustion | Connections | Already safe: pages never query per request (in-memory snapshot, one tiny version probe a minute while traffic flows; pool max 6). Measured: 6 database transactions during two full crawls of every profile (2 min) | Unchanged; a refused request never reaches any data code |
 
 Expensive routes, measured server time (p50): profile navigation ~50–57 ms (largest:
 `playerLevels` scans every stat line of every level); profile prefetch ~15 ms (shell only);
