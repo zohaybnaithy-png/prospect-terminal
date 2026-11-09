@@ -15,10 +15,12 @@ import { clientKey, identityConfig, type IdentityConfig } from "./client-identit
 export type TrafficClass = "profile" | "page" | "prefetch";
 
 export const LIMITS: Record<TrafficClass, BucketConfig> = {
-  // Full profile renders (document or client navigation): 60 at once, then 1 per second.
-  profile: { capacity: 60, refillPerSec: 1, maxKeys: 20_000 },
-  // Every other page render, Trends data, image optimization: 120 at once, then 3 per second.
-  page: { capacity: 120, refillPerSec: 3, maxKeys: 20_000 },
+  // Full profile renders (document or client navigation): 120 at once, then 6 per second. Generous
+  // on purpose: one address can be a whole office or campus (50 people each opening a profile every
+  // 10 s = 5/s). Total server load is bounded by the server-wide budget below, not by this.
+  profile: { capacity: 120, refillPerSec: 6, maxKeys: 20_000 },
+  // Every other page render, Trends data, image optimization: 240 at once, then 8 per second.
+  page: { capacity: 240, refillPerSec: 8, maxKeys: 20_000 },
   // Router prefetches (shell only): 400 at once, then 15 per second (a page view every ~4 s).
   prefetch: { capacity: 400, refillPerSec: 15, maxKeys: 20_000 },
 };
@@ -29,18 +31,27 @@ export const LIMITS: Record<TrafficClass, BucketConfig> = {
  * the server and slow every visitor 50×). So profile renders also draw on one server-wide budget
  * set below measured capacity (~16 renders/s per process). When it is exhausted, a profile request
  * is still served if its client has used little recently (`fairShare`: 10 profiles, one more every
- * 30 s, spent on every profile request); only clients pulling profiles continuously are refused,
- * and only while the server is over budget. A person reading a profile every 30 s never runs out;
- * one reading every 15 s lasts ~5 minutes before being subject to shedding (only under overload).
- * The refill is slow on purpose: every shed address still gets its refill, so N addresses add
- * N/30 renders/s on top of the server budget (64 addresses: ~2/s).
+ * 10 s, spent on every profile request); only clients pulling profiles continuously are refused,
+ * and only while the server is over budget. A person reading a profile every 10 s never runs out.
+ * Fair-share admissions draw on a capped server-wide overflow (`fairShareOverflow`), so however
+ * many addresses take part, admitted renders never exceed global + overflow.
  */
 export const OVERLOAD = {
   // 6 renders/s ≈ 40% of one process (a render is ~65 ms): leaves room for readers served on their
   // fair share, every other page, and the refusals themselves. Tunable: PT_PROFILE_BUDGET_RPS.
   global: { capacity: 12, refillPerSec: 6, maxKeys: 1 } satisfies BucketConfig,
-  fairShare: { capacity: 10, refillPerSec: 1 / 30, maxKeys: 20_000 } satisfies BucketConfig,
+  fairShare: { capacity: 10, refillPerSec: 1 / 10, maxKeys: 20_000 } satisfies BucketConfig,
+  // Hard bound on fair-share admissions server-wide. Without it, N addresses add N/30 renders/s and
+  // a first wave of up to 10 × N (measured before this cap: 1,000 addresses → 100/s in the first
+  // minute and 37/s steady against ~16/s of capacity). With it, admitted profile renders never exceed
+  // global + overflow (6 + 4 = 10/s, bursts 12 + 8) however many addresses take part. Tradeoff: in
+  // a very large attack, readers compete for these 4/s and may get a 429 with Retry-After instead
+  // of a server that is slow for everyone.
+  fairShareOverflow: { capacity: 8, refillPerSec: 4, maxKeys: 1 } satisfies BucketConfig,
 };
+
+/** Fair-share tokens a client must still hold (after this request) to use the shared overflow: half. */
+export const fairReserve = (capacity: number) => capacity - 2;
 
 /** `PT_PROFILE_BUDGET_RPS` (1–100) replaces the server-wide profile budget, e.g. on a larger host. */
 export function overloadFromEnv(env: Record<string, string | undefined>): typeof OVERLOAD {
@@ -94,6 +105,7 @@ export function createLimiter(
   const overload = opts.overload ?? overloadFromEnv(env);
   const globalProfiles = new TokenBuckets(overload.global, opts.now);
   const fairShare = new TokenBuckets(overload.fairShare, opts.now);
+  const fairOverflow = new TokenBuckets(overload.fairShareOverflow, opts.now);
   const rejected: Record<TrafficClass, number> = { profile: 0, page: 0, prefetch: 0 };
   let shed = 0;
   return {
@@ -113,14 +125,27 @@ export function createLimiter(
         return { action: "reject", cls, result, reason: "client-limit" };
       }
       if (cls !== "profile") return { action: "allow", reason: "within-limit", cls, result };
-      // Both are always spent, so usage is tracked whether or not the server is busy.
+      // Fair share is always spent, so recent usage is tracked whether or not the server is busy.
+      // "Light" = a client that has used little recently (at least fairReserve of its fair share
+      // left after this request): a reader. A continuously pulling address is "heavy" within
+      // seconds. Light clients have priority:
+      //  - heavy clients may use the server-wide budget only while it is above GLOBAL_RESERVE, so
+      //    one crawler (or many) can never take all of it;
+      //  - light clients may use all of it, then the capped overflow.
+      // Admitted renders never exceed global + overflow, however many addresses take part.
       const fair = fairShare.take(key);
-      const global = globalProfiles.take("*");
-      if (global.ok) return { action: "allow", reason: "within-limit", cls, result };
-      if (fair.ok) return { action: "allow", reason: "fair-share", cls, result };
+      const light = fair.ok && fair.remaining >= fairReserve(overload.fairShare.capacity);
+      const reserve = light ? 0 : Math.floor(overload.global.capacity / 2);
+      const global = globalProfiles.available("*") >= reserve + 1 ? globalProfiles.take("*") : null;
+      if (global?.ok) return { action: "allow", reason: "within-limit", cls, result };
+      if (light) {
+        const overflow = fairOverflow.take("*");
+        if (overflow.ok) return { action: "allow", reason: "fair-share", cls, result };
+      }
       rejected.profile++;
       shed++;
-      return { action: "reject", cls, result: global, reason: "overload" };
+      const wait = Math.max(1, Math.ceil((reserve + 1 - globalProfiles.available("*")) / overload.global.refillPerSec));
+      return { action: "reject", cls, result: { ok: false, remaining: 0, retryAfterSec: wait }, reason: "overload" };
     },
     stats() {
       const out = { ...rejected };

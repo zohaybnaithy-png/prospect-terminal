@@ -13,7 +13,7 @@ import { clientKey, identityConfig, ipv6Prefix64 } from "../src/lib/traffic/clie
 import { LIMITS, OVERLOAD, classify, createLimiter, tooManyRequests, type TrafficClass } from "../src/lib/traffic/policy";
 
 /** Per-client tests isolate the per-client budgets from the server-wide overload budget. */
-const NO_OVERLOAD = { global: { capacity: 1e9, refillPerSec: 1e9, maxKeys: 1 }, fairShare: OVERLOAD.fairShare };
+const NO_OVERLOAD = { global: { capacity: 1e9, refillPerSec: 1e9, maxKeys: 1 }, fairShare: OVERLOAD.fairShare, fairShareOverflow: OVERLOAD.fairShareOverflow };
 import { DISALLOW, isCrawlAllowed, robotsPolicy, STATIC_PAGES } from "../src/lib/crawl-policy";
 import { siteOrigin } from "../src/lib/site-url";
 import { sitemapEntries } from "../src/lib/sitemap";
@@ -213,7 +213,7 @@ describe("request classes and budgets", () => {
     assert.equal(refused, 0);
   });
 
-  test("a crawler fetching 20 profiles/s gets the burst, then ~1/s; others are unaffected", () => {
+  test("a crawler fetching 20 profiles/s gets the burst, then its per-address rate; others are unaffected", () => {
     const c = clock();
     const l = createLimiter({ env: ENV, now: c.now, overload: NO_OVERLOAD });
     let allowed = 0, refused = 0;
@@ -226,8 +226,9 @@ describe("request classes and budgets", () => {
       }
       c.advance(50);
     }
-    // 60 burst + ~1 per second for 60 s.
-    assert.ok(allowed >= 115 && allowed <= 125, `allowed ${allowed}`);
+    // Burst + refill for 60 s (per-client limits only here; overload shedding is tested separately).
+    const expected = LIMITS.profile.capacity + 60 * LIMITS.profile.refillPerSec;
+    assert.ok(Math.abs(allowed - expected) <= 5, `allowed ${allowed}, expected ~${expected}`);
     assert.equal(allowed + refused, 1200);
     assert.equal(l.decide(PROFILE, H("203.0.113.9")).action, "allow", "another client still served");
     assert.equal(l.decide("/players", H("192.0.2.66")).action, "allow", "the crawler's page budget is separate");
@@ -298,24 +299,28 @@ describe("request classes and budgets", () => {
       if (ms % 3000 === 0) {
         const reader = `203.0.113.${(ms / 3000) % 10}`;
         if (l.decide(PROFILE, H(reader)).action === "allow") readerServed++;
-        else readerRefused++;
+        else {
+          readerRefused++;
+          // At the very start every crawler address still looks like a reader (full fair share)
+          // and competes for the capped overflow; within seconds they fall below the reserve.
+          assert.ok(ms < 10_000, `reader refused at ${ms / 1000} s`);
+        }
       }
       c.advance(250);
     }
-    assert.equal(readerRefused, 0, "readers keep their fair share and are always served");
-    assert.equal(readerServed, 60);
-    // Once the crawlers' fair shares are spent, they get the server budget plus their 64 addresses'
-    // fair-share refills (10 + 64/30 ≈ 12.1/s), well below the 16/s they ask for and the ~16/s
-    // the server can render.
+    assert.ok(readerRefused <= 3, `${readerRefused} reader refusals (only in the first seconds)`);
+    assert.equal(readerServed + readerRefused, 60);
+    // Once the crawlers' fair shares are spent, admitted renders stay within the server budget plus
+    // the capped fair-share overflow (6 + 4/s), whatever the number of addresses.
     const perSecLate = lastHalf.length / 60;
-    const bound = OVERLOAD.global.refillPerSec + 64 * OVERLOAD.fairShare.refillPerSec;
+    const bound = OVERLOAD.global.refillPerSec + OVERLOAD.fairShareOverflow.refillPerSec;
     assert.ok(perSecLate <= bound + 0.3, `crawlers served ${perSecLate.toFixed(1)}/s at the end (bound ${bound.toFixed(1)})`);
     assert.ok(crawlerServed < 16 * 180, "some crawler requests were shed");
   });
 
   test("overload shedding never applies to other pages or prefetches", () => {
     const c = clock();
-    const l = createLimiter({ env: ENV, now: c.now, overload: { global: { capacity: 1, refillPerSec: 0.001, maxKeys: 1 }, fairShare: { capacity: 1, refillPerSec: 0.001, maxKeys: 10 } } });
+    const l = createLimiter({ env: ENV, now: c.now, overload: { global: { capacity: 1, refillPerSec: 0.001, maxKeys: 1 }, fairShare: { capacity: 1, refillPerSec: 0.001, maxKeys: 10 }, fairShareOverflow: OVERLOAD.fairShareOverflow } });
     l.decide(PROFILE, H("192.0.2.1"));
     assert.equal(l.decide(PROFILE, H("192.0.2.1")).action, "reject");
     for (let i = 0; i < 50; i++) {
@@ -359,6 +364,7 @@ describe("HTTP behaviour of the proxy", () => {
   test("the real proxy(): allows within budget, then 429 + Retry-After, and recovers", async (t) => {
     const prev = { ...process.env };
     process.env.PT_CLIENT_IP_HEADER = "x-pt-client-ip";
+    process.env.PT_PROFILE_BUDGET_RPS = "100";
     delete process.env.PT_RATE_LIMIT;
     const key = Symbol.for("prospect-terminal.rate-limiter");
     const g = globalThis as Record<symbol, unknown>;
@@ -374,30 +380,33 @@ describe("HTTP behaviour of the proxy", () => {
     const { proxy } = await import("../src/proxy");
     const req = (path: string, ip: string, extra: Record<string, string> = {}) =>
       new NextRequest(`http://localhost:3000${path}`, { headers: { "x-pt-client-ip": ip, ...extra } });
-    // One client, 5 profiles/s (under the server-wide budget, so only its own limit binds), with a
-    // different forged X-Forwarded-For on every request.
+    // One client, 10 profiles/s (above its per-address refill), with a different forged
+    // X-Forwarded-For on every request. A large server-wide budget isolates the per-client limit.
     let served = 0, refused: Response | undefined;
-    for (let i = 0; i < 200 && !refused; i++) {
+    for (let i = 0; i < 400 && !refused; i++) {
       const r = await proxy(req(PROFILE, "192.0.2.10", { "x-forwarded-for": `10.0.${i >> 8}.${i & 255}` }));
       if (r.status === 429) refused = r;
       else {
         served++;
         assert.equal(r.headers.get("x-middleware-next"), "1", "passed through to the app");
-        now += 200;
+        now += 100;
       }
     }
-    // Burst of 60 plus 1/s refill while it ran (~15 s): refused after ~75 requests, never 200.
-    assert.ok(served >= LIMITS.profile.capacity && served <= LIMITS.profile.capacity + 20, `served ${served}`);
+    // Burst plus refill while it ran; refused well before 400 requests.
+    assert.ok(served >= LIMITS.profile.capacity && served < 400, `served ${served}`);
     assert.equal(refused!.status, 429);
     assert.equal(refused!.headers.get("retry-after"), "1");
     assert.notEqual((await proxy(req(PROFILE, "192.0.2.11"))).status, 429, "another client is served");
     assert.notEqual((await proxy(req("/health", "192.0.2.10"))).status, 429, "health is exempt");
     now += 1000;
     assert.notEqual((await proxy(req(PROFILE, "192.0.2.10"))).status, 429, "served again after Retry-After");
-    assert.equal((await proxy(req(PROFILE, "192.0.2.10"))).status, 429, "one token per second, no more");
+    // The refill is exactly LIMITS.profile.refillPerSec per second, no more.
+    let again = 1;
+    while ((await proxy(req(PROFILE, "192.0.2.10"))).status !== 429) again++;
+    assert.ok(again >= LIMITS.profile.refillPerSec && again <= LIMITS.profile.refillPerSec + 1, `served ${again} after 1 s`);
   });
 
-  test("refusals are held for REFUSAL_DELAY_MS, and never more than 1000 at once", async (t) => {
+  test("refusals are held for REFUSAL_DELAY_MS, at most 32 per client and 256 in total", async (t) => {
     const prev = { ...process.env };
     process.env.PT_CLIENT_IP_HEADER = "x-pt-client-ip";
     const key = Symbol.for("prospect-terminal.rate-limiter");
@@ -407,22 +416,34 @@ describe("HTTP behaviour of the proxy", () => {
       delete g[key];
       process.env = prev;
     });
-    const { proxy, REFUSAL_DELAY_MS } = await import("../src/proxy");
+    const { proxy, REFUSAL_DELAY_MS, heldRefusals } = await import("../src/proxy");
+    const { HOLD_TOTAL_LIMIT, heldPerClientLimit } = await import("../src/lib/traffic/hold");
     const req = (ip: string) => new NextRequest(`http://localhost:3000/players`, { headers: { "x-pt-client-ip": ip } });
-    for (let i = 0; i < LIMITS.page.capacity; i++) await proxy(req("192.0.2.77"));
+    const exhaust = async (ip: string) => {
+      for (let i = 0; i < LIMITS.page.capacity; i++) await proxy(req(ip));
+    };
+    await exhaust("192.0.2.77");
     const start = performance.now();
     const one = await proxy(req("192.0.2.77"));
     assert.equal(one.status, 429);
     assert.ok(performance.now() - start >= REFUSAL_DELAY_MS - 20, "held before answering");
-    // Fill the hold (1000; a few of these calls are allowed because the bucket refilled during
-    // the 1 s wait above, hence 1010); the next refusal is answered at once.
-    const heldAll = Array.from({ length: 1010 }, () => proxy(req("192.0.2.77")));
+    // One client: only heldPerClientLimit refusals are held; the rest are answered at once.
+    const burst = Array.from({ length: 50 }, () => proxy(req("192.0.2.77")));
+    assert.equal(heldRefusals().total, heldPerClientLimit);
     const s2 = performance.now();
-    const extra = await proxy(req("192.0.2.77"));
-    assert.equal(extra.status, 429);
-    const waited = performance.now() - s2;
-    assert.ok(waited < 200, `beyond the bound, refusals are immediate (waited ${waited.toFixed(0)} ms)`);
-    assert.ok((await Promise.all(heldAll)).filter((r) => r.status === 429).length >= 1000);
+    assert.equal((await proxy(req("192.0.2.77"))).status, 429);
+    assert.ok(performance.now() - s2 < 200, "beyond the per-client bound, immediate");
+    await Promise.all(burst);
+    // Many clients: at most HOLD_TOTAL_LIMIT held in total.
+    const ips = Array.from({ length: 40 }, (_, i) => `198.51.100.${i}`);
+    for (const ip of ips) await exhaust(ip);
+    const many = ips.flatMap((ip) => Array.from({ length: heldPerClientLimit }, () => proxy(req(ip))));
+    assert.equal(heldRefusals().total, Math.min(HOLD_TOTAL_LIMIT, ips.length * heldPerClientLimit));
+    // Clients regain page tokens during the 1 s hold, so a few of these are served: never an error.
+    const results = await Promise.all(many);
+    assert.ok(results.every((r) => r.status === 429 || r.status === 200), "only refusals or pass-through");
+    assert.ok(results.filter((r) => r.status === 429).length >= results.length * 0.7);
+    assert.equal(heldRefusals().total, 0);
   });
 
   test("the proxy cannot touch data: it imports neither the database nor the data services", () => {

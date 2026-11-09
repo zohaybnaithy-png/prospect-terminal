@@ -43,6 +43,14 @@ export class TokenBuckets {
     return this.buckets.size;
   }
 
+  /** Tokens `key` would have now, without spending any (a missing key has a full bucket). */
+  available(key: string): number {
+    const prev = this.buckets.get(key);
+    if (!prev) return this.config.capacity;
+    const elapsed = Math.max(0, this.now() - prev.at) / 1000;
+    return Math.min(this.config.capacity, prev.tokens + elapsed * this.config.refillPerSec);
+  }
+
   take(key: string): TakeResult {
     const t = this.now();
     const { capacity, refillPerSec } = this.config;

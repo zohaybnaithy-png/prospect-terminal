@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createLimiter, tooManyRequests, type Limiter } from "@/lib/traffic/policy";
+import { clientKey } from "@/lib/traffic/client-identity";
+import { recordIdentity, sharedTrafficState } from "@/lib/traffic/health";
+import { holdDecision, refusalDelayMs } from "@/lib/traffic/hold";
 
 /**
  * Traffic protection (docs/TRAFFIC.md). Runs before any page or route renders, so a refused request
@@ -9,39 +12,45 @@ import { createLimiter, tooManyRequests, type Limiter } from "@/lib/traffic/poli
  * single-server deployment; with several servers each would count separately (see the doc).
  */
 const KEY = Symbol.for("prospect-terminal.rate-limiter");
-const g = globalThis as typeof globalThis & { [KEY]?: { limiter: Limiter; loggedAt: number; warned: boolean } };
+const g = globalThis as typeof globalThis & { [KEY]?: { limiter: Limiter; loggedAt: number; warnedAt: number } };
 
 function state() {
-  return (g[KEY] ??= { limiter: createLimiter(), loggedAt: Date.now(), warned: false });
+  return (g[KEY] ??= { limiter: createLimiter(), loggedAt: Date.now(), warnedAt: 0 });
 }
 
-/**
- * Refusals are answered after a short delay (bounded). A client that ignores Retry-After and
- * retries at once otherwise turns each connection into hundreds of refusals per second, and even a
- * cheap refusal (~1 ms of Next's request handling) adds up on the single server thread (measured,
- * docs/TRAFFIC.md). A held response costs only a timer; at most MAX_HELD are held, beyond that
- * refusals are immediate, so holding can never itself exhaust memory or sockets.
- */
-export const REFUSAL_DELAY_MS = 1000;
-const MAX_HELD = 1000;
-let held = 0;
+/** Refusals currently being held (see src/lib/traffic/hold.ts for why and the bounds). */
+const heldByClient = new Map<string, number>();
+let heldTotal = 0;
+export const REFUSAL_DELAY_MS = refusalDelayMs();
 
-async function refuse(response: Response) {
-  if (held >= MAX_HELD) return response;
-  held++;
+async function refuse(response: Response, key: string | null) {
+  if (REFUSAL_DELAY_MS === 0 || holdDecision(heldByClient, key, heldTotal) === "immediate") return response;
+  heldTotal++;
+  if (key) heldByClient.set(key, (heldByClient.get(key) ?? 0) + 1);
   try {
     await new Promise((r) => setTimeout(r, REFUSAL_DELAY_MS));
   } finally {
-    held--;
+    heldTotal--;
+    if (key) {
+      const n = (heldByClient.get(key) ?? 1) - 1;
+      if (n > 0) heldByClient.set(key, n);
+      else heldByClient.delete(key);
+    }
   }
   return response;
 }
 
+/** For tests and diagnostics. */
+export const heldRefusals = () => ({ total: heldTotal, clients: heldByClient.size });
+
 export async function proxy(request: NextRequest) {
   const s = state();
+  const key = clientKey(request.headers, s.limiter.identity);
+  // Proxied requests without a valid identity mean Caddy's header_up is missing: /health reports it.
+  recordIdentity(sharedTrafficState(), request.headers, key !== null);
   const decision = s.limiter.decide(request.nextUrl.pathname, request.headers);
-  if (decision.action === "allow" && decision.reason === "no-identity" && !s.warned && process.env.NODE_ENV === "production") {
-    s.warned = true;
+  if (decision.action === "allow" && decision.reason === "no-identity" && process.env.NODE_ENV === "production" && Date.now() - s.warnedAt >= 600_000) {
+    s.warnedAt = Date.now();
     const id = s.limiter.identity;
     console.error(
       "reason" in id
@@ -59,7 +68,7 @@ export async function proxy(request: NextRequest) {
         `[traffic] refused ${total} requests in the last minute (profile ${rejected.profile} of which ${shed} for server overload, page ${rejected.page}, prefetch ${rejected.prefetch}); tracked clients ${keys.profile}/${keys.page}/${keys.prefetch}`,
       );
   }
-  if (decision.action === "reject") return refuse(tooManyRequests(decision.result));
+  if (decision.action === "reject") return refuse(tooManyRequests(decision.result), key);
   return NextResponse.next();
 }
 

@@ -5,8 +5,26 @@
 #          sudo systemctl reload caddy
 # DNS: an A record for the domain (and www) must point at the instance's static IP first.
 
+# Global options: bound how long a connection may hold resources before sending a full request,
+# so slow-header/slow-body clients cannot pile up connections (docs/TRAFFIC.md).
+{
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 10s
+			write 60s
+			idle 2m
+		}
+	}
+}
+
 prospectterminal.example {
 	encode zstd gzip
+
+	# The site only serves GET requests; a large body is never legitimate.
+	request_body {
+		max_size 64KB
+	}
 
 	reverse_proxy 127.0.0.1:3000 {
 		# While the app restarts (deploy, crash), hold requests and retry for up to 30 s instead of

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { competitionHealth } from "@/services/competition";
 import { healthHttpStatus } from "@/services/competition/health";
+import { sharedTrafficState, trafficBlocksHealth, trafficHealth } from "@/lib/traffic/health";
 
 /**
  * Health check for the host / load balancer: 200 once every level's data is loaded, 503 while
@@ -10,8 +11,12 @@ import { healthHttpStatus } from "@/services/competition/health";
 export async function GET() {
   await connection();
   const report = competitionHealth();
-  return Response.json(report, {
-    status: healthHttpStatus(report),
-    headers: { "Cache-Control": "no-store" },
-  });
+  // Traffic protection that is not in place makes a production server unhealthy, so a release
+  // without it never passes deploy.sh's health gate (src/lib/traffic/health.ts).
+  const traffic = trafficHealth(process.env, sharedTrafficState());
+  const ok = healthHttpStatus(report) === 200 && !trafficBlocksHealth(traffic.status);
+  return Response.json(
+    { ...report, ...(trafficBlocksHealth(traffic.status) && report.status === "ready" ? { status: "misconfigured" } : {}), traffic },
+    { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
+  );
 }

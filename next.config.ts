@@ -46,6 +46,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The rate limiter (src/proxy.ts) must see `Next-Router-Prefetch` to give router prefetches their
+  // own budget. By default Next.js deletes that and the other router headers before Proxy runs, so
+  // every prefetch counted as a full profile render (docs/TRAFFIC.md). The proxy reads only the
+  // pathname and never rewrites or redirects, so skipping normalization changes nothing else.
+  skipProxyUrlNormalize: true,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
