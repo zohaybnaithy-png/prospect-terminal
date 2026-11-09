@@ -188,7 +188,7 @@ Should be addressed:
 
 4. **Crawler load on profiles** (~17 profiles/s per process). Mitigations: a `robots.txt`
    policy, then a rate limit or a CDN/WAF in front if traffic warrants it.
-5. ~~Accessibility findings~~: fixed in Phase 5A.
+5. **Accessibility findings** above (small CSS changes).
 6. **Data freshness**: no scheduled ingestion in production; the data is the 2026 season as
    ingested on the test branch (AFL through 2026-11-07). Fine off-season; schedule incremental
    ingestion (writer role, separate from the web server) before the 2027 season.
