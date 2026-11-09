@@ -4,6 +4,7 @@ import { MLBStatsApiSource } from "../src/ingestion/sources/mlb-stats-api";
 import { parseIngestionArgs } from "../src/ingestion/cli-options";
 import { ingest } from "../src/ingestion/runner";
 import { PostgresIngestionSink } from "../src/ingestion/postgres-sink";
+import { requireJobLock } from "../src/ingestion/refresh/lock";
 import {
   beginStage,
   progress,
@@ -59,6 +60,8 @@ async function main() {
   sink = url
     ? new PostgresIngestionSink(url, { signal: interrupt.signal })
     : undefined;
+  // Writes never overlap the scheduled refresh or another apply (docs/DATA-REFRESH.md).
+  const releaseJobLock = args.apply && url ? await requireJobLock(url) : undefined;
   try {
     const report = await ingest(adapter, sink, { dryRun: !args.apply });
     console.log(
@@ -84,6 +87,7 @@ async function main() {
       await sink.close();
       progress("db:closed");
     }
+    await releaseJobLock?.().catch(() => {});
   }
 }
 // First Ctrl+C rolls back an in-flight apply (marking its run failed); a second one exits immediately.

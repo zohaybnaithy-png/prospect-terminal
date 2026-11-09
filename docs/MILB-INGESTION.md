@@ -32,8 +32,10 @@ npm run ingest:milb -- --season=2026 --level=aaa --dry-run
 npm run ingest:milb -- --season=2026 --apply
 npm run ingest:milb -- --season=2026 --level=aa,high-a --from=2026-04-01 --to=2026-06-30 --apply
 
-# Daily / regular update (ready for a scheduler; none is installed):
+# Daily / regular update by hand (the scheduled job wraps this: docs/DATA-REFRESH.md):
 npm run ingest:milb -- --season=2026 --incremental --apply
+# Every --apply takes the database job lock: it refuses while the scheduled refresh (or another
+# apply) is running.
 
 # Debug scopes:
 npm run ingest:milb -- --season=2026 --level=aaa --league=SOURCE_LEAGUE_ID --dry-run
