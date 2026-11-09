@@ -14,9 +14,19 @@ validation, quarantine, provenance, idempotency and freshness guards unchanged
 
 1. **Takes the job lock** (`src/ingestion/refresh/lock.ts`): a PostgreSQL session advisory lock on a
    dedicated connection. If another job or a manual `ingest:* --apply` / `backfill:milb --apply`
-   holds it, the job records `locked` and exits 0 without fetching anything. The server releases
+   holds it, the job fetches nothing and reports how long the holder has held the lock
+   (`pg_stat_activity`, application name `pt-ingestion-job-lock`): **`locked`** (exit 0, no ping)
+   for a normal overlap, **`locked-stale`** (exit 1, failure ping) once the holder has held it for
+   more than 120 minutes (`--max-lock-hold-minutes`). A planned long backfill therefore makes the
+   timer's runs report `locked-stale`: pause the timer during one. Because a normal overlap does
+   not ping, a lock that is never released also trips the dead-man's switch. The server releases
    the lock the moment the holder's connection ends, so a crashed or `kill -9`ed job never leaves
-   it behind (tested). If the lock's connection drops mid-job, the job stops (another could start).
+   it behind (tested). **If the lock's connection drops mid-job**, the job stops with status
+   `aborted` (`abortReason: "lock-lost"`): a capture that has not started writing never writes; one
+   whose apply transaction is running rolls back as a whole and is recorded `failed`/`interrupted`
+   (both tested against PostgreSQL with a real change in the data: nothing partial was written,
+   and the next run applied the change in full). Releasing a lock whose connection is gone never
+   throws (found by that test: it used to, which turned the job's outcome into an error).
    Neon's `-pooler` endpoint (PgBouncer, transaction mode) cannot hold session locks, so the lock
    always connects to the direct endpoint (same credentials).
 2. **Recovers dead captures**: `ingestion_runs` rows still `running` after 2 h belong to a process
@@ -45,8 +55,15 @@ validation, quarantine, provenance, idempotency and freshness guards unchanged
    pinged on success and `<url>/fail` on failure (e.g. a free healthchecks.io check that alerts when
    pings stop or fail). Dry runs and `locked` jobs do not ping.
 
-Exit codes: 0 = ok, ok with quarantined records, nothing due, or another job running;
-1 = failed or timed out.
+Exit codes: 0 = ok, ok with quarantined records, nothing due, or a normal overlap (`locked`);
+1 = `failed`, `timed-out` (deadline), `aborted` (lock lost / interrupted), `locked-stale`, or
+`error`.
+
+**Every outcome is recorded and notified**, including fatal errors that prevent the job from
+running at all (bad arguments, missing `INGESTION_DATABASE_URL`, database unreachable, lock
+connection failure, an unexpected orchestration error): status `error` in the job log and a
+`<url>/fail` ping with a coarse, credential-free reason (e.g. `ECONNREFUSED`). Verified end to end
+with the real CLI and a local HTTPS ping receiver.
 
 | Option | Default | |
 |---|---|---|
@@ -57,16 +74,23 @@ Exit codes: 0 = ok, ok with quarantined records, nothing due, or another job run
 | `--max-attempts` | 3 | per step |
 | `--retry-delays` | `60,300` | seconds before attempt 2, 3, … |
 | `--timeout-minutes` | 45 | whole job |
+| `--max-lock-hold-minutes` | 120 | another holder longer than this → `locked-stale` |
 | `--log-dir` | `~/pt-runs/refresh` | JSONL job log |
+| `PT_SEASON_WINDOWS` (env) | defaults above | e.g. `milb=03-20..10-05,afl=10-03..11-25` for an unusual season; used by the job and by `check:freshness`; invalid values are an error |
 
 ## Freshness (`npm run -s check:freshness`)
 
 Read-only (every query in a `READ ONLY` transaction; the web server's read-only role is enough).
 Reports, from what is stored:
 
-- the latest final game with a complete boxscore per level, and a verdict per level: `fresh`,
-  `stale` (older than 4 days in season), `no-data` (in season, nothing stored) or `off-season`;
-- the last successful capture (`stale` if older than 36 h while any level is in season);
+- per level: the latest final game with a complete boxscore, and **that level's own** last
+  successful games capture (same source and season: a MiLB level counts only `milb:<season>:`
+  captures that include it; the AFL only `afl:<season>:`). Verdict per level: `fresh`, `stale`
+  (latest game older than 4 days, or its last successful capture older than 36 h, in season),
+  `no-data` (in season, nothing stored) or `off-season`. Before the pre-merge fix one global
+  "last success" was used, so a recent AFL or previous-season capture made stale MiLB data look
+  fresh (reproduced against PostgreSQL, now a regression test);
+- how long the job lock has been held (`attention` beyond 120 min; visible with the writer role);
 - failed or quarantined captures since the last success, and captures stuck in `running`
   (`attention`).
 
@@ -138,7 +162,11 @@ minute reloads changed levels in the background (docs/DEPLOYMENT.md).
 - Never run against the live MLB Stats API or Neon in this phase (no credentials in the build
   environment); the tests use a disposable local PostgreSQL and the synthetic fixtures, served
   through a mock fetch and a local HTTPS mock of the API.
-- Season windows are fixed dates, not read from the schedule; adjust `ACTIVE_WINDOWS` if a season
-  starts or ends unusually.
+- Season windows are configured dates (defaults, or `PT_SEASON_WINDOWS`), not read from the
+  league schedule. A schedule-aware version would read each sport's regular-season start and end
+  from the Stats API schedule once a season (the adapter already fetches schedules) and store them
+  with the job log; not done here because it adds API calls and storage outside this phase's
+  scope. Until then: set `PT_SEASON_WINDOWS` when a season moves; `check:freshness` reports
+  `stale` if games stop arriving inside the window, so a wrong window is visible.
 - No email/Slack integration in the app itself: alerting is the ping URL, systemd's exit status and
   `check:freshness`.

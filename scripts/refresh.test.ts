@@ -212,7 +212,10 @@ describe("refresh job", () => {
       throw new Error("aborted");
     };
     const r = await runRefreshJob(opts(), d);
-    assert.equal(r.status, "timed-out");
+    assert.equal(r.status, "aborted");
+    assert.equal(r.abortReason, "lock-lost");
+    assert.equal(r.steps[0].status, "aborted");
+    assert.equal(jobExitCode(r), 1);
     assert.deepEqual(calls, [], "no further steps");
   });
 
@@ -254,7 +257,9 @@ describe("freshness", () => {
   const facts = (o: Partial<FreshnessFacts> = {}): FreshnessFacts => ({
     now: "2026-06-15T09:00:00.000Z",
     season: 2026,
-    lastSuccess: { id: "r1", at: "2026-06-15T06:00:00.000Z", status: "applied", snapshotKey: "milb:...", errorCode: null },
+    lastSuccessByLevel: Object.fromEntries(
+      (["aaa", "aa", "high-a", "single-a"] as const).map((l) => [l, { id: "r1", at: "2026-06-15T06:00:00.000Z", status: "applied", snapshotKey: "milb:2026:aa+aaa+high-a+single-a:games:…", errorCode: null }]),
+    ),
     failuresSinceSuccess: [],
     stuckRunning: [],
     latestGame: { aaa: "2026-06-14", aa: "2026-06-14", "high-a": "2026-06-13", "single-a": "2026-06-14", afl: null },
@@ -270,26 +275,43 @@ describe("freshness", () => {
     const behind = assessFreshness(facts({ latestGame: { ...facts().latestGame, aa: "2026-06-08" } }));
     assert.equal(behind.verdict, "stale");
     assert.match(behind.reasons[0], /aa: latest game 2026-06-08 is 7 days old/);
-    const noJob = assessFreshness(facts({ lastSuccess: { ...facts().lastSuccess!, at: "2026-06-13T00:00:00.000Z" } }));
+    const old = { id: "r0", at: "2026-06-13T00:00:00.000Z", status: "applied", snapshotKey: "milb:2026:aa:games:…", errorCode: null };
+    const noJob = assessFreshness(facts({ lastSuccessByLevel: { ...facts().lastSuccessByLevel, aa: old } }));
     assert.equal(noJob.verdict, "stale");
-    assert.match(noJob.reasons[0], /last successful capture 57 h ago/);
+    assert.deepEqual(noJob.reasons, ["aa: its last successful capture was 57 h ago (max 36 h in season)"]);
+    assert.equal(noJob.levels.find((l) => l.level === "aa")?.successAgeHours, 57);
     assert.equal(freshnessExitCode(noJob), 1);
-    assert.equal(assessFreshness(facts({ lastSuccess: null })).verdict, "stale");
+    assert.match(assessFreshness(facts({ lastSuccessByLevel: { ...facts().lastSuccessByLevel, aaa: null } })).reasons[0], /aaa: no successful 2026 capture/);
     assert.equal(assessFreshness(facts({ latestGame: { ...facts().latestGame, aaa: null } })).levels[0].verdict, "no-data");
   });
+  test("an unrelated success (another source or season) never makes a level fresh", () => {
+    // Only Triple-A's own capture is old; AFL and other levels being current changes nothing.
+    const old = { id: "r0", at: "2026-06-12T00:00:00.000Z", status: "applied", snapshotKey: "milb:2026:aaa:games:…", errorCode: null };
+    const afl = { id: "r9", at: "2026-06-15T08:00:00.000Z", status: "applied", snapshotKey: "afl:2026:all:season:end:all", errorCode: null };
+    const r = assessFreshness(facts({ lastSuccessByLevel: { ...facts().lastSuccessByLevel, aaa: old, afl } }));
+    assert.deepEqual(r.levels.map((l) => l.verdict), ["stale", "fresh", "fresh", "fresh", "off-season"]);
+  });
+
   test("failures since the last success or dead captures: attention", () => {
     const r = assessFreshness(facts({
-      failuresSinceSuccess: [{ id: "r2", at: "2026-06-15T07:00:00.000Z", status: "failed", snapshotKey: "k", errorCode: "database-write-failed" }],
+      failuresSinceSuccess: [{ id: "r2", at: "2026-06-15T07:00:00.000Z", status: "failed", snapshotKey: "k", errorCode: "database-write-failed", source: "milb" }],
       stuckRunning: [{ id: "r3", at: "2026-06-15T01:00:00.000Z", status: "running", snapshotKey: "k", errorCode: null }],
     }));
     assert.equal(r.verdict, "attention");
     assert.deepEqual(r.reasons, [
-      "1 failed/quarantined capture(s) since the last success (latest: failed database-write-failed)",
+      "1 failed/quarantined 2026 capture(s) since their source's last success (latest: milb failed database-write-failed)",
       "1 capture(s) stuck in 'running' (process died; the next job marks them abandoned)",
     ]);
   });
+  test("a job lock held far longer than a job takes needs attention", () => {
+    assert.equal(assessFreshness(facts({ lockHeldForMinutes: 30 })).verdict, "ok", "a running job");
+    const r = assessFreshness(facts({ lockHeldForMinutes: 200 }));
+    assert.equal(r.verdict, "attention");
+    assert.match(r.reasons[0], /lock has been held for 200 min/);
+  });
+
   test("off-season: old data is expected, not stale", () => {
-    const r = assessFreshness(facts({ now: "2027-01-20T00:00:00.000Z", lastSuccess: { ...facts().lastSuccess!, at: "2026-11-25T00:00:00.000Z" } }));
+    const r = assessFreshness(facts({ now: "2027-01-20T00:00:00.000Z" }));
     assert.equal(r.verdict, "ok");
     assert.ok(r.levels.every((l) => l.verdict === "off-season"));
   });

@@ -13,6 +13,7 @@ import { z } from "zod";
 import { DEFAULT_REFRESH } from "../src/ingestion/refresh/job";
 import { assessFreshness, DEFAULT_FRESHNESS, freshnessExitCode, readFreshnessFacts } from "../src/ingestion/refresh/freshness";
 import { redact } from "../src/ingestion/progress";
+import { seasonWindowsFromEnv } from "../src/ingestion/refresh/schedule";
 
 async function main() {
   const values = new Map(
@@ -32,7 +33,7 @@ async function main() {
   };
   const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 15_000 });
   try {
-    const report = assessFreshness(await readFreshnessFacts(pool, { season, now, abandonedAfterMs: DEFAULT_REFRESH.abandonedAfterMs }), policy);
+    const report = assessFreshness(await readFreshnessFacts(pool, { season, now, abandonedAfterMs: DEFAULT_REFRESH.abandonedAfterMs }), policy, seasonWindowsFromEnv());
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     if (report.reasons.length) process.stderr.write(`[freshness] ${report.verdict}: ${report.reasons.join("; ")}\n`);
     process.exitCode = freshnessExitCode(report);

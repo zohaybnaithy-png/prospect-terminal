@@ -66,7 +66,10 @@ export class PgJobLock implements JobLock {
     this.client = null;
     if (!client) return;
     try {
-      await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [JOB_LOCK_NAME]);
+      // After a lost connection there is nothing to unlock: the server released the lock when the
+      // session ended. Release must never throw, or the job's outcome would be lost.
+      if (!this.lost.signal.aborted)
+        await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [JOB_LOCK_NAME]).catch(() => {});
     } finally {
       // Closing the session releases the lock even if the unlock statement failed.
       await client.end().catch(() => {});
@@ -86,4 +89,19 @@ export async function requireJobLock(url: string): Promise<() => Promise<void>> 
       "Another ingestion job holds the database job lock (scheduled refresh or a manual apply); try again when it has finished",
     );
   return () => lock.release();
+}
+
+/**
+ * How long the current holder of the job lock has held it (ms), from pg_stat_activity: every holder
+ * connects with application_name 'pt-ingestion-job-lock' just before taking the lock and closes the
+ * connection right after releasing it. Null when no holder is visible (e.g. a role that cannot see
+ * other sessions).
+ */
+export async function lockHolderAgeMs(query: (sql: string) => Promise<{ rows: { age_ms: string | number | null }[] }>): Promise<number | null> {
+  const r = await query(
+    `SELECT (extract(epoch FROM now() - min(backend_start)) * 1000)::bigint AS age_ms
+     FROM pg_stat_activity WHERE application_name = 'pt-ingestion-job-lock' AND pid <> pg_backend_pid()`,
+  );
+  const v = r.rows[0]?.age_ms;
+  return v === null || v === undefined ? null : Number(v);
 }

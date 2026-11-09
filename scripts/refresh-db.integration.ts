@@ -2,10 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Pool } from "pg";
 import { DEFAULT_REFRESH, runRefreshJob, type RefreshOptions } from "../src/ingestion/refresh/job";
-import { PgJobLock, JOB_LOCK_NAME } from "../src/ingestion/refresh/lock";
+import { PgJobLock, JOB_LOCK_NAME, lockHolderAgeMs } from "../src/ingestion/refresh/lock";
 import { assessFreshness, lastStructureAppliedAt, readFreshnessFacts, recoverAbandonedRuns } from "../src/ingestion/refresh/freshness";
 import { pipelineSteps } from "../src/ingestion/refresh/steps";
-import { milbFixtureFetch } from "../src/ingestion/fixtures/milb-synthetic";
+import { setProgressReporter } from "../src/ingestion/progress";
+import { buildMilbFixture, FIXTURE_IDS, milbFixtureFetch } from "../src/ingestion/fixtures/milb-synthetic";
 
 /**
  * The scheduled refresh against a fresh, migrated, DISPOSABLE PostgreSQL database populated only by
@@ -49,8 +50,8 @@ test("scheduled refresh against PostgreSQL", async (t) => {
   await t.test("before any job: stale, no successful capture", async () => {
     const f = await facts();
     assert.equal(f.verdict, "stale");
-    assert.equal(f.lastSuccess, null);
-    assert.ok(f.reasons.includes("no successful capture recorded"));
+    assert.ok(f.levels.filter((l) => l.level !== "afl").every((l) => l.lastSuccessAt === null && l.verdict === "no-data"));
+    assert.ok(f.reasons.includes("aaa: in season but no complete game stored"));
   });
 
   let afterFirst: Record<string, number> = {};
@@ -67,7 +68,7 @@ test("scheduled refresh against PostgreSQL", async (t) => {
 
   await t.test("freshness reflects what is stored, per level", async () => {
     const f = await facts();
-    assert.equal(f.lastSuccess?.status === "applied" || f.lastSuccess?.status === "applied-with-quarantine", true);
+    assert.ok(f.levels.filter((l) => l.level !== "afl").every((l) => l.lastSuccessAt !== null), "each MiLB level has its own success");
     assert.equal(f.levels.find((l) => l.level === "aa")?.latestGame, "2026-05-12");
     assert.equal(f.levels.find((l) => l.level === "aa")?.verdict, "fresh");
     // The fixture's High-A/Single-A games are on 2026-05-01: two weeks old in season = stale.
@@ -175,5 +176,125 @@ test("scheduled refresh against PostgreSQL", async (t) => {
     assert.equal(games.attempts, DEFAULT_REFRESH.maxAttempts);
     assert.match(games.error ?? "", /transport failed|fetch failed/i);
     assert.equal(await heldLocks(), 0, "lock released after failure");
+  });
+
+  await t.test("lock contention: a real holder is reported with its age; too long → locked-stale", async () => {
+    const holder = new PgJobLock(url);
+    assert.equal(await holder.acquire(), true);
+    await new Promise((r) => setTimeout(r, 1200));
+    const age = await lockHolderAgeMs((sql) => pool.query(sql));
+    assert.ok(age !== null && age >= 1000, `holder age ${age}`);
+    const run = (maxLockHoldMs: number) =>
+      runRefreshJob({ ...options, maxLockHoldMs }, {
+        lock: new PgJobLock(url),
+        steps: pipelineSteps({ url, season: 2026, apply: true, fetcher: milbFixtureFetch().fetcher, sleep: async () => {}, clock: () => NOW }),
+        lastStructureAppliedAt: () => lastStructureAppliedAt(pool, 2026),
+        recoverAbandoned: (ms) => recoverAbandonedRuns(pool, ms),
+        lockHolderAgeMs: () => lockHolderAgeMs((sql) => pool.query(sql)),
+        clock: () => NOW,
+      });
+    assert.equal((await run(DEFAULT_REFRESH.maxLockHoldMs)).status, "locked", "normal overlap");
+    const stale = await run(500);
+    assert.equal(stale.status, "locked-stale");
+    assert.ok((stale.lockHeldForMinutes ?? -1) >= 0);
+    await holder.release();
+  });
+
+  await t.test("lock connection lost during an active ingestion: aborted, nothing partial applied, next run completes", async () => {
+    // A real change in the source (a Double-A game inside the incremental window): one more hit.
+    const data = buildMilbFixture();
+    const box = data.boxes[FIXTURE_IDS.games.aaLate] as { teams: { home: { players: Record<string, { stats: { batting: { hits: number } } }> } } };
+    box.teams.home.players[`ID${FIXTURE_IDS.players.aa2Bat}`].stats.batting.hits = 3;
+    const hitsInDb = async () =>
+      one(
+        `SELECT b.hits FROM player_batting_games b
+         JOIN source_identities sp ON sp.internal_id = b.player_id AND sp.entity_kind = 'player' AND sp.external_id = $1
+         JOIN source_identities sg ON sg.internal_id = b.game_id AND sg.entity_kind = 'game' AND sg.external_id = $2`,
+        [String(FIXTURE_IDS.players.aa2Bat), String(FIXTURE_IDS.games.aaLate)],
+      );
+    assert.equal(await hitsInDb(), 2, "before: the stored value");
+    const later = new Date(NOW.getTime() + 3_600_000); // a newer capture than the stored one
+    const mock = milbFixtureFetch(data);
+    const lock = new PgJobLock(url);
+    let requests = 0, terminated = false;
+    const fetcher: typeof fetch = async (input, init) => {
+      requests++;
+      if (requests === 3 && !terminated) {
+        terminated = true;
+        // The lock's session dies while the capture is being fetched (as if the network dropped).
+        await pool.query(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'pt-ingestion-job-lock'`);
+        for (let i = 0; i < 100 && !lock.lostSignal.aborted; i++) await new Promise((r) => setTimeout(r, 10));
+      }
+      return mock.fetcher(input, init);
+    };
+    const runsBefore = await one("SELECT count(*) FROM ingestion_runs");
+    const r = await runRefreshJob({ ...options, structureMaxAgeHours: 1e6 }, {
+      lock,
+      steps: pipelineSteps({ url, season: 2026, apply: true, fetcher, sleep: async () => {}, clock: () => later }),
+      lastStructureAppliedAt: () => lastStructureAppliedAt(pool, 2026),
+      recoverAbandoned: (ms) => recoverAbandonedRuns(pool, ms),
+      lockLost: lock.lostSignal,
+      clock: () => later,
+      sleep: async () => {},
+    });
+    assert.ok(terminated);
+    assert.equal(r.status, "aborted", JSON.stringify(r));
+    assert.equal(r.abortReason, "lock-lost");
+    assert.equal(await one("SELECT count(*) FROM ingestion_runs WHERE status = 'running'"), 0, "no capture left running");
+    assert.equal(await hitsInDb(), 2, "the in-flight capture was not applied (no partial write)");
+    const interrupted = await one(`SELECT count(*) FROM ingestion_runs WHERE error_code = 'interrupted'`);
+    assert.ok(interrupted >= 1 || (await one("SELECT count(*) FROM ingestion_runs")) === runsBefore, "the capture stopped before or at its apply, recorded as interrupted");
+    assert.equal(await heldLocks(), 0);
+    // The next run applies the whole change.
+    const next = await runRefreshJob({ ...options, structureMaxAgeHours: 1e6 }, {
+      lock: new PgJobLock(url),
+      steps: pipelineSteps({ url, season: 2026, apply: true, fetcher: milbFixtureFetch(data).fetcher, sleep: async () => {}, clock: () => later }),
+      lastStructureAppliedAt: () => lastStructureAppliedAt(pool, 2026),
+      recoverAbandoned: (ms) => recoverAbandonedRuns(pool, ms),
+      clock: () => later,
+      sleep: async () => {},
+    });
+    assert.ok(next.status === "ok" || next.status === "ok-with-quarantine", JSON.stringify(next.steps));
+    assert.equal(await hitsInDb(), 3, "after: the change is applied in full");
+  });
+
+  await t.test("lock lost INSIDE the apply transaction: the whole capture rolls back, recorded as interrupted", async () => {
+    // Another real change (one more walk for the same line), applied by a newer capture.
+    const data = buildMilbFixture();
+    const box = data.boxes[FIXTURE_IDS.games.aaLate] as { teams: { home: { players: Record<string, { stats: { batting: { hits: number; baseOnBalls: number; plateAppearances: number } } }> } } };
+    const line = box.teams.home.players[`ID${FIXTURE_IDS.players.aa2Bat}`].stats.batting;
+    line.hits = 3;
+    line.baseOnBalls = 2;
+    line.plateAppearances = 5;
+    const walks = () =>
+      one(
+        `SELECT b.walks FROM player_batting_games b
+         JOIN source_identities sp ON sp.internal_id = b.player_id AND sp.entity_kind = 'player' AND sp.external_id = $1
+         JOIN source_identities sg ON sg.internal_id = b.game_id AND sg.entity_kind = 'game' AND sg.external_id = $2`,
+        [String(FIXTURE_IDS.players.aa2Bat), String(FIXTURE_IDS.games.aaLate)],
+      );
+    assert.equal(await walks(), 1);
+    const later = new Date(NOW.getTime() + 2 * 3_600_000);
+    const lost = new AbortController();
+    // Lose the lock at the exact moment the apply transaction has taken its source lock.
+    setProgressReporter((event) => {
+      if (event === "apply:lock-acquired" && !lost.signal.aborted) lost.abort(new Error("ingestion job lock connection lost"));
+    });
+    t.after(() => setProgressReporter(() => {}));
+    const r = await runRefreshJob({ ...options, structureMaxAgeHours: 1e6 }, {
+      lock: { acquire: async () => true, release: async () => {} },
+      steps: pipelineSteps({ url, season: 2026, apply: true, fetcher: milbFixtureFetch(data).fetcher, sleep: async () => {}, clock: () => later }),
+      lastStructureAppliedAt: () => lastStructureAppliedAt(pool, 2026),
+      recoverAbandoned: (ms) => recoverAbandonedRuns(pool, ms),
+      lockLost: lost.signal,
+      clock: () => later,
+      sleep: async () => {},
+    });
+    setProgressReporter(() => {});
+    assert.equal(r.status, "aborted");
+    assert.equal(r.abortReason, "lock-lost");
+    assert.equal(await walks(), 1, "rolled back: nothing of the capture was written");
+    assert.ok((await one(`SELECT count(*) FROM ingestion_runs WHERE status = 'failed' AND error_code = 'interrupted'`)) >= 1, "the capture is recorded as interrupted");
+    assert.equal(await one("SELECT count(*) FROM ingestion_runs WHERE status = 'running'"), 0);
   });
 });

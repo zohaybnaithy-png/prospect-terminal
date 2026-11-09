@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { MILB_LEVELS, milbLevelExternalIdPrefix, milbSeasonExternalId, type CompetitionLevelId } from "@/domain/levels";
 import { MLB_SOURCE_ID } from "../sources/mlb-config";
-import { isActive, type RefreshSource } from "./schedule";
+import { ACTIVE_WINDOWS, isActive, type RefreshSource, type SeasonWindow } from "./schedule";
 
 /**
  * Data freshness for operators, from what is actually stored: the latest complete game per level
@@ -20,23 +20,35 @@ export interface RunRef {
 export interface FreshnessFacts {
   now: string;
   season: number;
-  lastSuccess: RunRef | null;
-  /** Failed or quarantined captures after the last success (newest first, at most 10). */
-  failuresSinceSuccess: RunRef[];
+  /**
+   * Per level: the latest SUCCESSFUL GAMES capture of that level's own source and season
+   * (MiLB: a `milb:{season}:…:games|all:` capture whose level list includes the level; AFL:
+   * `afl:{season}:all|games:`). An AFL or previous-season success never counts for a MiLB level.
+   */
+  lastSuccessByLevel: Partial<Record<CompetitionLevelId, RunRef | null>>;
+  /** Failed or quarantined captures of the season after their source's last success (newest first). */
+  failuresSinceSuccess: (RunRef & { source: RefreshSource })[];
   /** `running` captures older than the abandoned threshold: a process died mid-capture. */
   stuckRunning: RunRef[];
+  /**
+   * Minutes the current holder of the ingestion job lock has held it (null: no holder visible;
+   * another role's sessions may be hidden, so run this check with the writer role to see it).
+   */
+  lockHeldForMinutes?: number | null;
   /** Latest final game with a complete boxscore, per level (null: none stored). */
   latestGame: Partial<Record<CompetitionLevelId, string | null>>;
 }
 
 export interface FreshnessPolicy {
-  /** Max hours since the last successful capture while any source is in season. */
+  /** Max hours since a level's last successful capture while that level is in season. */
   maxSuccessAgeHours: number;
+  /** A job lock held longer than this needs attention (a job normally finishes within 45 min). */
+  maxLockHoldMinutes?: number;
   /** Max days between today and a level's latest game while that level is in season. */
   maxGameAgeDays: number;
 }
 
-export const DEFAULT_FRESHNESS: FreshnessPolicy = { maxSuccessAgeHours: 36, maxGameAgeDays: 4 };
+export const DEFAULT_FRESHNESS: FreshnessPolicy = { maxSuccessAgeHours: 36, maxGameAgeDays: 4, maxLockHoldMinutes: 120 };
 
 export type LevelVerdict = "fresh" | "stale" | "off-season" | "no-data";
 
@@ -44,7 +56,14 @@ export interface FreshnessReport extends FreshnessFacts {
   /** ok: nothing to do; stale: data is behind; attention: failures or dead captures to look at. */
   verdict: "ok" | "stale" | "attention";
   reasons: string[];
-  levels: { level: CompetitionLevelId; latestGame: string | null; ageDays: number | null; verdict: LevelVerdict }[];
+  levels: {
+    level: CompetitionLevelId;
+    latestGame: string | null;
+    ageDays: number | null;
+    lastSuccessAt: string | null;
+    successAgeHours: number | null;
+    verdict: LevelVerdict;
+  }[];
 }
 
 const SOURCE_OF: Record<CompetitionLevelId, RefreshSource> = { aaa: "milb", aa: "milb", "high-a": "milb", "single-a": "milb", afl: "afl" };
@@ -54,31 +73,46 @@ const daysBetween = (from: string, to: string) =>
   Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 
 /** Pure: facts + policy → verdict. */
-export function assessFreshness(facts: FreshnessFacts, policy: FreshnessPolicy = DEFAULT_FRESHNESS): FreshnessReport {
+export function assessFreshness(
+  facts: FreshnessFacts,
+  policy: FreshnessPolicy = DEFAULT_FRESHNESS,
+  windows: Record<RefreshSource, SeasonWindow> = ACTIVE_WINDOWS,
+): FreshnessReport {
   const today = facts.now.slice(0, 10);
   const reasons: string[] = [];
   const levels = LEVELS.map((level) => {
     const latest = facts.latestGame[level] ?? null;
     const age = latest ? daysBetween(latest, today) : null;
-    const active = isActive(SOURCE_OF[level], today);
-    const verdict: LevelVerdict = !active ? "off-season" : latest === null ? "no-data" : age! > policy.maxGameAgeDays ? "stale" : "fresh";
-    if (verdict === "stale") reasons.push(`${level}: latest game ${latest} is ${age} days old (max ${policy.maxGameAgeDays} in season)`);
-    if (verdict === "no-data") reasons.push(`${level}: in season but no complete game stored`);
-    return { level, latestGame: latest, ageDays: age, verdict };
+    const success = facts.lastSuccessByLevel[level] ?? null;
+    const successAgeH = success ? (Date.parse(facts.now) - Date.parse(success.at)) / 3_600_000 : null;
+    const active = isActive(SOURCE_OF[level], today, windows);
+    let verdict: LevelVerdict = "fresh";
+    if (!active) verdict = "off-season";
+    else if (latest === null) {
+      verdict = "no-data";
+      reasons.push(`${level}: in season but no complete game stored`);
+    } else {
+      if (age! > policy.maxGameAgeDays) {
+        verdict = "stale";
+        reasons.push(`${level}: latest game ${latest} is ${age} days old (max ${policy.maxGameAgeDays} in season)`);
+      }
+      if (successAgeH === null || successAgeH > policy.maxSuccessAgeHours) {
+        verdict = "stale";
+        reasons.push(
+          success
+            ? `${level}: its last successful capture was ${Math.round(successAgeH!)} h ago (max ${policy.maxSuccessAgeHours} h in season)`
+            : `${level}: no successful ${facts.season} capture of this level recorded`,
+        );
+      }
+    }
+    return { level, latestGame: latest, ageDays: age, lastSuccessAt: success?.at ?? null, successAgeHours: successAgeH === null ? null : Math.round(successAgeH), verdict };
   });
-  const anyActive = levels.some((l) => l.verdict !== "off-season");
-  if (anyActive) {
-    const ageH = facts.lastSuccess ? (Date.parse(facts.now) - Date.parse(facts.lastSuccess.at)) / 3_600_000 : Infinity;
-    if (ageH > policy.maxSuccessAgeHours)
-      reasons.push(
-        facts.lastSuccess
-          ? `last successful capture ${Math.round(ageH)} h ago (max ${policy.maxSuccessAgeHours} h in season)`
-          : "no successful capture recorded",
-      );
-  }
   const stale = reasons.length > 0;
   if (facts.failuresSinceSuccess.length)
-    reasons.push(`${facts.failuresSinceSuccess.length} failed/quarantined capture(s) since the last success (latest: ${facts.failuresSinceSuccess[0].status}${facts.failuresSinceSuccess[0].errorCode ? ` ${facts.failuresSinceSuccess[0].errorCode}` : ""})`);
+    reasons.push(`${facts.failuresSinceSuccess.length} failed/quarantined ${facts.season} capture(s) since their source's last success (latest: ${facts.failuresSinceSuccess[0].source} ${facts.failuresSinceSuccess[0].status}${facts.failuresSinceSuccess[0].errorCode ? ` ${facts.failuresSinceSuccess[0].errorCode}` : ""})`);
+  const maxHold = policy.maxLockHoldMinutes ?? 120;
+  if (facts.lockHeldForMinutes != null && facts.lockHeldForMinutes > maxHold)
+    reasons.push(`the ingestion job lock has been held for ${facts.lockHeldForMinutes} min (max ${maxHold}): a job or manual apply may be stuck`);
   if (facts.stuckRunning.length) reasons.push(`${facts.stuckRunning.length} capture(s) stuck in 'running' (process died; the next job marks them abandoned)`);
   return {
     ...facts,
@@ -113,20 +147,40 @@ export async function readFreshnessFacts(
   o: { season: number; now: Date; abandonedAfterMs: number },
 ): Promise<FreshnessFacts> {
   return readOnly(pool, async (c) => {
-    const success = await c.query(
-      `SELECT ${RUN_COLUMNS} FROM ingestion_runs r JOIN source_snapshots s ON s.id = r.snapshot_id
-       WHERE r.provider = $1 AND r.status IN ('applied','applied-with-quarantine') AND r.completed_at IS NOT NULL
-       ORDER BY r.completed_at DESC LIMIT 1`,
-      [MLB_SOURCE_ID],
-    );
-    const lastSuccess = success.rows[0] ? toRef(success.rows[0]) : null;
-    const failures = await c.query(
-      `SELECT ${RUN_COLUMNS} FROM ingestion_runs r JOIN source_snapshots s ON s.id = r.snapshot_id
-       WHERE r.provider = $1 AND r.status IN ('failed','quarantined')
-         AND coalesce(r.completed_at, r.created_at) > coalesce($2::timestamptz, '-infinity')
-       ORDER BY coalesce(r.completed_at, r.created_at) DESC LIMIT 10`,
-      [MLB_SOURCE_ID, lastSuccess?.at ?? null],
-    );
+    // Latest successful games capture per level, of the level's own source and season.
+    const levelKeyPattern = (level: CompetitionLevelId) =>
+      level === "afl"
+        ? `^afl:${o.season}:(all|games):`
+        : `^milb:${o.season}:([a-z-]+\\+)*${level}(\\+[a-z-]+)*:(all|games):`;
+    const lastSuccessByLevel: FreshnessFacts["lastSuccessByLevel"] = {};
+    for (const level of LEVELS) {
+      const r = await c.query(
+        `SELECT ${RUN_COLUMNS} FROM ingestion_runs r JOIN source_snapshots s ON s.id = r.snapshot_id
+         WHERE r.provider = $1 AND r.status IN ('applied','applied-with-quarantine') AND r.completed_at IS NOT NULL
+           AND s.snapshot_key ~ $2
+         ORDER BY r.completed_at DESC LIMIT 1`,
+        [MLB_SOURCE_ID, levelKeyPattern(level)],
+      );
+      lastSuccessByLevel[level] = r.rows[0] ? toRef(r.rows[0]) : null;
+    }
+    // Failures of this season per source, after that source's latest success.
+    const failuresSinceSuccess: FreshnessFacts["failuresSinceSuccess"] = [];
+    for (const source of ["milb", "afl"] as const) {
+      const since = Object.entries(lastSuccessByLevel)
+        .filter(([l, r]) => SOURCE_OF[l as CompetitionLevelId] === source && r)
+        .map(([, r]) => r!.at)
+        .sort()
+        .at(-1);
+      const f = await c.query(
+        `SELECT ${RUN_COLUMNS} FROM ingestion_runs r JOIN source_snapshots s ON s.id = r.snapshot_id
+         WHERE r.provider = $1 AND r.status IN ('failed','quarantined') AND s.snapshot_key LIKE $2
+           AND coalesce(r.completed_at, r.created_at) > coalesce($3::timestamptz, '-infinity')
+         ORDER BY coalesce(r.completed_at, r.created_at) DESC LIMIT 10`,
+        [MLB_SOURCE_ID, `${source}:${o.season}:%`, since ?? null],
+      );
+      failuresSinceSuccess.push(...f.rows.map((row) => ({ ...toRef(row), source })));
+    }
+    failuresSinceSuccess.sort((a, b) => b.at.localeCompare(a.at));
     const stuck = await c.query(
       `SELECT ${RUN_COLUMNS} FROM ingestion_runs r JOIN source_snapshots s ON s.id = r.snapshot_id
        WHERE r.provider = $1 AND r.status = 'running' AND r.created_at < $2::timestamptz
@@ -150,11 +204,17 @@ export async function readFreshnessFacts(
     for (const [level, def] of Object.entries(MILB_LEVELS))
       latestGame[level as CompetitionLevelId] = await latest(milbSeasonExternalId(o.season), milbLevelExternalIdPrefix(def.sportId));
     latestGame.afl = await latest(`afl-${o.season}`, null);
+    const holder = await c.query<{ age_ms: string | null }>(
+      `SELECT (extract(epoch FROM now() - min(backend_start)) * 1000)::bigint AS age_ms
+       FROM pg_stat_activity WHERE application_name = 'pt-ingestion-job-lock'`,
+    );
+    const heldMs = holder.rows[0]?.age_ms;
     return {
       now: o.now.toISOString(),
       season: o.season,
-      lastSuccess,
-      failuresSinceSuccess: failures.rows.map(toRef),
+      lockHeldForMinutes: heldMs == null ? null : Math.round(Number(heldMs) / 60_000),
+      lastSuccessByLevel,
+      failuresSinceSuccess,
       stuckRunning: stuck.rows.map(toRef),
       latestGame,
     };

@@ -15,11 +15,11 @@
  *   afl             full AFL season capture (small: ~2.7k records)
  * A source outside its season window (src/ingestion/refresh/schedule.ts) is skipped unless forced.
  */
-import type { RefreshSource } from "./schedule";
-import { isoDate, shouldRefresh } from "./schedule";
+import type { RefreshSource, SeasonWindow } from "./schedule";
+import { ACTIVE_WINDOWS, isoDate, shouldRefresh } from "./schedule";
 
 export type StepName = "milb-structure" | "milb-games" | "afl";
-export type StepStatus = "ok" | "ok-with-quarantine" | "quarantined" | "failed" | "skipped" | "timed-out";
+export type StepStatus = "ok" | "ok-with-quarantine" | "quarantined" | "failed" | "skipped" | "timed-out" | "aborted";
 
 /** What a step executor reports. `failed` steps are retried; quarantine is a data problem and is not. */
 export interface StepOutcome {
@@ -56,7 +56,21 @@ export interface StepRecord {
   detail?: Record<string, unknown>;
 }
 
-export type JobStatus = "ok" | "ok-with-quarantine" | "failed" | "timed-out" | "locked" | "nothing-due";
+export type JobStatus =
+  | "ok"
+  | "ok-with-quarantine"
+  | "failed"
+  /** The job deadline passed. */
+  | "timed-out"
+  /** Stopped early: the lock's connection was lost, or the process was interrupted. */
+  | "aborted"
+  /** Another job holds the lock: normal overlap. */
+  | "locked"
+  /** Another holder has held the lock longer than maxLockHoldMs: something is stuck. */
+  | "locked-stale"
+  | "nothing-due"
+  /** The job could not run at all (configuration, database, unexpected error). */
+  | "error";
 
 export interface JobRecord {
   jobId: string;
@@ -67,6 +81,12 @@ export interface JobRecord {
   apply: boolean;
   /** `running` ingestion_runs rows of dead processes marked `failed`/`abandoned` at start. */
   recoveredAbandonedRuns: number;
+  /** For aborted/timed-out jobs: why. */
+  abortReason?: "deadline" | "lock-lost" | "interrupted";
+  /** For locked/locked-stale jobs: how long the current holder has held the lock. */
+  lockHeldForMinutes?: number;
+  /** For status "error": a coarse, credential-free description. */
+  error?: string;
   steps: StepRecord[];
 }
 
@@ -86,6 +106,10 @@ export interface RefreshOptions {
   structureMaxAgeHours: number;
   /** A `running` run older than this is a dead process's leftover. */
   abandonedAfterMs: number;
+  /** Another holder keeping the lock longer than this is reported as `locked-stale` (exit 1). */
+  maxLockHoldMs: number;
+  /** Season windows (default ACTIVE_WINDOWS; PT_SEASON_WINDOWS in the CLI). */
+  windows?: Record<RefreshSource, SeasonWindow>;
 }
 
 export const DEFAULT_REFRESH: Omit<RefreshOptions, "season" | "sources" | "apply" | "force"> = {
@@ -94,6 +118,7 @@ export const DEFAULT_REFRESH: Omit<RefreshOptions, "season" | "sources" | "apply
   timeoutMs: 45 * 60_000,
   structureMaxAgeHours: 20,
   abandonedAfterMs: 2 * 60 * 60_000,
+  maxLockHoldMs: 120 * 60_000,
 };
 
 export interface JobLock {
@@ -109,6 +134,10 @@ export interface RefreshDeps {
   lastStructureAppliedAt(): Promise<Date | null>;
   /** Marks dead processes' `running` rows as failed; returns how many. Only called with the lock. */
   recoverAbandoned(olderThanMs: number): Promise<number>;
+  /** How long the current lock holder has held the lock (ms), or null if unknown. */
+  lockHolderAgeMs?(): Promise<number | null>;
+  /** Fires when the process is asked to stop (SIGINT/SIGTERM). */
+  interrupt?: AbortSignal;
   clock?: () => Date;
   sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
   random?: () => number;
@@ -134,12 +163,12 @@ const abortableSleep = (ms: number, signal: AbortSignal) =>
 
 /** Which steps a job runs today, and why the others are skipped. */
 export function planSteps(
-  o: Pick<RefreshOptions, "sources" | "force" | "structureMaxAgeHours">,
+  o: Pick<RefreshOptions, "sources" | "force" | "structureMaxAgeHours" | "windows">,
   today: string,
   lastStructure: Date | null,
   now: Date,
 ): { step: StepName; run: boolean; reason?: string }[] {
-  const due = (s: RefreshSource) => o.sources.includes(s) && (o.force || shouldRefresh(s, today));
+  const due = (s: RefreshSource) => o.sources.includes(s) && (o.force || shouldRefresh(s, today, o.windows ?? ACTIVE_WINDOWS));
   const why = (s: RefreshSource) => (o.sources.includes(s) ? "off-season" : "not selected");
   const structureFresh =
     lastStructure !== null && now.getTime() - lastStructure.getTime() < o.structureMaxAgeHours * 3_600_000;
@@ -178,13 +207,20 @@ export async function runRefreshJob(o: RefreshOptions, deps: RefreshDeps): Promi
   };
 
   if (!(await deps.lock.acquire())) {
-    log("job:locked");
-    return finish("locked");
+    const age = (await deps.lockHolderAgeMs?.().catch(() => null)) ?? null;
+    if (age !== null) record.lockHeldForMinutes = Math.round(age / 60_000);
+    // Normal overlap (exit 0, no ping) unless the holder has held the lock for too long.
+    const stale = age !== null && age > o.maxLockHoldMs;
+    log(stale ? "job:locked-stale" : "job:locked", { heldForMinutes: record.lockHeldForMinutes });
+    return finish(stale ? "locked-stale" : "locked");
   }
-  // Deadline and lost-lock both stop the job. Both are checked between attempts and passed to steps,
-  // whose sink stops before the next apply (an apply in progress rolls back as a whole).
+  // The deadline, a lost lock and an interrupt all stop the job. They are checked between attempts
+  // and passed to steps, whose sink stops before its next apply (an apply in progress commits or
+  // rolls back as a whole; nothing partial is written).
   const deadline = AbortSignal.timeout(o.timeoutMs);
-  const signal = deps.lockLost ? AbortSignal.any([deadline, deps.lockLost]) : deadline;
+  const signal = AbortSignal.any([deadline, ...(deps.lockLost ? [deps.lockLost] : []), ...(deps.interrupt ? [deps.interrupt] : [])]);
+  const abortReason = (): JobRecord["abortReason"] =>
+    deps.lockLost?.aborted ? "lock-lost" : deps.interrupt?.aborted ? "interrupted" : "deadline";
   try {
     if (o.apply) {
       record.recoveredAbandonedRuns = await deps.recoverAbandoned(o.abandonedAfterMs);
@@ -201,8 +237,13 @@ export async function runRefreshJob(o: RefreshOptions, deps: RefreshDeps): Promi
         continue;
       }
       const stepRecord = await runStep(p.step, o, deps.steps[p.step], signal, sleep, random, clock, log);
+      if (stepRecord.status === "timed-out") {
+        record.abortReason = abortReason();
+        if (record.abortReason !== "deadline") stepRecord.status = "aborted";
+        record.steps.push(stepRecord);
+        return finish(record.abortReason === "deadline" ? "timed-out" : "aborted");
+      }
       record.steps.push(stepRecord);
-      if (stepRecord.status === "timed-out") return finish("timed-out");
       // A failed MiLB structure capture does not block games: games reuse stored structure and the
       // pipeline quarantines anything it cannot resolve. Every step's outcome is recorded.
     }
@@ -267,6 +308,13 @@ export function errorText(error: unknown) {
   return (error instanceof Error ? error.message : String(error)).slice(0, 300);
 }
 
-/** Process exit code for a scheduler: 0 done (or nothing due / another job running), 1 needs attention. */
-export const jobExitCode = (r: JobRecord) =>
-  r.status === "ok" || r.status === "nothing-due" || r.status === "locked" ? 0 : r.status === "ok-with-quarantine" ? 0 : 1;
+/** Process exit code for a scheduler: 0 done (or nothing due / normal overlap), 1 needs attention. */
+export const jobExitCode = (r: Pick<JobRecord, "status">) =>
+  r.status === "ok" || r.status === "ok-with-quarantine" || r.status === "nothing-due" || r.status === "locked" ? 0 : 1;
+
+/** Whether the dead-man's-switch ping should fire, and how: normal overlap and dry runs do not ping. */
+export function pingKind(r: Pick<JobRecord, "status" | "apply">): "success" | "fail" | null {
+  if (r.status === "error") return "fail";
+  if (!r.apply || r.status === "locked") return null;
+  return jobExitCode(r) === 0 ? "success" : "fail";
+}
