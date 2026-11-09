@@ -45,6 +45,38 @@ export function analyticsContextFor(snapshot: AflSnapshot): AnalyticsContext {
   return ctx;
 }
 
+/**
+ * A Map that reads through to `base` but writes only to itself. Lets a computation reuse every
+ * cached result without adding its own entries to the shared cache.
+ */
+class ReadThroughMap<K, V> extends Map<K, V> {
+  constructor(private readonly base: Map<K, V>) {
+    super();
+  }
+  override get(key: K) {
+    return super.get(key) ?? this.base.get(key);
+  }
+  override has(key: K) {
+    return super.has(key) || this.base.has(key);
+  }
+}
+
+/**
+ * The per-player profile view computes Momentum and the change snapshot at every completed date
+ * (timelines), which no other page needs. Cached in the shared, per-snapshot context, those
+ * entries grew with every distinct profile visited (~0.5 MB each) until the process ran out of
+ * memory. A request-scoped context reuses the shared caches (the warm-up's current-date results,
+ * the scale tables) but keeps its own additions, which are garbage once the response is built.
+ * Results are identical: these caches are pure memoization of deterministic functions.
+ */
+export function requestContext(ctx: AnalyticsContext): AnalyticsContext {
+  return {
+    ...ctx,
+    changeCache: new ReadThroughMap(ctx.changeCache),
+    momentumCache: new ReadThroughMap(ctx.momentumCache),
+  };
+}
+
 export interface RoleAnalyticsView {
   role: Role;
   momentum: Record<MomentumWindow, MomentumResult>;
@@ -63,7 +95,7 @@ export function playerAnalyticsView(
   playerId: string,
   modelId: ModelId = DEFAULT_MOMENTUM_MODEL,
 ): PlayerAnalyticsView {
-  const ctx = analyticsContextFor(snapshot);
+  const ctx = requestContext(analyticsContextFor(snapshot));
   const player = snapshot.players.find((p) => p.id === playerId);
   const roles = playerRoles(ctx.ds, playerId);
   if (player?.primaryPosition === "P") roles.reverse();

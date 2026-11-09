@@ -1,0 +1,6 @@
+# sudoers rule: lets the deploy user restart the app (and clear systemd's restart limit after a
+# failed release, so the next deploy can start it) and nothing else.
+# Install: sudo install -m 440 deploy/sudoers-prospect-terminal /etc/sudoers.d/prospect-terminal
+#          sudo visudo -cf /etc/sudoers.d/prospect-terminal
+prospect ALL=(root) NOPASSWD: /usr/bin/systemctl restart prospect-terminal
+prospect ALL=(root) NOPASSWD: /usr/bin/systemctl reset-failed prospect-terminal

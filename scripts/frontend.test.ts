@@ -10,7 +10,9 @@ import { TrendDataStore } from "../src/components/analytics/trend-data-store";
 import type { LevelId } from "../src/services/players/levels";
 import { formatMetric, metricDefinition } from "../src/analytics/metrics";
 import { persistenceLabel } from "../src/analytics/persistence";
-import { mapSets, playerAnalyticsView, riserSets } from "../src/analytics/views";
+import { analyticsContextFor, mapSets, playerAnalyticsView, requestContext, riserSets } from "../src/analytics/views";
+import { createAnalyticsContext, momentum, playerTimeline } from "../src/analytics/engine";
+import { DEFAULT_MOMENTUM_MODEL } from "../src/analytics/config";
 import {
   mapPointsView,
   riserListsView,
@@ -355,5 +357,42 @@ describe("Trends on-demand data cache (per level × role × window)", () => {
     assert.deepEqual(store.state(sel("single-a", "pitcher", "7d"), initial), { status: "ok", data: "pitchers 7d" });
     // An unavailable window is neither requested by the hook nor reported from the cache.
     assert.deepEqual(store.state(sel("single-a", "pitcher", "7d"), initial, true), { status: "loading" });
+  });
+});
+
+describe("profile analytics do not grow the shared per-snapshot caches", () => {
+  test("same view as computing on the shared context, and the shared caches stay the same size", () => {
+    const snapshot = trajectorySnapshot();
+    const shared = analyticsContextFor(snapshot);
+    // Warm the shared context like the server does (current-date Momentum for every player).
+    for (const p of snapshot.players)
+      for (const role of ["hitter", "pitcher"] as const)
+        for (const w of MOMENTUM_WINDOW_IDS) momentum(shared, p.id, role, w, DEFAULT_MOMENTUM_MODEL);
+    const sizes = () => [shared.changeCache.size, shared.momentumCache.size];
+    const before = sizes();
+    const views = snapshot.players.map((p) => playerAnalyticsView(snapshot, p.id));
+    assert.deepEqual(sizes(), before, "profile timelines are request-scoped");
+    // Reference: the same computation written into a separate, ordinary context.
+    const reference = createAnalyticsContext(snapshot);
+    snapshot.players.forEach((p, i) => {
+      for (const r of views[i].roles)
+        for (const w of MOMENTUM_WINDOW_IDS) {
+          assert.deepEqual(r.timelines[w], playerTimeline(reference, p.id, r.role, w, DEFAULT_MOMENTUM_MODEL));
+          assert.deepEqual(r.momentum[w], momentum(reference, p.id, r.role, w, DEFAULT_MOMENTUM_MODEL));
+        }
+    });
+    assert.ok(views.some((v) => v.roles.some((r) => r.timelines["14d"].points.length > 0)));
+  });
+
+  test("a request context reads shared entries but writes only to itself", () => {
+    const shared = analyticsContextFor(trajectorySnapshot());
+    shared.momentumCache.set("probe", { probe: true } as never);
+    const req = requestContext(shared);
+    assert.deepEqual(req.momentumCache.get("probe"), { probe: true });
+    assert.ok(req.momentumCache.has("probe"));
+    req.momentumCache.set("mine", { mine: true } as never);
+    assert.equal(shared.momentumCache.has("mine"), false);
+    assert.equal(req.ds, shared.ds);
+    assert.equal(req.scaleCache, shared.scaleCache);
   });
 });
