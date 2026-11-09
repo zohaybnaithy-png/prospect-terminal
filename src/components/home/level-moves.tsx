@@ -5,6 +5,7 @@ import { PlayerLink } from "@/components/ui/entity-links";
 import { AflTeamLink } from "@/components/afl/links";
 import { shortDate } from "@/lib/format";
 import { SourceTag } from "./source-tag";
+import { ScrollRegion } from "@/components/ui/scroll-region";
 
 /**
  * Call-ups and other level changes as observed in box scores (first game at a new MiLB level).
@@ -21,7 +22,7 @@ export function LevelMoves({ moves, level }: { moves: LevelMove[]; level?: Level
         <Link href="/players">Player directory →</Link>
       </div>
       {moves.length ? (
-        <div className="table-scroll moves-scroll">
+        <ScrollRegion label={`Most recent ${scope} level moves`} className="moves-scroll">
           <table className="data-table moves-table">
             <caption className="sr-only">Most recent {scope} level moves observed in box scores</caption>
             <thead>
@@ -62,7 +63,7 @@ export function LevelMoves({ moves, level }: { moves: LevelMove[]; level?: Level
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       ) : (
         <p className="empty-state">No level moves observed in {scope} box scores this season.</p>
       )}

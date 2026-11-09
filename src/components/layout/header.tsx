@@ -27,7 +27,7 @@ export function Header() {
           </span>
           <span>Prospect Terminal</span>
         </Link>
-        <form action="/players" className="global-search">
+        <form action="/players" className="global-search" role="search">
           <Search size={16} aria-hidden="true" />
           <input
             name="q"

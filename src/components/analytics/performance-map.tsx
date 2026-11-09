@@ -26,6 +26,8 @@ import {
 import { metricDefinition } from "@/analytics/metrics";
 import type { MapPointCompact } from "@/analytics/trend-views";
 import { signedText } from "./momentum-parts";
+import { DataTable, type Column } from "@/components/ui/data-table";
+import { PlayerLink } from "@/components/ui/entity-links";
 
 interface Point extends MapPointCompact {
   x: number;
@@ -83,7 +85,7 @@ export function PerformanceMap({
     <section className="explorer" aria-label="Performance by Momentum map">
       <div className="section-heading">
         <h2>Performance × Momentum</h2>
-        <span className="small-muted">Click a dot to open the player</span>
+        <span className="small-muted">Click a dot, or use the player list below the map</span>
       </div>
       <div className="filter-bar">
         <div className="button-group" role="group" aria-label="Role">
@@ -126,7 +128,7 @@ export function PerformanceMap({
               <ReferenceLine x={MAP_QUADRANT_SPLIT.percentile} stroke="#9fb3b0" />
               <ReferenceLine y={MAP_QUADRANT_SPLIT.momentum} stroke="#9fb3b0" />
               {QUADRANTS.map((q) => (
-                <ReferenceLine key={q.label} y={q.y} stroke="none" label={{ value: q.label, position: q.anchor === "start" ? "insideLeft" : "insideRight", fill: "#7b8b89", fontSize: 10 }} />
+                <ReferenceLine key={q.label} y={q.y} stroke="none" label={{ value: q.label, position: q.anchor === "start" ? "insideLeft" : "insideRight", fill: "#637073", fontSize: 10 }} />
               ))}
               <Tooltip cursor={false} content={<MapTooltip xMetric={xMetric} />} />
               <Scatter
@@ -143,6 +145,9 @@ export function PerformanceMap({
             </ScatterChart>
           </ResponsiveContainer>
         </div>
+      ) : null}
+      {points.length ? (
+        <MapPointList points={points} xLabel={xLabel} level={level} />
       ) : unavailable ? (
         <p className="empty-state">
           {MOMENTUM_WINDOWS[window].short} unavailable — no player has enough games at this level before this window to compare with yet. No change is estimated.
@@ -168,6 +173,33 @@ export function PerformanceMap({
         Quadrant names are descriptive categories, not scouting conclusions.
       </p>
     </section>
+  );
+}
+
+/**
+ * The map's points as a table: the keyboard and screen-reader route to every player on the chart
+ * (the dots themselves are mouse-only). Collapsed by default, so the map stays the primary view.
+ */
+export function MapPointList({ points, xLabel, level }: { points: Point[]; xLabel: string; level: LevelId }) {
+  const rows = useMemo(() => [...points].sort((a, b) => b.y - a.y || a.name.localeCompare(b.name)), [points]);
+  const columns: Column<Point>[] = [
+    { key: "player", label: "Player", render: (p) => <PlayerLink player={p} level={level} /> },
+    { key: "context", label: "Context", render: (p) => p.context },
+    { key: "x", label: xLabel, numeric: true, render: (p) => p.xText },
+    { key: "pct", label: "Pctl", title: "Season percentile at this level", numeric: true, render: (p) => Math.round(p.x) },
+    { key: "y", label: "Momentum", numeric: true, render: (p) => signedText(p.y) },
+    { key: "confidence", label: "Confidence", render: (p) => p.confidence },
+  ];
+  return (
+    <details className="map-points">
+      <summary>List the {points.length} players on this map</summary>
+      <DataTable
+        rows={rows}
+        columns={columns}
+        rowKey={(p) => p.id}
+        caption={`Players on the map: ${xLabel} percentile and Momentum, highest Momentum first`}
+      />
+    </details>
   );
 }
 

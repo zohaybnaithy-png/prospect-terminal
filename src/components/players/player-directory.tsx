@@ -364,12 +364,15 @@ export function PlayerDirectory({
                   title={`${l.label} — ${unavailableLevels.includes(l.id) ? "temporarily unavailable" : "not ingested"}`}
                 >
                   {l.short}
+                  <span className="sr-only">
+                    {unavailableLevels.includes(l.id) ? " (temporarily unavailable)" : " (not ingested)"}
+                  </span>
                 </span>
               ),
             )}
           </nav>
           <label className="search-label directory-search">
-            <span className="sr-only">Search players</span>
+            <span className="sr-only">Search player, team, or organization</span>
             <input
               type="search"
               name="q"
@@ -383,7 +386,6 @@ export function PlayerDirectory({
                 timer.current = setTimeout(() => submitQuery(v), SEARCH_DEBOUNCE_MS);
               }}
               placeholder="Search player, team, organization"
-              aria-label="Search player, team, or organization"
             />
           </label>
           <button
