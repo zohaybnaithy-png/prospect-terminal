@@ -9,6 +9,7 @@ import { dbLevelLoader, loadCompetition, tracedLevelLoader } from "./load";
 import { summarizeTrace } from "@/db/instrument";
 import { prepareSnapshot } from "./prepare";
 import type { CompetitionDataResult } from "./types";
+import { healthReport, type HealthReport } from "./health";
 
 export type { CompetitionDataResult, LevelSnapshot } from "./types";
 
@@ -105,4 +106,18 @@ export function warmCompetitionData() {
   } catch (error) {
     console.error(`[competition-data] warm-up failed (${safeErrorCode(error)})`);
   }
+}
+
+/**
+ * Health-check readiness (see health.ts). Reads only in-memory cache state; also restarts the
+ * warm-up for levels whose backoff has expired, so a failed start keeps retrying without visitors.
+ */
+export function competitionHealth(): HealthReport {
+  if (!process.env.DATABASE_URL) return healthReport(false, []);
+  const c = levelCache();
+  c.warm(LEVEL_IDS);
+  return healthReport(
+    true,
+    LEVEL_IDS.map((level) => [level, c.state(level)]),
+  );
 }

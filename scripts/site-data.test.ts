@@ -687,3 +687,58 @@ test("watchdog: CPU contention (sub-second blocks) is not mistaken for a stalled
   assert.deepEqual(closed, ["stalled"]);
   await assert.rejects(q, /terminated/);
 });
+
+// Health check readiness (in-memory cache state only)
+
+import { healthHttpStatus, healthReport } from "../src/services/competition/health";
+
+test("health: 503 until every level has loaded, 200 after, and stays 200 when a later refresh fails", async () => {
+  const levels: LevelId[] = ["aaa", "afl"];
+  const gates = new Map(levels.map((l) => [l, deferred<AflSnapshot | null>()]));
+  let failRefresh = false;
+  const h = harness({
+    load: (l) => (failRefresh ? Promise.reject(new Error("down")) : gates.get(l)!.promise),
+  });
+  const report = () => healthReport(true, levels.map((l) => [l, h.cache.state(l)]));
+  assert.deepEqual(report(), { status: "starting", levels: { aaa: "waiting", afl: "waiting" } });
+  h.cache.warm(levels);
+  assert.equal(report().status, "starting");
+  assert.equal(healthHttpStatus(report()), 503);
+  gates.get("aaa")!.resolve(snap("aaa"));
+  await sleep(0);
+  assert.deepEqual(report().levels, { aaa: "ready", afl: "loading" });
+  gates.get("afl")!.resolve(null); // a level that is not ingested still counts as loaded
+  await sleep(0);
+  assert.deepEqual(report(), { status: "ready", levels: { aaa: "ready", afl: "ready" } });
+  assert.equal(healthHttpStatus(report()), 200);
+  // A new ingestion version whose reload fails keeps the previous snapshot: still ready.
+  failRefresh = true;
+  h.setVersion("v2");
+  h.advance(61_000);
+  await h.cache.get("aaa");
+  await sleep(0);
+  assert.equal(report().status, "ready");
+});
+
+test("health: a failed first load reports degraded (503) and recovers once the retry succeeds", async () => {
+  let fail = true;
+  const h = harness({ load: async (l) => (fail ? Promise.reject(new Error("refused")) : snap(l)) });
+  const report = () => healthReport(true, [["aa", h.cache.state("aa")]]);
+  h.cache.warm(["aa"]);
+  await sleep(0);
+  await sleep(0);
+  assert.deepEqual(report(), { status: "degraded", levels: { aa: "failed" } });
+  assert.equal(healthHttpStatus(report()), 503);
+  // warm() inside the backoff window does not start a load; after it, it does.
+  fail = false;
+  h.cache.warm(["aa"]);
+  assert.equal(report().levels.aa, "failed");
+  h.advance(5_000);
+  h.cache.warm(["aa"]);
+  await sleep(0);
+  await sleep(0);
+  assert.equal(report().status, "ready");
+  assert.deepEqual(healthReport(false, []), { status: "not-configured", levels: {} });
+  // The report carries only level states: no error text, hosts or credentials.
+  assert.doesNotMatch(JSON.stringify(report()), /refused|postgres|neon/i);
+});

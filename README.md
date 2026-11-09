@@ -13,6 +13,7 @@ Prospect Terminal is a player-first prospect analytics product. The core loop is
 | `/players/[id]` | Identity/bio, season + last-14-day stat strips, Momentum panel (value, band, confidence, persistence, 7D/14D/30D, decomposition), recent games, Momentum and recent-vs-earlier charts, What changed?, window splits, same-level percentiles, levels this season, full game log, roster observations | Real AFL + MiLB |
 | `/trends`       | Biggest Risers & Fallers by component, Performance × Momentum map. The page embeds hitters · 14D; other role/window selections load from `/trends/data` | Real AFL + MiLB |
 | `/data`         | Coverage, level status, Momentum methodology, statistics glossary, metrics in development                                                                                                                                                                                | Real AFL + MiLB + docs |
+| `/health`       | Health check for the host: 200 once every level's data is loaded, 503 while starting (in-memory state only, no database query) | Server state |
 
 **Real data:** 2026 Triple-A, Double-A, High-A, Single-A and Arizona Fall League (MLB Stats API, development use), each loaded as its own level: schedule/scores, rosters and MLB organization observations, player bio fields, and per-game batting/pitching lines. Stats count only final games with complete box scores. Without `DATABASE_URL` (or if the database is unreachable) every real-data section shows a not-connected / temporarily-unavailable notice in place; the layout stays intact and nothing falls back to fictional data.
 
@@ -127,7 +128,7 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 
 Use a read-only database role for the deployed app's `DATABASE_URL`. Do not seed production. Before any public or commercial launch, confirm MLB Stats API licensing.
 
-See [Architecture](docs/ARCHITECTURE.md), [Analytics](docs/ANALYTICS.md), [Ingestion](docs/INGESTION.md) and [Roadmap](docs/ROADMAP.md).
+See [Architecture](docs/ARCHITECTURE.md), [Analytics](docs/ANALYTICS.md), [Ingestion](docs/INGESTION.md), [Roadmap](docs/ROADMAP.md), [Deployment](docs/DEPLOYMENT.md) and the [deployment runbook](docs/DEPLOYMENT-RUNBOOK.md).
 
 ## AFL ingestion: local live source and offline fixtures
 

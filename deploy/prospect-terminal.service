@@ -1,0 +1,47 @@
+# systemd unit for the Prospect Terminal web server (one persistent Node.js process).
+# Install: sudo cp deploy/prospect-terminal.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#          sudo systemctl enable --now prospect-terminal
+# See docs/DEPLOYMENT-RUNBOOK.md.
+[Unit]
+Description=Prospect Terminal (Next.js production server)
+After=network-online.target
+Wants=network-online.target
+# Give up restarting only after 10 failures within 10 minutes (then it stays down and alerts fire).
+StartLimitIntervalSec=600
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=prospect
+Group=prospect
+# `current` is a symlink to the active release (deploy/deploy.sh switches it); it is resolved at start.
+WorkingDirectory=/srv/prospect-terminal/current
+# Secrets (DATABASE_URL) live only here: owned by root, mode 600, read by systemd before it drops
+# privileges. Never commit or print this file.
+EnvironmentFile=/etc/prospect-terminal/env
+Environment=NODE_ENV=production
+# Heap cap tested with a full crawl of every player profile (resident memory levels off at ~1.1–1.25 GB).
+Environment=NODE_OPTIONS=--max-old-space-size=1536
+Environment=NEXT_TELEMETRY_DISABLED=1
+# Only Caddy (same machine) talks to the app; it is not reachable from the internet directly.
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+# Hard ceiling: if memory ever runs away, systemd kills and restarts the process instead of the
+# whole machine swapping.
+MemoryMax=3G
+# Hardening: the app needs no privileges, and writes only to its release directory (.next/cache).
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

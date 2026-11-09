@@ -1,0 +1,34 @@
+# Caddy reverse proxy: HTTPS (automatic, free Let's Encrypt certificates, renewed by Caddy),
+# compression and HSTS in front of the app on 127.0.0.1:3000.
+# Install: replace prospectterminal.example with your domain, then
+#          sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo caddy validate --config /etc/caddy/Caddyfile
+#          sudo systemctl reload caddy
+# DNS: an A record for the domain (and www) must point at the instance's static IP first.
+
+prospectterminal.example {
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:3000 {
+		# While the app restarts (deploy, crash), hold requests and retry for up to 30 s instead of
+		# returning 502. The app starts listening in about a second and serves once data is loaded.
+		lb_try_duration 30s
+		lb_try_interval 250ms
+	}
+
+	header {
+		# HTTPS only from now on (no includeSubDomains/preload until every subdomain is HTTPS).
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}
+
+www.prospectterminal.example {
+	redir https://prospectterminal.example{uri} permanent
+}

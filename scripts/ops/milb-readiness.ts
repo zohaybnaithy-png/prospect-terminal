@@ -1,6 +1,6 @@
 /**
  * Read-only analytics readiness check for every level (AFL + Triple-A … Single-A) on the Neon
- * TEST branch. Loads levels through the site's own loader (READ ONLY, REPEATABLE READ
+ * TEST branch (or the endpoint in PT_EXPECTED_ENDPOINT). Loads levels through the site's own loader (READ ONLY, REPEATABLE READ
  * transactions) on a pool whose sessions are also forced read-only, then runs the page view
  * models (directory, Momentum 7/14/30-day windows, trending, profiles). See
  * src/services/competition/readiness.ts.
@@ -17,7 +17,9 @@ import { redact } from "../../src/ingestion/progress";
 import { dbLevelLoader, loadCompetition } from "../../src/services/competition/load";
 import { readinessReport } from "../../src/services/competition/readiness";
 
-const APPROVED_ENDPOINT = "ep-spring-cake-ak5jqlqp";
+// The test branch by default. To verify another copy of the data (e.g. a new production branch
+// before launch), set PT_EXPECTED_ENDPOINT to its endpoint id; sessions stay read-only either way.
+const APPROVED_ENDPOINT = process.env.PT_EXPECTED_ENDPOINT || "ep-spring-cake-ak5jqlqp";
 const SEASON = 2026;
 
 for (const key of Object.keys(process.env))
