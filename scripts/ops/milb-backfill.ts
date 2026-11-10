@@ -36,6 +36,7 @@ import {
   type IngestRequest,
 } from "../../src/ingestion/milb-backfill";
 import { planDateChunks, runMilbIngestion } from "../../src/ingestion/milb-runner";
+import { requireJobLock } from "../../src/ingestion/refresh/lock";
 import { PostgresIngestionSink } from "../../src/ingestion/postgres-sink";
 import { progress, redact, setProgressReporter, startHeartbeat, stderrReporter } from "../../src/ingestion/progress";
 import { MILB_GAME_TYPES, type MilbGameType } from "../../src/ingestion/sources/milb-config";
@@ -214,7 +215,19 @@ async function main() {
   });
   await mkdir(args.runDir, { recursive: true, mode: 0o700 });
   await chmod(args.runDir, 0o700);
-  const release = args.apply ? await acquireLock(args.runDir) : async () => {};
+  const releaseFile = args.apply ? await acquireLock(args.runDir) : async () => {};
+  // The database job lock also excludes the scheduled refresh and manual ingest:* applies.
+  let releaseJob: () => Promise<void> = async () => {};
+  try {
+    if (args.apply) releaseJob = await requireJobLock(url!);
+  } catch (error) {
+    await releaseFile();
+    throw error;
+  }
+  const release = async () => {
+    await releaseJob().catch(() => {});
+    await releaseFile();
+  };
   const db = readOnly(url!);
   let sink: PostgresIngestionSink | undefined;
   const statePath = join(args.runDir, "state.json");

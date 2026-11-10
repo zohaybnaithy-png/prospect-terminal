@@ -12,6 +12,7 @@
 import { parseMilbArgs } from "../src/ingestion/cli-options";
 import { runMilbIngestion } from "../src/ingestion/milb-runner";
 import { PostgresIngestionSink } from "../src/ingestion/postgres-sink";
+import { requireJobLock } from "../src/ingestion/refresh/lock";
 import { milbFixtureFetch } from "../src/ingestion/fixtures/milb-synthetic";
 import {
   beginStage,
@@ -26,6 +27,7 @@ setProgressReporter(stderrReporter());
 const stopHeartbeat = startHeartbeat();
 const interrupt = new AbortController();
 let sink: PostgresIngestionSink | undefined;
+let releaseJobLock: (() => Promise<void>) | undefined;
 
 async function main() {
   const args = parseMilbArgs(process.argv.slice(2));
@@ -47,6 +49,8 @@ async function main() {
     throw new Error("--apply/--incremental require INGESTION_DATABASE_URL pointing to a migrated PostgreSQL database");
   // The synthetic fixture never touches a database, even for a read-only preview.
   sink = url && args.source === "live" ? new PostgresIngestionSink(url, { signal: interrupt.signal }) : undefined;
+  // Writes never overlap the scheduled refresh or another apply (docs/DATA-REFRESH.md).
+  releaseJobLock = args.apply && url && args.source === "live" ? await requireJobLock(url) : undefined;
   const summary = await runMilbIngestion(args, {
     sink,
     ...(args.source === "fixture"
@@ -74,4 +78,5 @@ main()
   .finally(async () => {
     stopHeartbeat();
     await sink?.close();
+    await releaseJobLock?.().catch(() => {});
   });

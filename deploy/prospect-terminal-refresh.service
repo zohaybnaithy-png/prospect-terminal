@@ -1,0 +1,41 @@
+# Scheduled data refresh (docs/DATA-REFRESH.md): one `refresh:data --apply` job, started by
+# prospect-terminal-refresh.timer. NOT installed or enabled by deploy.sh: enabling the schedule is
+# a deliberate, approved step (writes to the production database).
+#
+# Runs as its own user with its own secrets file, so the WRITER credential never sits in the web
+# server's environment (/etc/prospect-terminal/env holds only the read-only role).
+# Install (after approval): see docs/DATA-REFRESH.md, "Enabling the schedule".
+[Unit]
+Description=Prospect Terminal data refresh (MiLB + AFL ingestion)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=prospect-ingest
+Group=prospect-ingest
+WorkingDirectory=/srv/prospect-terminal/current
+# INGESTION_DATABASE_URL (writer role) and optional PT_REFRESH_PING_URL; root-owned, mode 600.
+EnvironmentFile=/etc/prospect-terminal-ingest/env
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=1024
+# Job log (JSONL + last-job.json) under /var/lib/prospect-terminal-ingest/refresh.
+StateDirectory=prospect-terminal-ingest
+StateDirectoryMode=0700
+ExecStart=/usr/bin/node --import tsx scripts/refresh-data.ts --apply --log-dir=/var/lib/prospect-terminal-ingest/refresh
+# The job stops itself after 45 minutes; this is the hard backstop. systemd never starts a second
+# instance of a oneshot unit while one runs, and the database advisory lock covers manual runs.
+TimeoutStartSec=60min
+KillSignal=SIGINT
+Nice=10
+MemoryMax=1500M
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true

@@ -1,0 +1,16 @@
+# Twice-daily data refresh (docs/DATA-REFRESH.md). NOT enabled by deploy.sh.
+# 10:20 UTC: after the previous night's games (US evening) have final boxscores.
+# 16:20 UTC: picks up late corrections and anything the morning run missed.
+# Out of season the job finds nothing due and exits in about a second.
+[Unit]
+Description=Prospect Terminal data refresh schedule
+
+[Timer]
+OnCalendar=*-*-* 10:20:00 UTC
+OnCalendar=*-*-* 16:20:00 UTC
+# Spread the start a little; run a missed refresh after downtime.
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

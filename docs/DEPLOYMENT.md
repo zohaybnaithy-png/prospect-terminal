@@ -199,9 +199,11 @@ Should be addressed:
    with a server-wide profile budget, keyed on a header Caddy overwrites. Large or widely
    distributed floods still need a CDN/WAF in front.
 5. **Accessibility findings** above (small CSS changes).
-6. **Data freshness**: no scheduled ingestion in production; the data is the 2026 season as
-   ingested on the test branch (AFL through 2026-11-07). Fine off-season; schedule incremental
-   ingestion (writer role, separate from the web server) before the 2027 season.
+6. **Data freshness**: no scheduled ingestion in production yet; the data is the 2026 season as
+   ingested on the test branch (AFL through 2026-11-07). Phase 5C added the scheduled job
+   (`refresh:data`, job lock, retries, recovery), `check:freshness` and a disabled systemd timer
+   ([DATA-REFRESH.md](./DATA-REFRESH.md)); enable it (approval: production writes) before the 2027
+   season.
 7. **Single server**: a crash or reboot is covered by systemd (~15 s); losing the machine means
    restoring a snapshot or re-running the runbook (~1 hour). Acceptable at this stage.
 8. **CSP allows inline scripts** (required by Next.js without nonces); acceptable without user
