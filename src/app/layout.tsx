@@ -3,15 +3,21 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ScoreStrip, ScoreStripFallback } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
+import { metadataBase } from "@/lib/site-url";
 import "./globals.css";
-export const metadata: Metadata = {
+/**
+ * Request-time metadata so `metadataBase` (the origin of canonical URLs) comes from the server's
+ * `PT_SITE_URL`, never from the request's Host header (src/lib/site-url.ts).
+ */
+export const generateMetadata = (): Metadata => ({
+  metadataBase: metadataBase(),
   title: {
     default: "Prospect Terminal — prospect performance and Momentum",
     template: "%s | Prospect Terminal",
   },
   description:
     "Player-first prospect analytics: trending prospects, Momentum, game logs and scouting-style player profiles built on real 2026 Minor League Baseball (Triple-A to Single-A) and Arizona Fall League data.",
-};
+});
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

@@ -25,6 +25,9 @@ Environment=NODE_OPTIONS=--max-old-space-size=1536
 Environment=NEXT_TELEMETRY_DISABLED=1
 # Only Caddy (same machine) talks to the app; it is not reachable from the internet directly.
 ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+# File-descriptor headroom (systemd's default soft limit is 1024): every held refusal and every
+# proxied request uses one; measured peak under a 1,000-connection flood was ~640 (docs/TRAFFIC.md).
+LimitNOFILE=16384
 Restart=always
 RestartSec=5
 TimeoutStopSec=20

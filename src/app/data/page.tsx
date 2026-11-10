@@ -21,6 +21,7 @@ import { ScrollRegion } from "@/components/ui/scroll-region";
 
 export const metadata: Metadata = {
   title: "Data & methodology",
+  alternates: { canonical: "/data" },
   description:
     "What data Prospect Terminal uses, how Momentum is calculated and read, and which metrics are still in development.",
 };

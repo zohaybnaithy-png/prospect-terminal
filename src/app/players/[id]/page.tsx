@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getCompetitionData } from "@/services/competition";
@@ -16,7 +17,10 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
  * which level's statistics and Momentum the profile shows; by default the level of the player's
  * most recent completed game. Anything else is not found.
  */
-async function resolve(id: string, requested: string | undefined) {
+const resolve = cache(resolveUncached);
+
+/** Once per request: generateMetadata and the page both need it (React `cache` dedupes it). */
+async function resolveUncached(id: string, requested: string | undefined) {
   if (!z.uuid().safeParse(id).success) return { kind: "missing" as const };
   const data = await getCompetitionData();
   if (data.status !== "ok")
@@ -47,6 +51,8 @@ export async function generateMetadata({
   if (r.kind === "ok")
     return {
       title: r.profile.player.name,
+      // One indexable URL per player: `?level=` variants consolidate on the query-free profile.
+      alternates: { canonical: `/players/${id}` },
       description: `${r.profile.player.name} (${r.profile.row.position}) — ${levelById(r.level).label} statistics, recent games and Momentum.`,
     };
   return { title: r.kind === "missing" ? "Player not found" : "Player" };

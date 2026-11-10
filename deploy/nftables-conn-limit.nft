@@ -1,0 +1,36 @@
+#!/usr/sbin/nft -f
+# Per-source concurrent connection limit in front of Caddy (docs/TRAFFIC.md). NOT applied by
+# deploy.sh. Install on the server (once; survives reboots via /etc/nftables.conf):
+#   sudo nft -c -f deploy/nftables-conn-limit.nft && sudo nft -f deploy/nftables-conn-limit.nft
+#   echo 'include "/etc/nftables.d/prospect-terminal-conn-limit.nft"' | sudo tee -a /etc/nftables.conf
+#   sudo install -D -m 644 deploy/nftables-conn-limit.nft /etc/nftables.d/prospect-terminal-conn-limit.nft
+#   sudo systemctl enable nftables
+#
+# Why: the app's rate limiter answers a refusal in ~1 ms, but one address opening hundreds of
+# connections still produces hundreds of refusals per second and saturates the single Node thread
+# (measured: 600 connections from one address → readers waited ~21 s). Limiting NEW connections per
+# source in the kernel stops that before Caddy and Node see it. Measured, 600 connections from one
+# address: limit 32 → app CPU 38%, readers p50/p95 629/714 ms; limit 64 → 86%, 685/2,043 ms
+# (without the rule: 118% and ~21 s).
+#
+# 64 concurrent connections per IPv4 address / IPv6 /64: a browser uses 1 HTTP/2 connection (up to
+# 6 over HTTP/1.1), so a NAT of ~50 simultaneous visitors fits (tested). Raise it for a large
+# campus or carrier NAT. Existing connections are never cut; only new ones beyond the limit are
+# reset. It does not help against many addresses (that needs a CDN/WAF).
+table inet prospect_terminal_conn_limit {
+	set perip4 {
+		type ipv4_addr
+		flags dynamic
+		size 65535
+	}
+	set perip6 {
+		type ipv6_addr
+		flags dynamic
+		size 65535
+	}
+	chain input {
+		type filter hook input priority filter; policy accept;
+		tcp dport { 80, 443 } ct state new add @perip4 { ip saddr ct count over 64 } counter reject with tcp reset
+		tcp dport { 80, 443 } ct state new add @perip6 { ip6 saddr & ffff:ffff:ffff:ffff:: ct count over 64 } counter reject with tcp reset
+	}
+}

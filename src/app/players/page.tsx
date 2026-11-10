@@ -19,6 +19,8 @@ import { shortDate } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Players",
+  // Filters, sorts and pages are views of one directory: one canonical URL (src/lib/crawl-policy.ts).
+  alternates: { canonical: "/players" },
   description:
     "Search and sort prospects at Triple-A, Double-A, High-A, Single-A and the Arizona Fall League by level, team, organization, position and Momentum.",
 };

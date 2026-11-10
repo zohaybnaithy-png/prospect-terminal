@@ -226,10 +226,19 @@ sudo nano /etc/prospect-terminal/env
 ```
 
 Type `DATABASE_URL=` and paste the `pt_web` pooled connection string from 1.5 (see
-`deploy/env.example` for the shape). Save. Check without printing the value:
+`deploy/env.example` for the shape). Add the two traffic settings (docs/TRAFFIC.md): the public
+origin (use the real domain once chosen in Phase 3) and the header Caddy sets:
+
+```
+PT_SITE_URL=https://example.com
+PT_CLIENT_IP_HEADER=x-pt-client-ip
+```
+
+Save. Check without printing the value:
 
 ```bash
 sudo grep -c '^DATABASE_URL=postgresql://pt_web:' /etc/prospect-terminal/env   # 1
+sudo grep -c '^PT_CLIENT_IP_HEADER=x-pt-client-ip$' /etc/prospect-terminal/env  # 1
 sudo stat -c '%a %U' /etc/prospect-terminal/env                                 # 600 root
 ```
 
@@ -271,6 +280,20 @@ starts the service normally.
 
 3. Caddy obtains the certificate within a minute. Check from your Mac:
    `curl -sI https://example.com | head -5` shows `HTTP/2 200` and `strict-transport-security`.
+4. Per-source connection limit in front of Caddy (docs/TRAFFIC.md; 64 concurrent connections per
+   address):
+
+   ```bash
+   cd /srv/prospect-terminal/repo
+   sudo nft -c -f deploy/nftables-conn-limit.nft            # syntax check only
+   sudo install -D -m 644 deploy/nftables-conn-limit.nft /etc/nftables.d/prospect-terminal-conn-limit.nft
+   echo 'include "/etc/nftables.d/prospect-terminal-conn-limit.nft"' | sudo tee -a /etc/nftables.conf
+   sudo systemctl enable --now nftables && sudo nft list table inet prospect_terminal_conn_limit
+   ```
+
+5. `curl -s https://example.com/health` shows `"traffic":{"status":"protected"}`. A
+   `"misconfigured"` status (HTTP 503) names the problem: a missing `PT_CLIENT_IP_HEADER` /
+   `PT_SITE_URL`, or Caddy not sending the `X-PT-Client-IP` header.
 
 ---
 
@@ -278,6 +301,8 @@ starts the service normally.
 
 - **Uptime**: create a free monitor (UptimeRobot, Better Stack or similar) for
   `https://example.com/health`, every 1–5 minutes, expecting status 200, alerting your email.
+  It also alerts if traffic protection stops working: `/health` returns 503 `misconfigured`
+  when Caddy stops sending the client-identity header (docs/TRAFFIC.md).
 - **Lightsail alarm**: instance → **Metrics** → CPU utilization → add an alarm (e.g. ≥ 80% for
   10 minutes) with email notification (add your email as a notification contact first).
 - **Snapshots**: confirm the first automatic snapshot appears the next day.
@@ -297,6 +322,16 @@ From your Mac, against `https://example.com`:
 - [ ] On the server, `sudo journalctl -u prospect-terminal --since today | grep -ci postgres`
       prints `0` (no connection details in logs).
 - [ ] The uptime monitor reports up.
+- [ ] `curl -s https://example.com/robots.txt` lists `Disallow: /*?` and the sitemap at the real
+      domain; `curl -s https://example.com/sitemap.xml | grep -c '<url>'` is the number of players
+      plus 4; a profile's HTML has `<link rel="canonical" href="https://example.com/players/...">`.
+- [ ] Rate limiting is on and cannot be spoofed: fetching one profile 80 times quickly with a
+      different forged header each time still ends in 429s (this limits your own address for about
+      a minute):
+      `for i in $(seq 80); do curl -s -o /dev/null -w "%{http_code}\n" -H "X-PT-Client-IP: 10.0.0.$i" -H "X-Forwarded-For: 10.1.0.$i" https://example.com/players/<id>; done | sort | uniq -c`
+      shows both `200` and `429`.
+- [ ] On the server, `sudo journalctl -u prospect-terminal --since today | grep -c "rate limiting is OFF"`
+      prints `0`, and `curl -s https://example.com/health` shows `"traffic":{"status":"protected"}`.
 
 ---
 
