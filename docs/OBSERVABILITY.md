@@ -18,9 +18,21 @@ stop. None is activated by the repository.
 | Ingestion stopped (timer off, host down) | no new job record | monitor `refresh`: no job for 26 h in season; the refresh ping stops |
 | Stale data | `check:freshness` (per level: own captures and latest game) | monitor `freshness` (with `DATABASE_URL`) |
 | High memory | `/health` → `process.rssMB`, `heapUsedMB`, `heapLimitMB` | monitor `memory`: rss above 2,560 MB (of the 3 GB `MemoryMax`) |
-| Traffic protection off | `/health` 503 `misconfigured` (production) | deploy refuses; external uptime check; monitor `health` |
+| Traffic protection misconfigured | `/health` 503 (`misconfigured` locally, `unavailable` publicly) | deploy refuses; external uptime check; monitor `traffic` |
+| Traffic protection **disabled** (`PT_RATE_LIMIT=off`) | `/health` stays 200 (an emergency switch must not block a deploy); local body `"traffic":{"status":"disabled"}`; journal `rate limiting is OFF` every 10 min | monitor `traffic`: alerts on **every** run until it is removed |
 
 ## `/health` fields
+
+**Public** (through Caddy, including on staging, where `/health` skips basic auth): only
+`{"status":"ready"}` with 200, or `{"status":"unavailable"}` with 503. No memory or uptime, no
+level or database state, no configuration reasons or header names, and nothing that says
+traffic protection is off. Uptime checks need only the status code.
+
+**Local** (a direct request to `http://127.0.0.1:3000/health` on the server: deploy gate,
+monitor, operator). A request counts as local only when X-Forwarded-For is absent or loopback
+**and** the Caddy-overwritten identity header is absent or loopback **and** there is no
+`Forwarded` / `X-Real-IP` header (`src/lib/health-response.ts`). A forged X-Forwarded-For alone
+unlocks nothing:
 
 ```json
 {
@@ -33,13 +45,16 @@ stop. None is activated by the repository.
 }
 ```
 
-`refreshFailing` is present only while a background check or reload is failing. HTTP status is 200
+`refreshFailing` is present only while a background check or reload is failing. `traffic` is
+`protected`, `disabled` (`PT_RATE_LIMIT=off`), `misconfigured` or `development`. The monitor
+accepts only `protected`; a body without `traffic` (the public answer) also alerts, so a monitor
+pointed at the public URL cannot pass silently. HTTP status is 200
 only when `status` is `ready` and traffic protection is not misconfigured. The body never contains
 error text, hosts or credentials.
 
 ## Local monitor (`npm run -s monitor`, `deploy/prospect-terminal-monitor.{service,timer}`)
 
-- **What it does:** one run checks `app`, `health`, `memory`, `http-5xx`, `refresh` and `freshness`,
+- **What it does:** one run checks `app`, `health`, `traffic`, `memory`, `http-5xx`, `refresh` and `freshness`,
   and prints a JSON report. Exit codes: 0 ok, 1 alert, 2 could not run.
 - **Missing inputs** (no access log on a dev machine, no refresh state, no `DATABASE_URL`) are
   reported as `skipped`, not as alerts.
@@ -53,7 +68,7 @@ error text, hosts or credentials.
 
 | Setting | Default |
 |---|---|
-| `PT_MONITOR_HEALTH_URL` | `http://127.0.0.1:3000/health` |
+| `PT_MONITOR_HEALTH_URL` | `http://127.0.0.1:3000/health` (must be the app directly: the public URL has no details, and the `traffic` check then alerts) |
 | `PT_MONITOR_ACCESS_LOG` | `/var/log/caddy/access.log` (needs the read ACL from STAGING-SERVER.md step 3) |
 | `PT_MONITOR_REFRESH_STATE` | `/var/lib/prospect-terminal-ingest/refresh/last-job.json` (group-readable `0750`) |
 | `PT_MONITOR_RSS_MB_MAX` | 2560 |

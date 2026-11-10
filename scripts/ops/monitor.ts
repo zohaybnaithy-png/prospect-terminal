@@ -45,10 +45,10 @@ export function evaluateHealth(httpStatus: number, body: unknown, rssMbMax: numb
   };
   const problems: string[] = [];
   if (httpStatus !== 200 || b.status !== "ready") problems.push(`status ${httpStatus} ${b.status ?? "?"}`);
-  if (b.traffic?.status === "misconfigured") problems.push(`traffic protection misconfigured (${b.traffic.reason ?? "?"})`);
   if (b.refreshFailing?.length) problems.push(`database refresh failing for ${b.refreshFailing.join(", ")} (serving older data)`);
   const checks: Check[] = [
-    { name: "health", status: problems.length ? "alert" : "ok", detail: problems.length ? problems.join("; ") : `ready; traffic ${b.traffic?.status ?? "?"}` },
+    { name: "health", status: problems.length ? "alert" : "ok", detail: problems.length ? problems.join("; ") : "ready" },
+    evaluateTraffic(b.traffic),
   ];
   const rss = b.process?.rssMB;
   checks.push(
@@ -61,6 +61,31 @@ export function evaluateHealth(httpStatus: number, body: unknown, rssMbMax: numb
         },
   );
   return checks;
+}
+
+/**
+ * Traffic protection must be ON on a server. Only "protected" passes. The PT_RATE_LIMIT=off
+ * emergency switch keeps /health at 200 (so a deploy that needs it still goes through), so the
+ * monitor is what makes it loud: it alerts on every run until the switch is removed. A body
+ * without a traffic field is the public /health answer, meaning the monitor is pointed at the
+ * public URL instead of the app (127.0.0.1:3000); that alerts too instead of passing silently.
+ */
+export function evaluateTraffic(traffic: { status?: string; reason?: string } | undefined): Check {
+  const reason = traffic?.reason ? ` (${traffic.reason})` : "";
+  switch (traffic?.status) {
+    case "protected":
+      return { name: "traffic", status: "ok", detail: "traffic protection on" };
+    case "disabled":
+      return { name: "traffic", status: "alert", detail: `traffic protection is DISABLED${reason}: remove PT_RATE_LIMIT=off and restart once the emergency is over` };
+    case "misconfigured":
+      return { name: "traffic", status: "alert", detail: `traffic protection misconfigured${reason}` };
+    case "development":
+      return { name: "traffic", status: "alert", detail: "the app is not running with NODE_ENV=production, so traffic protection is off" };
+    case undefined:
+      return { name: "traffic", status: "alert", detail: "no traffic status in /health: point PT_MONITOR_HEALTH_URL at the app directly (http://127.0.0.1:3000/health), not the public site" };
+    default:
+      return { name: "traffic", status: "alert", detail: `unknown traffic status ${JSON.stringify(traffic?.status).slice(0, 40)}` };
+  }
 }
 
 /** Caddy JSON access-log lines → 5xx count and share within the window. Malformed lines are ignored. */

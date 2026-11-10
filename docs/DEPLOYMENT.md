@@ -68,6 +68,11 @@ an aggressive crawler can saturate the process; see *Risks*.
 `GET /health` (`src/app/health/route.ts`) reads only the in-memory cache state, never queries the
 database, never caches, and returns no error details:
 
+Through the proxy (anyone on the internet) the body is only `{"status":"ready"}` (200) or
+`{"status":"unavailable"}` (503). The detailed body below is returned only to direct local requests
+on the server (`http://127.0.0.1:3000/health`: the deploy script, the monitor, an operator's curl);
+see `src/lib/health-response.ts` and docs/OBSERVABILITY.md.
+
 - `200 {"status":"ready"}`: every level has its data (a level not yet ingested counts as loaded).
 - `503 {"status":"starting"}`: still loading (about 12 s after start, measured).
 - `503 {"status":"degraded"}`: a first load failed and is backing off. The health check also

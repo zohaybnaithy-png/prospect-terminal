@@ -37,6 +37,8 @@ replaces the severity tables further down where they differ.
 | Staging would have been indexable and public | Medium | `PT_INDEXING=off` (robots, sitemap, meta, `X-Robots-Tag`); `deploy/Caddyfile.staging` basic auth |
 | No writer-role definition; the only writer was the owner role | Medium | `deploy/neon-writer-role.sql`, `check:db-roles`, an integration test that runs the real job as that role |
 | `shellcheck -x deploy/*.sh` reported findings, while the runbook says "no output = OK" | Low | scripts fixed; a test runs shellcheck |
+| Public `/health` (also unauthenticated on staging) disclosed memory, uptime, per-level and database-failure state, configuration reasons (env and header names) and whether rate limiting was off | Medium | Public answer is only `ready`/`unavailable` plus the HTTP status; full report only for direct local requests (two independent signals, not forgeable through Caddy) |
+| `PT_RATE_LIMIT=off` was reported as `disabled` and the monitor treated it as healthy | Medium | Monitor `traffic` check alerts on anything but `protected` (and on a missing traffic field); tests keep staging templates protected by default |
 
 **Remaining, ranked:**
 

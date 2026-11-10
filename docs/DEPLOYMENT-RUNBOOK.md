@@ -291,9 +291,12 @@ starts the service normally.
    sudo systemctl enable --now nftables && sudo nft list table inet prospect_terminal_conn_limit
    ```
 
-5. `curl -s https://example.com/health` shows `"traffic":{"status":"protected"}`. A
+5. From your Mac, `curl -s https://example.com/health` shows only `{"status":"ready"}`: the public
+   answer never includes details. Then, after that request has passed through Caddy, on the
+   server: `curl -s http://127.0.0.1:3000/health` shows `"traffic":{"status":"protected"}`. A
    `"misconfigured"` status (HTTP 503) names the problem: a missing `PT_CLIENT_IP_HEADER` /
-   `PT_SITE_URL`, or Caddy not sending the `X-PT-Client-IP` header.
+   `PT_SITE_URL`, or Caddy not sending the `X-PT-Client-IP` header. The public URL then answers
+   503 `{"status":"unavailable"}`.
 
 ---
 
@@ -301,8 +304,10 @@ starts the service normally.
 
 - **Uptime**: create a free monitor (UptimeRobot, Better Stack or similar) for
   `https://example.com/health`, every 1–5 minutes, expecting status 200, alerting your email.
-  It also alerts if traffic protection stops working: `/health` returns 503 `misconfigured`
-  when Caddy stops sending the client-identity header (docs/TRAFFIC.md).
+  It also alerts if traffic protection stops working: `/health` returns 503 (`unavailable`
+  publicly, `misconfigured` locally) when Caddy stops sending the client-identity header
+  (docs/TRAFFIC.md). The `PT_RATE_LIMIT=off` emergency switch keeps `/health` at 200; only the
+  local monitor alerts on it (docs/OBSERVABILITY.md).
 - **Lightsail alarm**: instance → **Metrics** → CPU utilization → add an alarm (e.g. ≥ 80% for
   10 minutes) with email notification (add your email as a notification contact first).
 - **Snapshots**: confirm the first automatic snapshot appears the next day.
@@ -337,7 +342,8 @@ From your Mac, against `https://example.com`:
       `for i in $(seq 80); do curl -s -o /dev/null -w "%{http_code}\n" -H "X-PT-Client-IP: 10.0.0.$i" -H "X-Forwarded-For: 10.1.0.$i" https://example.com/players/<id>; done | sort | uniq -c`
       shows both `200` and `429`.
 - [ ] On the server, `sudo journalctl -u prospect-terminal --since today | grep -c "rate limiting is OFF"`
-      prints `0`, and `curl -s https://example.com/health` shows `"traffic":{"status":"protected"}`.
+      prints `0`, and `curl -s http://127.0.0.1:3000/health` (on the server) shows `"traffic":{"status":"protected"}`.
+      `curl -s https://example.com/health` from your Mac shows only `{"status":"ready"}`.
 
 ---
 

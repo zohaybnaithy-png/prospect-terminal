@@ -68,7 +68,7 @@ sudo nano /etc/prospect-terminal/env          # from deploy/env.example
 sudo nano /etc/prospect-terminal-ingest/env   # from deploy/ingest-env.example
 ```
 
-`/etc/prospect-terminal/env` (web):
+`/etc/prospect-terminal/env` (web). Traffic protection is on by default: never add `PT_RATE_LIMIT=off` here (the monitor alerts on it):
 
 ```
 DATABASE_URL=<pt_web on staging, pooled>
@@ -132,18 +132,18 @@ From your Mac unless marked. `S=https://staging.<your-domain>`, `A='-u staging:<
 
 | # | Check | Command | Expected |
 |---|---|---|---|
-| 1 | Health, public | `curl -s $S/health` | 200, `"status":"ready"`, `"traffic":{"status":"protected"}`, `"indexing":"off"`, `process.rssMB` |
+| 1 | Health | Mac: `curl -s $S/health`; server: `curl -s http://127.0.0.1:3000/health` | Mac: 200 and exactly `{"status":"ready"}`. Server: `"traffic":{"status":"protected"}`, `"indexing":"off"`, `process.rssMB` |
 | 2 | Private | `curl -s -o /dev/null -w '%{http_code}' $S/` | 401 |
 | 3 | Not indexable | `curl -s $A $S/robots.txt`; `curl -sI $A $S/ \| grep -i x-robots` | `Disallow: /`; `noindex, nofollow` |
 | 4 | Pages | browse home, players, trends, data, a profile (with the password) | render; no console errors |
 | 5 | Spoof resistance | runbook Phase 5 loop with forged `X-PT-Client-IP` (add `$A`) | both 200 and 429 |
 | 6 | Prefetch classification | browse 10 pages quickly, then on the server `journalctl -u prospect-terminal --since -5min \| grep traffic` | refusals, if any, only in `prefetch`, never `profile` for normal browsing |
-| 7 | Database failure visibility | Neon console: **suspend** the staging compute for ~2 min (APPROVAL); then `curl -s $S/health` | still 200, `refreshFailing` lists levels; clears after resume |
+| 7 | Database failure visibility | Neon console: **suspend** the staging compute for ~2 min (APPROVAL); then on the server `curl -s http://127.0.0.1:3000/health` | still 200, `refreshFailing` lists levels; clears after resume. `$S/health` stays `{"status":"ready"}` |
 | 8 | Deploy + rollback | server: `deploy.sh main`; `rollback.sh`; `deploy.sh main` again | each ends healthy; `deployments.log` shows all three |
 | 9 | Refresh (optional, APPROVAL: writes staging) | server: `sudo systemctl start prospect-terminal-refresh.service`; `cat /var/lib/prospect-terminal-ingest/refresh/last-job.json` | `ok`/`nothing-due`; never `error` with a TargetGuardError |
 | 10 | Wrong-target guard | temporarily set `PT_WRITE_TARGET_ENDPOINT=ep-wrong` in the ingest env, start the unit, restore | status `error`, "endpoint … is not the approved endpoint", nothing written |
 | 11 | Monitor | server: `sudo systemctl start prospect-terminal-monitor.service; journalctl -u prospect-terminal-monitor -n 30` | exit 0 when healthy; during check 7 it reports the database alert |
-| 12 | Memory | after checks 4–8: `curl -s $S/health \| jq .process` and `systemctl status prospect-terminal` | rss well below 2.5 GB; no OOM in `journalctl -k` |
+| 12 | Memory | after checks 4–8: server: `curl -s http://127.0.0.1:3000/health \| jq .process` and `systemctl status prospect-terminal` | rss well below 2.5 GB; no OOM in `journalctl -k` |
 | 13 | Capacity (optional) | on the server, against a temporary local site (see below) | readers stay fast while an attacker is limited |
 
 **Capacity on real hardware (13):** `npm run -s traffic:load` only targets loopback addresses, so

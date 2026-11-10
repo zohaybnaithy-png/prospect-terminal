@@ -58,13 +58,14 @@ describe("local monitor (scripts/ops/monitor.ts)", async () => {
 
   test("health: ready and protected is ok; refresh failures, misconfiguration and memory alert", () => {
     const ok = evaluateHealth(200, { status: "ready", traffic: { status: "protected" }, process: { rssMB: 900, heapUsedMB: 500, heapLimitMB: 1536 } }, 2560);
-    assert.deepEqual(ok.map((c) => c.status), ["ok", "ok"]);
+    assert.deepEqual(ok.map((c) => c.status), ["ok", "ok", "ok"]);
     const db = evaluateHealth(200, { status: "ready", refreshFailing: ["aaa", "afl"], traffic: { status: "protected" }, process: { rssMB: 2700 } }, 2560);
-    assert.deepEqual(db.map((c) => c.status), ["alert", "alert"]);
+    assert.deepEqual(db.map((c) => [c.name, c.status]), [["health", "alert"], ["traffic", "ok"], ["memory", "alert"]]);
     assert.match(db[0].detail, /database refresh failing for aaa, afl/);
-    assert.match(db[1].detail, /rss 2700 MB/);
+    assert.match(db[2].detail, /rss 2700 MB/);
     const mis = evaluateHealth(503, { status: "misconfigured", traffic: { status: "misconfigured", reason: "PT_CLIENT_IP_HEADER is unset" } }, 2560);
-    assert.match(mis[0].detail, /traffic protection misconfigured \(PT_CLIENT_IP_HEADER is unset\)/);
+    assert.equal(mis[0].status, "alert");
+    assert.match(mis[1].detail, /traffic protection misconfigured \(PT_CLIENT_IP_HEADER is unset\)/);
   });
 
   test("5xx: only the window counts, malformed lines are ignored, small numbers do not alert", () => {
@@ -127,7 +128,7 @@ describe("local monitor (scripts/ops/monitor.ts)", async () => {
       { fetch: fake, now: () => new Date("2027-01-20T00:00:00Z") },
     );
     assert.equal(r.status, "ok");
-    assert.deepEqual(Object.fromEntries(r.checks.map((c) => [c.name, c.status])), { app: "ok", health: "ok", memory: "ok", "http-5xx": "skipped", refresh: "ok", freshness: "skipped" });
+    assert.deepEqual(Object.fromEntries(r.checks.map((c) => [c.name, c.status])), { app: "ok", health: "ok", traffic: "ok", memory: "ok", "http-5xx": "skipped", refresh: "ok", freshness: "skipped" });
     assert.deepEqual(pinged, ["https://hc.example/ping/m1"]);
   });
 });

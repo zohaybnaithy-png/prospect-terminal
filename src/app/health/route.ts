@@ -1,30 +1,28 @@
 import { connection } from "next/server";
 import { competitionHealth } from "@/services/competition";
-import { healthHttpStatus } from "@/services/competition/health";
-import { sharedTrafficState, trafficBlocksHealth, trafficHealth } from "@/lib/traffic/health";
+import { sharedTrafficState, trafficHealth } from "@/lib/traffic/health";
 import { processStats } from "@/lib/process-stats";
 import { indexingEnabled } from "@/lib/indexing";
+import { buildHealthResponse, isLocalHealthRequest } from "@/lib/health-response";
 
 /**
- * Health check for the host / load balancer: 200 once every level's data is loaded, 503 while
- * starting or when a first load failed. Never queries the database (in-memory state only), never
- * includes error details, and is never cached. See docs/DEPLOYMENT.md.
+ * Health check for the host and the deploy gate: 200 once every level's data is loaded, 503 while
+ * starting, when a first load failed, or when production traffic protection is misconfigured
+ * (src/lib/traffic/health.ts). It never queries the database (in-memory state only), never includes
+ * error details, and is never cached.
+ *
+ * Public requests (through Caddy) get only `ready` / `unavailable`. The full report (levels,
+ * refresh failures, traffic protection, indexing, memory) is only for direct local requests: the
+ * deploy script and the monitor on the same host. See src/lib/health-response.ts and
+ * docs/OBSERVABILITY.md.
  */
-export async function GET() {
+export async function GET(request: Request) {
   await connection();
-  const report = competitionHealth();
-  // Traffic protection that is not in place makes a production server unhealthy, so a release
-  // without it never passes deploy.sh's health gate (src/lib/traffic/health.ts).
-  const traffic = trafficHealth(process.env, sharedTrafficState());
-  const ok = healthHttpStatus(report) === 200 && !trafficBlocksHealth(traffic.status);
-  return Response.json(
-    {
-      ...report,
-      ...(trafficBlocksHealth(traffic.status) && report.status === "ready" ? { status: "misconfigured" } : {}),
-      traffic,
-      indexing: indexingEnabled() ? "on" : "off",
-      process: processStats(),
-    },
-    { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
+  const { status, body } = buildHealthResponse(
+    competitionHealth(),
+    trafficHealth(process.env, sharedTrafficState()),
+    { indexing: indexingEnabled() ? "on" : "off", process: processStats() },
+    isLocalHealthRequest(request.headers, process.env),
   );
+  return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
