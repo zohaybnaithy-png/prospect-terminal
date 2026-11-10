@@ -1,6 +1,8 @@
--- Read-only database role for the web server. Run ONCE, on the PRODUCTION branch only, in the
--- Neon SQL Editor as the database owner (neondb_owner), after the data is in place.
--- Requires explicit approval (it creates a role). Nothing here changes data.
+-- Read-only database role for the web server. Run ONCE per branch a web server reads (the STAGING
+-- branch for the rehearsal, docs/NEON-STAGING.md; later the PRODUCTION branch), in the Neon SQL
+-- Editor as the database owner (neondb_owner), after the data is in place. Use a different password
+-- on each branch. Requires explicit approval (it creates a role). Nothing here changes data.
+-- `npm run -s check:db-roles` verifies the result from the server (docs/NEON-STAGING.md).
 --
 -- Create the role with SQL, not the Neon Console: Console-created roles are members of
 -- neon_superuser, which can write. Replace the password in the editor; do not save it anywhere

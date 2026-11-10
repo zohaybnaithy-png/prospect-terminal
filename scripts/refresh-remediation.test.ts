@@ -89,3 +89,37 @@ describe("season windows can be configured (an unusual season start/end)", () =>
     assert.ok(DEFAULT_REFRESH);
   });
 });
+
+describe("Phase 6A: the scheduled writer refuses an unpinned or wrong database before connecting", () => {
+  const PROD = "postgresql://writer:s3cret@ep-prod-thing-123456-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+  const STAGING_ENDPOINT = "ep-staging-thing-654321";
+  const run = async (argv: string[], env: Record<string, string>) => {
+    const { runRefreshCli } = await import("./refresh-data");
+    pinged.length = 0;
+    const logDir = mkdtempSync(join(tmpdir(), "pt-refresh-pin-"));
+    const code = await runRefreshCli([...argv, `--log-dir=${logDir}`], { PT_REFRESH_PING_URL: "https://hc.example/ping/abc", ...env }, { fetch: fakeFetch, quiet: true });
+    return { code, last: JSON.parse(readFileSync(join(logDir, "last-job.json"), "utf8")) };
+  };
+
+  test("production without PT_WRITE_TARGET_ENDPOINT: refused, notified", async () => {
+    const r = await run(["--apply", "--force"], { NODE_ENV: "production", INGESTION_DATABASE_URL: PROD });
+    assert.equal(r.code, 1);
+    assert.equal(r.last.status, "error");
+    assert.match(r.last.error, /PT_WRITE_TARGET_ENDPOINT/);
+    assert.equal(pinged[0]?.url, "https://hc.example/ping/abc/fail");
+  });
+
+  test("a staging host given the production URL: refused (endpoint mismatch), no secret in the record", async () => {
+    const r = await run(["--apply", "--force"], { NODE_ENV: "production", INGESTION_DATABASE_URL: PROD, PT_WRITE_TARGET_ENDPOINT: STAGING_ENDPOINT });
+    assert.equal(r.code, 1);
+    assert.match(r.last.error, /endpoint ep-prod-thing-123456 is not the approved endpoint ep-staging-thing-654321/);
+    assert.doesNotMatch(JSON.stringify(r.last) + pinged.map((p) => p.body).join(""), /s3cret|writer:/);
+  });
+
+  test("weak TLS or a non-Neon host: refused", async () => {
+    const noTls = await run(["--apply", "--force"], { NODE_ENV: "production", PT_WRITE_TARGET_ENDPOINT: STAGING_ENDPOINT, INGESTION_DATABASE_URL: `postgresql://w:p@${STAGING_ENDPOINT}.c-2.us-west-2.aws.neon.tech/neondb` });
+    assert.match(noTls.last.error, /sslmode/);
+    const local = await run(["--apply", "--force"], { NODE_ENV: "production", PT_WRITE_TARGET_ENDPOINT: STAGING_ENDPOINT, INGESTION_DATABASE_URL: "postgres://postgres@127.0.0.1:1/x" });
+    assert.match(local.last.error, /not a Neon endpoint host/);
+  });
+});

@@ -68,3 +68,74 @@ test("deploy: scripts parse, and refuse unsafe refs and release names", () => {
   // A failed release leaves releases/ so a later rollback can never select it.
   assert.match(deploy, /mv "\$release" "\$failed"/);
 });
+
+test("deploy: the runbook's `shellcheck -x deploy/*.sh` check is clean (Phase 6A)", () => {
+  // Before Phase 6A the runbook said "no output = OK" but shellcheck reported SC2148 (error) and
+  // three notes, so an operator would have stopped at step 2.4.
+  assert.match(common, /^# shellcheck shell=bash$/m);
+  for (const f of ["deploy.sh", "rollback.sh", "common.sh"]) assert.doesNotMatch(read(f), /\bls -1d\b/, f);
+  let installed = true;
+  try {
+    execFileSync("shellcheck", ["--version"], { stdio: "pipe" });
+  } catch {
+    installed = false; // the static checks above still run; the server has shellcheck (runbook 2.2)
+  }
+  if (installed) {
+    const out = execFileSync("bash", ["-c", "shellcheck -x deploy/*.sh 2>&1 || true"], { cwd: new URL("..", import.meta.url).pathname }).toString();
+    assert.equal(out, "", out);
+  }
+});
+
+test("deploy: deploy.sh installs dev dependencies and never builds during a data refresh (Phase 6A)", () => {
+  const deploy = read("deploy.sh");
+  assert.match(deploy, /npm ci --include=dev/);
+  assert.match(deploy, /PT_REFRESH_ACTIVE_CMD/);
+  assert.match(common, /systemctl is-active --quiet prospect-terminal-refresh\.service/);
+});
+
+test("deploy: the staging Caddyfile matches production in every block the rehearsal tests (Phase 6A)", () => {
+  const staging = read("Caddyfile.staging");
+  const block = (text: string, start: RegExp) => {
+    const i = text.search(start);
+    assert.ok(i >= 0, String(start));
+    let depth = 0;
+    for (let j = text.indexOf("{", i); j < text.length; j++) {
+      if (text[j] === "{") depth++;
+      if (text[j] === "}" && --depth === 0) return text.slice(i, j + 1);
+    }
+    throw new Error("unbalanced");
+  };
+  for (const start of [/^\{$/m, /reverse_proxy 127\.0\.0\.1:3000 \{/, /request_body \{/, /log \{/])
+    assert.equal(block(staging, start), block(caddy, start), String(start));
+  // Private: basic auth on everything except /health; never a real hash in the repository.
+  assert.match(staging, /@private not path \/health\n\tbasicauth @private \{\n\t\tstaging REPLACE_WITH_CADDY_HASH_PASSWORD_OUTPUT\n/);
+  assert.match(staging, /X-Robots-Tag "noindex, nofollow"/);
+  assert.doesNotMatch(staging, /\$2[aby]\$/, "no bcrypt hash committed");
+});
+
+test("deploy: the ingestion env template pins the write target and holds no credentials (Phase 6A)", () => {
+  const ingest = read("ingest-env.example");
+  assert.match(ingest, /^INGESTION_DATABASE_URL=postgresql:\/\/pt_ingest:REPLACE_WITH_PASSWORD@ep-REPLACE-pooler\./m);
+  assert.match(ingest, /^PT_WRITE_TARGET_ENDPOINT=ep-REPLACE$/m);
+  assert.doesNotMatch(ingest, /npg_[A-Za-z0-9]+/);
+  assert.match(read("prospect-terminal-refresh.service"), /^EnvironmentFile=\/etc\/prospect-terminal-ingest\/env$/m);
+  // The web server's template never carries the writer credential.
+  assert.doesNotMatch(env.replace(/^#.*$/gm, ""), /INGESTION_DATABASE_URL|PT_WRITE_TARGET/);
+  assert.match(env, /^# PT_INDEXING=off$/m, "staging switch documented, off by default");
+});
+
+test("deploy: a deploy and a data refresh never overlap, in either direction (Phase 6A)", () => {
+  const refresh = read("prospect-terminal-refresh.service");
+  // The refresh is skipped while deploy.sh holds its lock directory ...
+  assert.match(refresh, /^ExecCondition=\/bin\/sh -c '! test -d \/srv\/prospect-terminal\/\.deploy\.lock'$/m);
+  assert.match(common, /mkdir "\$PT_ROOT\/\.deploy\.lock"/, "the same directory deploy.sh takes");
+  assert.match(common, /PT_ROOT="\$\{PT_ROOT:-\/srv\/prospect-terminal\}"/);
+  // ... and deploy.sh refuses to build while the refresh unit is active (rehearsal-tested).
+  assert.match(common, /prospect-terminal-refresh\.service/);
+  // Memory caps that keep a 4 GB host safe (app 3G hard cap, refresh 1.5G, monitor 300M).
+  assert.match(service, /^MemoryMax=3G$/m);
+  assert.match(refresh, /^MemoryMax=1500M$/m);
+  assert.match(read("prospect-terminal-monitor.service"), /^MemoryMax=300M$/m);
+  assert.match(read("prospect-terminal-monitor.timer"), /^OnUnitActiveSec=5min$/m);
+  assert.doesNotMatch(read("deploy.sh"), /monitor\.timer|refresh\.timer/, "deploy never enables schedules");
+});

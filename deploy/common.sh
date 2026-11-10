@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared settings and helpers for deploy.sh / rollback.sh (sourced, not run).
 # Every value can be overridden from the environment (used by the local rehearsal test).
 PT_ROOT="${PT_ROOT:-/srv/prospect-terminal}"
@@ -12,6 +13,10 @@ PT_KEEP="${PT_KEEP:-5}"
 PT_RESTART_CMD="${PT_RESTART_CMD:-sudo /usr/bin/systemctl restart prospect-terminal}"
 # Clears systemd's start limit (hit when a broken release crash-loops) so a restart is accepted.
 PT_RESET_CMD="${PT_RESET_CMD:-sudo -n /usr/bin/systemctl reset-failed prospect-terminal}"
+# Succeeds while a scheduled data refresh is running (no sudo needed to ask). deploy.sh does not
+# build then: on a 4 GB host the build (~1 GB) on top of the app (~1.2 GB) and a refresh job is the
+# out-of-memory risk. PT_ALLOW_DEPLOY_DURING_REFRESH=1 overrides (e.g. an urgent fix).
+PT_REFRESH_ACTIVE_CMD="${PT_REFRESH_ACTIVE_CMD:-systemctl is-active --quiet prospect-terminal-refresh.service}"
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
@@ -23,7 +28,13 @@ take_lock() {
   trap 'rmdir "$PT_ROOT/.deploy.lock" 2>/dev/null || true' EXIT
 }
 
-current_release() { [ -L "$PT_CURRENT" ] && readlink "$PT_CURRENT" || true; }
+current_release() {
+  if [ -L "$PT_CURRENT" ]; then readlink "$PT_CURRENT"; fi
+  return 0
+}
+
+# Release directories, newest first (names start with a UTC timestamp).
+list_releases() { find "$PT_RELEASES" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r; }
 
 switch_to() { ln -sfn "$1" "$PT_CURRENT"; }
 

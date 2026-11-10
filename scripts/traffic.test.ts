@@ -483,7 +483,7 @@ describe("crawl policy", () => {
       sitemap: "https://prospectterminal.example/sitemap.xml",
     });
     assert.equal("sitemap" in robotsPolicy(null), false);
-    assert.match(src("src/app/robots.ts"), /robotsPolicy\(siteOrigin\(\)\)/);
+    assert.match(src("src/app/robots.ts"), /robotsFor\(siteOrigin\(\)\)/); // robotsPolicy unless PT_INDEXING=off
     assert.match(src("src/app/robots.ts"), /await connection\(\)/, "built at request time (PT_SITE_URL is a runtime setting)");
   });
 

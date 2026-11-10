@@ -1,0 +1,11 @@
+# Every 5 minutes (docs/OBSERVABILITY.md). NOT enabled by deploy.sh.
+[Unit]
+Description=Prospect Terminal local monitor schedule
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

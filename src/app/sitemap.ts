@@ -4,6 +4,7 @@ import { getCompetitionData } from "@/services/competition";
 import { STATIC_PAGES } from "@/lib/crawl-policy";
 import { siteOrigin } from "@/lib/site-url";
 import { sitemapEntries } from "@/lib/sitemap";
+import { indexingEnabled } from "@/lib/indexing";
 
 /**
  * sitemap.xml: the public pages plus one canonical URL per player with game lines at any level.
@@ -13,7 +14,8 @@ import { sitemapEntries } from "@/lib/sitemap";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
   const origin = siteOrigin();
-  if (!origin) return [];
+  // No origin, or a deployment that must not be indexed (staging): an empty sitemap.
+  if (!origin || !indexingEnabled()) return [];
   const data = await getCompetitionData();
   return sitemapEntries(origin, STATIC_PAGES, data.status === "ok" ? data.levels : []);
 }

@@ -19,6 +19,10 @@ ref="${1:-main}"
 case "$ref" in -*|*..*|*' '*) die "invalid ref: $ref";; esac
 take_lock
 
+if [ "${PT_ALLOW_DEPLOY_DURING_REFRESH:-0}" != "1" ] && $PT_REFRESH_ACTIVE_CMD; then
+  die "a data refresh is running (prospect-terminal-refresh.service); deploy when it has finished, or set PT_ALLOW_DEPLOY_DURING_REFRESH=1"
+fi
+
 log "fetching $ref"
 git -C "$PT_REPO" fetch --quiet --prune --tags origin
 sha="$(git -C "$PT_REPO" rev-parse --verify --quiet "origin/$ref^{commit}" ||
@@ -35,7 +39,9 @@ git -C "$PT_REPO" archive "$sha" | tar -x -C "$release"
 printf '%s\n' "$sha" > "$release/REVISION"
 if ! (
   cd "$release"
-  npm ci --no-audit --no-fund
+  # Dev dependencies are needed by the test suite and by the refresh/monitor units (tsx); npm ci
+  # would omit them if NODE_ENV=production were set in this shell.
+  npm ci --include=dev --no-audit --no-fund
   if [ "${PT_SKIP_TESTS:-0}" != "1" ]; then npm test; fi
   npm run build
 ) > "$build_log" 2>&1; then
@@ -51,7 +57,7 @@ restart_app
 if wait_healthy; then
   record "${sha:0:7} $ref"
   # Keep the newest $PT_KEEP releases (always including the current and previous ones).
-  ls -1d "$PT_RELEASES"/*/ 2>/dev/null | sed 's:/$::' | sort -r | tail -n +"$((PT_KEEP + 1))" |
+  list_releases | tail -n +"$((PT_KEEP + 1))" |
     while read -r old; do
       [ "$old" = "$release" ] || [ "$old" = "$previous" ] || rm -rf "$old"
     done

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { indexingEnabled } from "./indexing";
 
 /**
  * What search engines may crawl (docs/TRAFFIC.md). robots.txt is ADVISORY: well-behaved crawlers
@@ -23,6 +24,11 @@ export function robotsPolicy(origin: string | null): MetadataRoute.Robots {
     rules: [{ userAgent: "*", allow: ALLOW, disallow: DISALLOW }],
     ...(origin ? { sitemap: `${origin}/sitemap.xml` } : {}),
   };
+}
+
+/** robots.txt for this deployment: the public policy, or disallow everything when not indexed. */
+export function robotsFor(origin: string | null, env: Record<string, string | undefined> = process.env): MetadataRoute.Robots {
+  return indexingEnabled(env) ? robotsPolicy(origin) : { rules: [{ userAgent: "*", disallow: "/" }] };
 }
 
 /** Public pages listed in the sitemap besides player profiles. */

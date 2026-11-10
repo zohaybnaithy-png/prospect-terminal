@@ -19,9 +19,14 @@ WorkingDirectory=/srv/prospect-terminal/current
 EnvironmentFile=/etc/prospect-terminal-ingest/env
 Environment=NODE_ENV=production
 Environment=NODE_OPTIONS=--max-old-space-size=1024
-# Job log (JSONL + last-job.json) under /var/lib/prospect-terminal-ingest/refresh.
+# Job log (JSONL + last-job.json) under /var/lib/prospect-terminal-ingest/refresh; group-readable
+# (0750) so the local monitor can read the outcome. It holds no secrets (coarse error codes only).
 StateDirectory=prospect-terminal-ingest
-StateDirectoryMode=0700
+StateDirectoryMode=0750
+# Never start during a deploy: the build (~1 GB) + the app (~1.2 GB) + this job would exceed a 4 GB
+# host. ExecCondition exiting 1 SKIPS the run (not a failure); the next timer run catches up.
+# (deploy.sh likewise refuses to build while this unit is active.)
+ExecCondition=/bin/sh -c '! test -d /srv/prospect-terminal/.deploy.lock'
 ExecStart=/usr/bin/node --import tsx scripts/refresh-data.ts --apply --log-dir=/var/lib/prospect-terminal-ingest/refresh
 # The job stops itself after 45 minutes; this is the hard backstop. systemd never starts a second
 # instance of a oneshot unit while one runs, and the database advisory lock covers manual runs.

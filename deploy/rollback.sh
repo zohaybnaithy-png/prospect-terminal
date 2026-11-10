@@ -16,7 +16,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/common.sh"
 
 current="$(current_release)"
-releases="$(ls -1d "$PT_RELEASES"/*/ 2>/dev/null | sed 's:/$::' | sort -r || true)"
+releases="$(list_releases || true)"
 if [ "${1:-}" = "--list" ]; then
   while read -r r; do
     [ -n "$r" ] || continue

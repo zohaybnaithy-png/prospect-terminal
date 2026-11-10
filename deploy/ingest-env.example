@@ -1,0 +1,24 @@
+# Template for /etc/prospect-terminal-ingest/env on the INGESTION host (owner root, mode 600), read
+# by prospect-terminal-refresh.service (docs/DATA-REFRESH.md). Fill in the real values on that host
+# only: never commit, paste into chat, or print them. Separate from /etc/prospect-terminal/env: the
+# web server never holds the writer credential.
+#
+# Writer role (deploy/neon-writer-role.sql) on the branch this host may write to: for the staging
+# rehearsal, the STAGING branch. Neon -> Connect -> role pt_ingest -> pooled or direct; keep
+# sslmode=require (or verify-full) and channel_binding=require. The job lock connects to the direct
+# endpoint automatically.
+INGESTION_DATABASE_URL=postgresql://pt_ingest:REPLACE_WITH_PASSWORD@ep-REPLACE-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# REQUIRED in production (the unit sets NODE_ENV=production): the ONLY Neon endpoint this host may
+# write to, e.g. ep-xxxx-yyyy-123456 (without -pooler). Every --apply run refuses before connecting
+# when INGESTION_DATABASE_URL names any other endpoint or database, or a non-verifying sslmode, so
+# a staging host given a production URL (or the reverse) cannot write anywhere.
+PT_WRITE_TARGET_ENDPOINT=ep-REPLACE
+# PT_WRITE_TARGET_DATABASE=neondb
+
+# Optional dead-man's switch (https): pinged after every applied job, `<url>/fail` on any failure,
+# including fatal errors. Use a check that alerts when pings stop.
+# PT_REFRESH_PING_URL=https://hc-ping.com/REPLACE
+
+# Optional: season windows for an unusual year (validated; see docs/DATA-REFRESH.md).
+# PT_SEASON_WINDOWS=milb=04-01..09-30,afl=10-01..11-20
