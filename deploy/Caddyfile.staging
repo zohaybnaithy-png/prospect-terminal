@@ -1,0 +1,62 @@
+# STAGING reverse proxy (docs/STAGING-SERVER.md). Identical to deploy/Caddyfile in everything the
+# rehearsal tests (timeouts, body limit, the reverse_proxy block with the client-identity header,
+# HSTS, access log); a test keeps the two in step. Differences, all for a private staging site:
+#   - one site name, staging.prospectterminal.example (replace with your staging host name);
+#   - HTTP basic auth on everything except /health, so the uptime check and monitor still work;
+#   - an X-Robots-Tag header as a second layer behind the app's PT_INDEXING=off.
+# Create the password hash on the server, never store the password itself:
+#   caddy hash-password            (type the password; paste the printed hash below)
+# Caddy 2.6–2.7 call the directive `basicauth`; 2.8+ also accept `basic_auth` (same syntax).
+
+{
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 10s
+			write 60s
+			idle 2m
+		}
+	}
+}
+
+staging.prospectterminal.example {
+	encode zstd gzip
+
+	# The site only serves GET requests; a large body is never legitimate.
+	request_body {
+		max_size 64KB
+	}
+
+	@private not path /health
+	basicauth @private {
+		staging REPLACE_WITH_CADDY_HASH_PASSWORD_OUTPUT
+	}
+
+	reverse_proxy 127.0.0.1:3000 {
+		# While the app restarts (deploy, crash), hold requests and retry for up to 30 s instead of
+		# returning 502. The app starts listening in about a second and serves once data is loaded.
+		lb_try_duration 30s
+		lb_try_interval 250ms
+		# Client identity for the app's rate limiter (docs/TRAFFIC.md). `header_up` REPLACES any
+		# value the client sent, so this header always holds the address of the TCP connection Caddy
+		# accepted ({remote_host}: works on every Caddy 2 release; `{client_ip}` does not exist
+		# before 2.7 and would be sent literally, which turns per-client limiting off). If a CDN is
+		# ever put in front, this must change to the CDN's verified client header, nothing else.
+		# The app reads exactly this header (PT_CLIENT_IP_HEADER) and never X-Forwarded-For.
+		header_up X-PT-Client-IP {remote_host}
+	}
+
+	header {
+		# HTTPS only from now on (no includeSubDomains/preload until every subdomain is HTTPS).
+		Strict-Transport-Security "max-age=31536000"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}

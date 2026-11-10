@@ -55,6 +55,8 @@ interface Entry {
   /** Consecutive failed first loads, the last error, and when the next attempt may start. */
   failures: number;
   lastError?: unknown;
+  /** Consecutive failed background checks/reloads while a snapshot is served (0 = healthy). */
+  refreshFailures: number;
   retryAt: number;
 }
 
@@ -70,6 +72,8 @@ export interface LevelCache {
     loading: boolean;
     failures: number;
     retryInMs: number;
+    /** Consecutive failed background checks/reloads of a loaded level (its data may be stale). */
+    refreshFailures: number;
   };
 }
 
@@ -81,7 +85,7 @@ export function createLevelCache(opts: LevelCacheOptions): LevelCache {
   const entries = new Map<LevelId, Entry>();
   const entry = (level: LevelId) => {
     let e = entries.get(level);
-    if (!e) entries.set(level, (e = { checkedAt: 0, failures: 0, retryAt: 0 }));
+    if (!e) entries.set(level, (e = { checkedAt: 0, failures: 0, retryAt: 0, refreshFailures: 0 }));
     return e;
   };
 
@@ -152,7 +156,13 @@ export function createLevelCache(opts: LevelCacheOptions): LevelCache {
     const promise = version().then((v) => (v === current.version ? current.snapshot : load(level, e, v)));
     if (!e.inflight) e.inflight = promise;
     promise
-      .catch((error: unknown) => opts.onBackgroundError?.(level, error))
+      .then(() => {
+        e.refreshFailures = 0;
+      })
+      .catch((error: unknown) => {
+        e.refreshFailures++;
+        opts.onBackgroundError?.(level, error);
+      })
       .finally(() => {
         if (e.inflight === promise) e.inflight = undefined;
       });
@@ -184,6 +194,7 @@ export function createLevelCache(opts: LevelCacheOptions): LevelCache {
         loading: !!e?.inflight,
         failures: e?.failures ?? 0,
         retryInMs: e && e.failures ? Math.max(0, e.retryAt - now()) : 0,
+        refreshFailures: e?.refreshFailures ?? 0,
       };
     },
   };

@@ -20,6 +20,7 @@ interface Rig {
   root: string;
   src: string;
   run: (script: "deploy.sh" | "rollback.sh", ...args: string[]) => Promise<{ code: number; stderr: string }>;
+  runWith: (extra: Record<string, string>, script: "deploy.sh" | "rollback.sh", ...args: string[]) => Promise<{ code: number; stderr: string }>;
   commit: (health: "ok" | "bad") => void;
   current: () => string | null;
   releases: () => string[];
@@ -46,8 +47,8 @@ async function rig(): Promise<Rig> {
   git(src, "commit", "-q", "-m", "init");
   git(base, "clone", "-q", "--no-local", src, join(root, "repo"));
 
-  writeFileSync(join(bin, "npm"), '#!/bin/sh\nif [ "$1 $2" = "run build" ]; then mkdir -p .next && echo build > .next/BUILD_ID; fi\n');
   const callsFile = join(base, "calls");
+  writeFileSync(join(bin, "npm"), `#!/bin/sh\necho "npm $*" >> "${callsFile}"\nif [ "$1 $2" = "run build" ]; then mkdir -p .next && echo build > .next/BUILD_ID; fi\n`);
   writeFileSync(join(bin, "restart"), `#!/bin/sh\necho restart >> "${callsFile}"\n`);
   writeFileSync(join(bin, "reset"), `#!/bin/sh\necho reset >> "${callsFile}"\n`);
   for (const f of ["npm", "restart", "reset"]) chmodSync(join(bin, f), 0o755);
@@ -73,6 +74,8 @@ async function rig(): Promise<Rig> {
     PT_RESTART_CMD: join(bin, "restart"),
     PT_RESET_CMD: join(bin, "reset"),
     PT_SKIP_TESTS: "1",
+    // No data refresh running (the real default asks systemd).
+    PT_REFRESH_ACTIVE_CMD: "false",
   };
   const list = (d: string) => (existsSync(d) ? readdirSync(d).sort() : []);
   return {
@@ -82,6 +85,12 @@ async function rig(): Promise<Rig> {
     run: (script, ...args) =>
       new Promise((resolve) => {
         execFile("bash", [join(deployDir, script), ...args], { env }, (err, _out, stderr) =>
+          resolve({ code: err ? Number(err.code ?? 1) : 0, stderr }),
+        );
+      }),
+    runWith: (extra, script, ...args) =>
+      new Promise((resolve) => {
+        execFile("bash", [join(deployDir, script), ...args], { env: { ...env, ...extra } }, (err, _out, stderr) =>
           resolve({ code: err ? Number(err.code ?? 1) : 0, stderr }),
         );
       }),
@@ -184,6 +193,39 @@ test("rollback rehearsal: an unhealthy target restores the running release, and 
     const ok = await r.run("rollback.sh", older);
     assert.equal(ok.code, 0, ok.stderr);
     assert.equal(r.current(), join(r.root, "releases", older));
+  } finally {
+    await r.close();
+  }
+});
+
+test("deploy rehearsal (Phase 6A): no build while a data refresh is running, unless explicitly allowed", async () => {
+  const r = await rig();
+  try {
+    r.commit("ok");
+    assert.equal((await r.run("deploy.sh")).code, 0);
+    const before = { releases: r.releases(), current: r.current(), calls: r.calls().length };
+    r.commit("ok");
+    // On a 4 GB host the build (~1 GB) on top of the app and a refresh job is the out-of-memory risk.
+    const busy = await r.runWith({ PT_REFRESH_ACTIVE_CMD: "true" }, "deploy.sh");
+    assert.equal(busy.code, 1, busy.stderr);
+    assert.match(busy.stderr, /a data refresh is running/);
+    assert.deepEqual({ releases: r.releases(), current: r.current(), calls: r.calls().length }, before, "nothing changed, nothing built");
+    const forced = await r.runWith({ PT_REFRESH_ACTIVE_CMD: "true", PT_ALLOW_DEPLOY_DURING_REFRESH: "1" }, "deploy.sh");
+    assert.equal(forced.code, 0, forced.stderr);
+  } finally {
+    await r.close();
+  }
+});
+
+test("deploy rehearsal (Phase 6A): dev dependencies are installed even if NODE_ENV=production is set", async () => {
+  const r = await rig();
+  try {
+    r.commit("ok");
+    // The test suite and the refresh/monitor units (node --import tsx) need devDependencies; npm ci
+    // silently omits them when NODE_ENV=production is in the deploying shell.
+    const res = await r.runWith({ NODE_ENV: "production" }, "deploy.sh");
+    assert.equal(res.code, 0, res.stderr);
+    assert.ok(r.calls().some((c) => /^npm ci .*--include=dev/.test(c)), r.calls().join(" | "));
   } finally {
     await r.close();
   }

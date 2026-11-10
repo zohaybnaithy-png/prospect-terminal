@@ -22,6 +22,7 @@
     "test:refresh:db": "node --import tsx --test scripts/refresh-db.integration.ts",
     "test:refresh:freshness:db": "node --import tsx --test scripts/refresh-freshness-db.integration.ts",
     "check:milb:readiness": "node --import tsx scripts/ops/milb-readiness.ts",
+    "monitor": "node --import tsx scripts/ops/monitor.ts",
     "traffic:load": "node --import tsx scripts/ops/traffic-load.ts",
     "a11y:scan": "node --import tsx scripts/ops/a11y-scan.ts",
     "profile:site": "node --import tsx scripts/ops/site-profile.ts",
@@ -29,6 +30,8 @@
     "test:ingestion:db": "node --import tsx --test scripts/ingestion-db.integration.ts",
     "test:mlb:db": "node --import tsx --test scripts/mlb-db.integration.ts",
     "test:afl:db": "node --import tsx --test scripts/afl-read.integration.ts",
+    "test:roles:db": "node --import tsx --test scripts/db-roles.integration.ts",
+    "check:db-roles": "node --import tsx scripts/ops/check-db-roles.ts",
     "test:milb:db": "node --import tsx --test scripts/milb-db.integration.ts"
   },
   "repository": {

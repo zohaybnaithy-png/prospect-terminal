@@ -248,7 +248,7 @@ sudo stat -c '%a %U' /etc/prospect-terminal/env                                 
 sudo -u prospect -H /srv/prospect-terminal/repo/deploy/deploy.sh main
 ```
 
-It fetches `main`, installs, runs the test suite, builds, starts the service and waits for
+It fetches `main`, installs (`npm ci --include=dev`: the tests and the refresh/monitor units need dev dependencies), runs the test suite, builds, starts the service and waits for
 `/health`. Expect a few minutes, ending with `deployed <commit> (main)`. Then:
 
 ```bash
@@ -306,6 +306,12 @@ starts the service normally.
 - **Lightsail alarm**: instance → **Metrics** → CPU utilization → add an alarm (e.g. ≥ 80% for
   10 minutes) with email notification (add your email as a notification contact first).
 - **Snapshots**: confirm the first automatic snapshot appears the next day.
+- **Local monitor** (optional, shipped disabled): `deploy/prospect-terminal-monitor.{service,timer}`
+  checks app, `/health`, memory, 5xx rate, the refresh job and freshness every 5 minutes, and can
+  ping a free dead-man's-switch check (`PT_MONITOR_PING_URL`). See docs/OBSERVABILITY.md.
+
+Rehearse all of this first on a staging server against a Neon staging branch:
+docs/STAGING-CHECKLIST.md, docs/NEON-STAGING.md, docs/STAGING-SERVER.md.
 
 ---
 
@@ -349,6 +355,8 @@ From your Mac, against `https://example.com`:
 | Deploy history | `cat /srv/prospect-terminal/deployments.log` |
 | Change the DB password | Neon → Roles → `pt_web` → reset; edit `/etc/prospect-terminal/env`; restart the app |
 | OS reboot (after kernel updates) | `sudo reboot` (the app and Caddy start by themselves) |
+
+A deploy refuses to start while the scheduled refresh is running (`a data refresh is running`); wait for it, or set `PT_ALLOW_DEPLOY_DURING_REFRESH=1` to override. A refresh never starts while a deploy holds its lock.
 
 The deploy script uses the scripts from the checked-out repository; pull them first if they
 changed: `sudo -u prospect git -C /srv/prospect-terminal/repo pull --ff-only`.

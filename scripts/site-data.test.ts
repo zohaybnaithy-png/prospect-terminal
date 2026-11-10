@@ -80,7 +80,7 @@ test("level cache: loads once, shares an in-flight load and prepares before serv
   assert.deepEqual(h.prepared, ["aaa@v1"]);
   assert.equal(await h.cache.get("aaa"), a);
   assert.deepEqual(h.loads, ["aaa"]);
-  assert.deepEqual(h.cache.state("aaa"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0 });
+  assert.deepEqual(h.cache.state("aaa"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0, refreshFailures: 0 });
 });
 
 test("level cache: within the check window no probe runs; after it an unchanged version keeps the snapshot", async () => {
@@ -125,7 +125,7 @@ test("level cache: a changed version reloads in the background while the previou
   await tick();
   const fresh = await cache.get("high-a");
   assert.equal(fresh?.league.id, "high-a@v2");
-  assert.deepEqual(cache.state("high-a"), { loaded: true, version: "v2", loading: false, failures: 0, retryInMs: 0 });
+  assert.deepEqual(cache.state("high-a"), { loaded: true, version: "v2", loading: false, failures: 0, retryInMs: 0, refreshFailures: 0 });
 });
 
 test("level cache: a failed first load is not reused; retries back off (no retry storm) and reset on success", async () => {
@@ -145,7 +145,7 @@ test("level cache: a failed first load is not reused; retries back off (no retry
     retryMaxMs: 20_000,
   });
   await assert.rejects(cache.get("single-a"), /boom/);
-  assert.deepEqual(cache.state("single-a"), { loaded: false, version: null, loading: false, failures: 1, retryInMs: 5_000 });
+  assert.deepEqual(cache.state("single-a"), { loaded: false, version: null, loading: false, failures: 1, retryInMs: 5_000, refreshFailures: 0 });
   // Inside the backoff window every request fails fast with the last error and starts no load.
   for (let i = 0; i < 20; i++) await assert.rejects(cache.get("single-a"), /boom/);
   cache.warm(["single-a"]);
@@ -166,7 +166,7 @@ test("level cache: a failed first load is not reused; retries back off (no retry
   clock += 20_000;
   assert.equal((await cache.get("single-a"))!.league.id, "single-a");
   assert.equal(calls, 5);
-  assert.deepEqual(cache.state("single-a"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0 });
+  assert.deepEqual(cache.state("single-a"), { loaded: true, version: "v1", loading: false, failures: 0, retryInMs: 0, refreshFailures: 0 });
 });
 
 test("level cache: a load that never finishes is abandoned after loadTimeoutMs (cold and background)", async () => {

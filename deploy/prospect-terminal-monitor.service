@@ -1,0 +1,28 @@
+# Local monitor (docs/OBSERVABILITY.md): one `scripts/ops/monitor.ts` run, started every 5 minutes
+# by prospect-terminal-monitor.timer. NOT installed or enabled by deploy.sh.
+# Checks /health (app up, ready, traffic protection, database refresh), memory, the Caddy 5xx rate,
+# the last data-refresh outcome and, with DATABASE_URL, data freshness. Exit 1 = alert (visible in
+# `systemctl status` and the journal); with PT_MONITOR_PING_URL set, a free dead-man's-switch
+# check alerts by email when the monitor reports a problem OR stops pinging (machine down).
+[Unit]
+Description=Prospect Terminal local monitor
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=prospect
+Group=prospect
+# Read the refresh job's state (group-readable) and Caddy's access log (see the runbook: an ACL).
+SupplementaryGroups=prospect-ingest
+WorkingDirectory=/srv/prospect-terminal/current
+# DATABASE_URL (read-only web role, for the freshness check) and optional PT_MONITOR_PING_URL.
+EnvironmentFile=/etc/prospect-terminal/env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node --import tsx scripts/ops/monitor.ts
+TimeoutStartSec=2min
+Nice=10
+MemoryMax=300M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true

@@ -10,14 +10,17 @@
  *          --max-attempts=3 --retry-delays=60,300 (seconds) --timeout-minutes=45
  *          --max-lock-hold-minutes=120 (another holder longer than this → locked-stale, exit 1)
  *          --log-dir=<dir> (JSONL job log; default ~/pt-runs/refresh)
- * Env: INGESTION_DATABASE_URL (writer; required), PT_SEASON_WINDOWS (optional, e.g.
+ * Env: INGESTION_DATABASE_URL (writer; required), PT_WRITE_TARGET_ENDPOINT (+ optional
+ *      PT_WRITE_TARGET_DATABASE, default neondb; required in production: the only database this
+ *      host may write to), PT_SEASON_WINDOWS (optional, e.g.
  *      milb=03-20..10-05,afl=10-03..11-25), PT_REFRESH_PING_URL (optional https URL pinged on
  *      success, `<url>/fail` on failure: a dead-man's switch such as a healthchecks.io check).
  * Exit: 0 done, nothing due, or normal overlap (another job holds the lock); 1 failed, timed out,
  *       aborted, lock held too long (locked-stale), or a fatal error (status "error"; also pinged).
  * stdout: the job record (JSON); stderr: progress. Never prints credentials.
  */
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { assertVerifyingTls, checkWriteTarget, TargetGuardError } from "../src/ingestion/db-target";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { Pool } from "pg";
@@ -63,8 +66,31 @@ export function parseRefreshArgs(argv: string[], now = new Date()) {
   };
 }
 
+/**
+ * Before any write, the writer's connection string must name exactly the database this host is
+ * meant to write to: `PT_WRITE_TARGET_ENDPOINT` (Neon endpoint id, e.g. ep-xxxx) and
+ * `PT_WRITE_TARGET_DATABASE` (default neondb), a certificate-verifying sslmode and no unexpected
+ * parameters (src/ingestion/db-target.ts, the same guard as the backfill). Required in production,
+ * so a staging host given a production URL (or the reverse) refuses before connecting. Local
+ * development (NODE_ENV != production) without the variable writes to its disposable database.
+ */
+export function assertWriteTarget(url: string, env: Record<string, string | undefined>) {
+  const endpoint = env.PT_WRITE_TARGET_ENDPOINT?.trim();
+  if (!endpoint) {
+    if (env.NODE_ENV === "production")
+      throw new TargetGuardError("PT_WRITE_TARGET_ENDPOINT must be set in production (the Neon endpoint this host may write to)");
+    return;
+  }
+  const target = checkWriteTarget(url, { endpoint, database: env.PT_WRITE_TARGET_DATABASE?.trim() || "neondb" });
+  assertVerifyingTls(PG_VERSION, target.sslmode);
+}
+
+const PG_VERSION = (JSON.parse(readFileSync(new URL("../node_modules/pg/package.json", import.meta.url), "utf8")) as { version: string }).version;
+
 /** Credential-free error description: an error code or class name, never the message's details. */
 function coarseError(error: unknown): string {
+  // Guard errors are written to be credential-free (db-target.ts) and say what to fix.
+  if (error instanceof TargetGuardError) return `TargetGuardError: ${error.message}`.slice(0, 200);
   const code = error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : "";
   const name = error instanceof Error ? error.name : "Error";
   const known = error instanceof Error && /^refresh:data needs|Unknown option|Unexpected argument/.test(error.message) ? error.message.slice(0, 120) : "";
@@ -88,7 +114,7 @@ async function ping(record: Pick<JobRecord, "status" | "apply"> & { error?: stri
 
 function writeLog(logDir: string, record: object, quiet: boolean) {
   try {
-    mkdirSync(logDir, { recursive: true, mode: 0o700 });
+    mkdirSync(logDir, { recursive: true, mode: 0o750 }); // group-readable for the monitor; no secrets inside
     appendFileSync(join(logDir, "jobs.jsonl"), `${JSON.stringify(record)}\n`);
     writeFileSync(join(logDir, "last-job.json"), `${JSON.stringify(record, null, 2)}\n`);
   } catch {
@@ -121,6 +147,7 @@ export async function runRefreshCli(
     apply = o.apply;
     const url = env.INGESTION_DATABASE_URL;
     if (!url) throw new Error("refresh:data needs INGESTION_DATABASE_URL (the writer role)");
+    if (o.apply) assertWriteTarget(url, env);
     pool = new Pool({ connectionString: url, max: 2, connectionTimeoutMillis: 15_000 });
     pool.on("error", () => {}); // an idle client's error must not crash the process
     const lock = new PgJobLock(url);

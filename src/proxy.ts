@@ -3,6 +3,7 @@ import { createLimiter, tooManyRequests, type Limiter } from "@/lib/traffic/poli
 import { clientKey } from "@/lib/traffic/client-identity";
 import { recordIdentity, sharedTrafficState } from "@/lib/traffic/health";
 import { holdDecision, refusalDelayMs } from "@/lib/traffic/hold";
+import { indexingEnabled, NOINDEX_HEADER } from "@/lib/indexing";
 
 /**
  * Traffic protection (docs/TRAFFIC.md). Runs before any page or route renders, so a refused request
@@ -44,6 +45,13 @@ async function refuse(response: Response, key: string | null) {
 export const heldRefusals = () => ({ total: heldTotal, clients: heldByClient.size });
 
 export async function proxy(request: NextRequest) {
+  const response = await decide(request);
+  // Non-public deployment (PT_INDEXING=off, e.g. staging): every response says noindex.
+  if (!indexingEnabled()) response.headers.set("X-Robots-Tag", NOINDEX_HEADER);
+  return response;
+}
+
+async function decide(request: NextRequest): Promise<Response> {
   const s = state();
   const key = clientKey(request.headers, s.limiter.identity);
   // Proxied requests without a valid identity mean Caddy's header_up is missing: /health reports it.

@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { competitionHealth } from "@/services/competition";
 import { healthHttpStatus } from "@/services/competition/health";
 import { sharedTrafficState, trafficBlocksHealth, trafficHealth } from "@/lib/traffic/health";
+import { processStats } from "@/lib/process-stats";
+import { indexingEnabled } from "@/lib/indexing";
 
 /**
  * Health check for the host / load balancer: 200 once every level's data is loaded, 503 while
@@ -16,7 +18,13 @@ export async function GET() {
   const traffic = trafficHealth(process.env, sharedTrafficState());
   const ok = healthHttpStatus(report) === 200 && !trafficBlocksHealth(traffic.status);
   return Response.json(
-    { ...report, ...(trafficBlocksHealth(traffic.status) && report.status === "ready" ? { status: "misconfigured" } : {}), traffic },
+    {
+      ...report,
+      ...(trafficBlocksHealth(traffic.status) && report.status === "ready" ? { status: "misconfigured" } : {}),
+      traffic,
+      indexing: indexingEnabled() ? "on" : "off",
+      process: processStats(),
+    },
     { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
 }

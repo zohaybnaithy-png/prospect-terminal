@@ -17,6 +17,8 @@ export interface LevelCacheState {
   loaded: boolean;
   loading: boolean;
   failures: number;
+  /** Failed background checks/reloads while a snapshot is served (optional for older callers). */
+  refreshFailures?: number;
 }
 
 export type HealthStatus = "ready" | "starting" | "degraded" | "not-configured";
@@ -24,6 +26,12 @@ export type HealthStatus = "ready" | "starting" | "degraded" | "not-configured";
 export interface HealthReport {
   status: HealthStatus;
   levels: Partial<Record<LevelId, "ready" | "loading" | "failed" | "waiting">>;
+  /**
+   * Loaded levels whose background check or reload is currently failing (database unreachable,
+   * failed reload). They keep serving their last snapshot, so readiness is unchanged (200), but the
+   * data may be getting stale: monitoring alerts on this (scripts/ops/monitor.ts). Absent when none.
+   */
+  refreshFailing?: LevelId[];
 }
 
 export function healthReport(configured: boolean, states: [LevelId, LevelCacheState][]): HealthReport {
@@ -31,13 +39,14 @@ export function healthReport(configured: boolean, states: [LevelId, LevelCacheSt
   const levels: HealthReport["levels"] = {};
   for (const [level, s] of states)
     levels[level] = s.loaded ? "ready" : s.loading ? "loading" : s.failures ? "failed" : "waiting";
+  const refreshFailing = states.filter(([, s]) => s.loaded && (s.refreshFailures ?? 0) > 0).map(([level]) => level);
   const values = Object.values(levels);
   const status: HealthStatus = values.every((v) => v === "ready")
     ? "ready"
     : values.includes("failed")
       ? "degraded"
       : "starting";
-  return { status, levels };
+  return { status, levels, ...(refreshFailing.length ? { refreshFailing } : {}) };
 }
 
 export const healthHttpStatus = (r: HealthReport) => (r.status === "ready" ? 200 : 503);

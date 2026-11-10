@@ -1,4 +1,4 @@
-# Production readiness audit (Phase 5, updated after the pre-merge remediation)
+# Production readiness audit (Phase 5, updated after the pre-merge remediation and Phase 6A)
 
 Review of `main` (`c22c095`, Phases 1–5A) together with the open, remediated Phase 5B
 (traffic protection, PR #12, head `77ffdb9`) and Phase 5C (data refresh, PR #13, head `0054a0a`)
@@ -17,6 +17,43 @@ branches. Updated after a pre-merge remediation pass that found and fixed severa
 **What the evidence supports:** after #12 and #13 are merged, the code is ready for a
 **staged rehearsal**. That means the runbook on a real Lightsail instance against a non-production
 Neon branch, with the launch checks below. It is not ready for real users.
+
+## Phase 6A update (pre-staging): ranked gap list
+
+PRs #10–#14 are merged into `main`. Phase 6A verified `main` (426/426 tests, lint, typecheck,
+build, 49/49 database integration tests), fixed the defects below, and prepared staging
+(docs/STAGING-CHECKLIST.md). It still ran **only on local disposable infrastructure**. This list
+replaces the severity tables further down where they differ.
+
+**Fixed in 6A** (each with a regression test):
+
+| Defect | Severity before | Fix |
+|---|---|---|
+| The scheduled writer accepted whatever `INGESTION_DATABASE_URL` it was given. A copied prod URL on staging (or the reverse) would write to the wrong database | High | `PT_WRITE_TARGET_ENDPOINT` pin, checked before connecting; required in production |
+| A deploy's build (~1 GB) could overlap a refresh (≤ 1.5 GB) on a 4 GB host, and a refresh could start mid-deploy | High | `deploy.sh` refuses during a refresh; the refresh unit skips during a deploy (`ExecCondition`) |
+| `deploy.sh` ran `npm ci` without dev dependencies when `NODE_ENV=production` was set in the shell, so tests and `tsx` units broke | Medium | `npm ci --include=dev` |
+| A database failure **after** start was invisible: `/health` stayed `ready`, and only the journal showed it | Medium | `/health` `refreshFailing`; monitor alert |
+| No 5xx, memory or "job stopped running" alerting | Medium | `scripts/ops/monitor.ts` and its timer (disabled), optional free ping |
+| Staging would have been indexable and public | Medium | `PT_INDEXING=off` (robots, sitemap, meta, `X-Robots-Tag`); `deploy/Caddyfile.staging` basic auth |
+| No writer-role definition; the only writer was the owner role | Medium | `deploy/neon-writer-role.sql`, `check:db-roles`, an integration test that runs the real job as that role |
+| `shellcheck -x deploy/*.sh` reported findings, while the runbook says "no output = OK" | Low | scripts fixed; a test runs shellcheck |
+
+**Remaining, ranked:**
+
+| Rank | Severity | Gap | Owner action |
+|---|---|---|---|
+| 1 | Blocker | **Data licensing** (B1): docs/DATA-LICENSING.md, 12 questions | Legal/commercial decision |
+| 2 | Blocker | **Nothing verified on Neon or a real server** since Phase 4 (B2) | Staging rehearsal: docs/STAGING-CHECKLIST.md B and C |
+| 3 | High | **Refresh job never run against Neon or the live API** (pooler vs direct lock, timings, memory) | Staging rehearsal check 9 |
+| 4 | High | **Distributed floods** (H2): no CDN/WAF | Decide before a public launch |
+| 5 | High | **Alert delivery** depends on an external ping or uptime service you create; nothing is enabled | Create free checks; enable the monitor timer |
+| 6 | Medium | **Privacy:** IP addresses in logs, player birth dates, no notice or retention policy (M6) | Notice and log retention before launch |
+| 7 | Medium | **Writer credential** on the web host's disk when both run on one host (M5) | Separate host or CI scheduler later |
+| 8 | Medium | Prefetch classification depends on Next.js internals (M1); profile render capacity ~16/s (M2) | Re-run the end-to-end check after upgrades; per-player index |
+| 9 | Medium | **Real capacity unknown:** all load numbers are from a shared local container | Staging check 13 |
+| 10 | Low | No error tracking with stack traces, no metrics history | Add when traffic justifies it |
+| 11 | Low | Season windows are dates, not the schedule (L1); AFL 2026 ended Nov 7, before the default Nov 20 | Set `PT_SEASON_WINDOWS=afl=10-01..11-07` |
+| 12 | Low | Caddy 2.6 locally vs ≥ 2.8 on the server; the Caddyfiles validate on 2.6 only | Staging step 2 confirms |
 
 ## What was verified where
 

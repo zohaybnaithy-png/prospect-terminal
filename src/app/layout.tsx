@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ScoreStrip, ScoreStripFallback } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
 import { metadataBase } from "@/lib/site-url";
+import { indexingEnabled } from "@/lib/indexing";
 import "./globals.css";
 /**
  * Request-time metadata so `metadataBase` (the origin of canonical URLs) comes from the server's
@@ -11,6 +12,8 @@ import "./globals.css";
  */
 export const generateMetadata = (): Metadata => ({
   metadataBase: metadataBase(),
+  // Staging and other non-public deployments (PT_INDEXING=off) are never indexed.
+  ...(indexingEnabled() ? {} : { robots: { index: false, follow: false } }),
   title: {
     default: "Prospect Terminal — prospect performance and Momentum",
     template: "%s | Prospect Terminal",

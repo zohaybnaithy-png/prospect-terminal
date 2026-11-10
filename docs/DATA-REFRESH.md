@@ -141,7 +141,7 @@ own root-only secrets file. On the same instance (simplest) or a separate small 
 sudo useradd --system --home /nonexistent --shell /usr/sbin/nologin prospect-ingest
 sudo mkdir -p /etc/prospect-terminal-ingest
 sudo install -m 600 -o root -g root /dev/null /etc/prospect-terminal-ingest/env
-sudo nano /etc/prospect-terminal-ingest/env   # INGESTION_DATABASE_URL=… (writer role); optional PT_REFRESH_PING_URL=https://…
+sudo nano /etc/prospect-terminal-ingest/env   # from deploy/ingest-env.example: INGESTION_DATABASE_URL (pt_ingest, deploy/neon-writer-role.sql) and PT_WRITE_TARGET_ENDPOINT
 # The release directory must be readable by prospect-ingest (it is world-readable by default).
 sudo cp deploy/prospect-terminal-refresh.service deploy/prospect-terminal-refresh.timer /etc/systemd/system/
 sudo systemctl daemon-reload
@@ -149,6 +149,21 @@ sudo systemctl start prospect-terminal-refresh.service      # one manual run fir
 sudo systemctl enable --now prospect-terminal-refresh.timer # schedule: 10:20 and 16:20 UTC
 systemctl list-timers prospect-terminal-refresh.timer
 ```
+
+Since Phase 6A:
+
+- **Pinned write target.** With `PT_WRITE_TARGET_ENDPOINT=ep-…` (and optionally
+  `PT_WRITE_TARGET_DATABASE`, default `neondb`) an `--apply` job refuses any other host or
+  database, or a non-verifying TLS mode, **before connecting** (status `error`, `TargetGuardError`,
+  credential-free message). With `NODE_ENV=production` (the unit sets it) the variable is
+  **required**; an unpinned production job refuses to write.
+- **Writer role.** `deploy/neon-writer-role.sql` creates `pt_ingest`: SELECT/INSERT/UPDATE/DELETE
+  only (no TRUNCATE, no CREATE, owns nothing). Check it with `npm run -s check:db-roles`.
+- **State directory** `/var/lib/prospect-terminal-ingest` is `0750` (group `prospect-ingest`), so
+  the monitor can read `last-job.json`; it holds no secrets.
+- **No refresh during a deploy.** The unit's `ExecCondition` skips a run while
+  `/srv/prospect-terminal/.deploy.lock` exists, and `deploy.sh` refuses to build while the refresh
+  service is active (override: `PT_ALLOW_DEPLOY_DURING_REFRESH=1`).
 
 Tradeoff of the same instance: the writer credential is on the web server's disk (root-only, a
 different user), not in its process environment. A separate host (or a CI scheduler with a secret)
