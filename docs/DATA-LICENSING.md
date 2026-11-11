@@ -80,6 +80,18 @@ data-bearing page depends on it.
 12. If permission is refused or withdrawn: what is the shutdown or deletion procedure (Neon branches
     and backups, server caches, search-engine removal)?
 
+## Hosting on Vercel does not change this (Phase 6B)
+
+The Vercel target (docs/VERCEL.md) bundles a snapshot of the stored data with each deployment. It
+republishes the same data in the same way, so every question above applies unchanged.
+
+- **Hobby is non-commercial only.** That fits the Stats API's non-commercial terms but is not a
+  licence. Ads, sponsorships or paid features would need both a licence and a paid plan.
+- **Indexing is off on every Vercel deployment by default.** It turns on only with an explicit
+  `PT_INDEXING=on` on Production, which should happen only after this decision.
+- **The snapshot files are git-ignored and never committed.** Bulk Stats API data stays out of the
+  repository.
+
 ## Decision needed from the owner
 
 Either:
@@ -90,4 +102,5 @@ Either:
 - (c) a private, non-public deployment only.
 
 Until one of these is in place, staging stays private (basic auth and `PT_INDEXING=off`;
-docs/STAGING-SERVER.md), and no public launch happens.
+docs/STAGING-SERVER.md; on Vercel, Deployment Protection and indexing off by default;
+docs/VERCEL.md), and no public launch happens.

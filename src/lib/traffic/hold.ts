@@ -1,3 +1,5 @@
+import { onVercel } from "@/lib/platform";
+
 /**
  * Refusals are answered after a short delay so a client that ignores Retry-After cannot turn each
  * connection into hundreds of refusals per second (measured: one address with 16 connections sent
@@ -17,10 +19,18 @@ export function holdDecision(held: Map<string, number>, key: string | null, tota
   return "hold";
 }
 
-/** `PT_REFUSAL_DELAY_MS` (0–5000, default 1000): 0 answers every refusal immediately. */
+/**
+ * `PT_REFUSAL_DELAY_MS` (0–5000): 0 answers every refusal immediately.
+ *
+ * Default 1000 on the single server. On Vercel the default is 0: a held refusal there keeps a
+ * function invocation open, which is billed as provisioned memory and counts against the Hobby
+ * allowance, while the platform's edge (not this process) holds the client's connection, so holding
+ * protects nothing. An explicit value still wins.
+ */
 export function refusalDelayMs(env: Record<string, string | undefined> = process.env): number {
+  const fallback = onVercel(env) ? 0 : 1000;
   const raw = env.PT_REFUSAL_DELAY_MS;
-  if (raw === undefined || raw === "") return 1000;
+  if (raw === undefined || raw === "") return fallback;
   const n = Number(raw);
-  return Number.isInteger(n) && n >= 0 && n <= 5000 ? n : 1000;
+  return Number.isInteger(n) && n >= 0 && n <= 5000 ? n : fallback;
 }

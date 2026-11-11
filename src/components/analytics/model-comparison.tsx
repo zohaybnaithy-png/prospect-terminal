@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import type { ComparisonEntry, ModelComparison } from "@/analytics/engine";
 import { formatMetric, formatMetricChange } from "@/analytics/metrics";
 import { MOMENTUM_MODELS } from "@/analytics/config";

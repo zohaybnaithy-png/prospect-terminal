@@ -240,11 +240,26 @@ Sitemap: https://<PT_SITE_URL>/sitemap.xml
 
 | Variable | Value | Effect |
 |---|---|---|
-| `PT_CLIENT_IP_HEADER` | `x-pt-client-ip` | Must match the Caddyfile `header_up` line. Unset/invalid in production: `/health` 503 `misconfigured` |
+| `PT_CLIENT_IP_HEADER` | `x-pt-client-ip` | Must match the Caddyfile `header_up` line. Unset/invalid in production: `/health` 503 `misconfigured`. On Vercel leave it unset (`x-vercel-forwarded-for` is used; anything else is refused) |
 | `PT_SITE_URL` | `https://<domain>` | Canonical URLs, robots.txt, sitemap. Unset/invalid in production: `/health` 503 |
-| `PT_REFUSAL_DELAY_MS` | unset (1000) | How long a refusal is held (0–5000; 0 = immediate) |
+| `PT_REFUSAL_DELAY_MS` | unset (1000; 0 on Vercel) | How long a refusal is held (0–5000; 0 = immediate) |
 | `PT_PROFILE_BUDGET_RPS` | unset (6) | Server-wide profile renders/s before shedding heavy clients (1–100). Raise on a bigger host |
 | `PT_RATE_LIMIT` | unset | `off` disables limiting (emergency switch, reported as `disabled` in `/health`); needs a restart |
+
+## On Vercel (Phase 6B, docs/VERCEL.md)
+
+The same limiter runs in each Vercel function instance:
+
+- **Identity:** keyed on `x-vercel-forwarded-for`, set by Vercel's edge. It is the default there,
+  and every other header is refused on Vercel. Off Vercel the same header is refused, because a
+  client could send it through Caddy.
+- **Refusals:** answered immediately (`PT_REFUSAL_DELAY_MS` defaults to 0 on Vercel; a held
+  refusal there is billed function time). They carry `Vercel-CDN-Cache-Control: no-store` so the
+  CDN never stores them.
+- **Limits are per instance.** A single heavy client is refused. A distributed flood is absorbed
+  first by the CDN cache, then by Vercel's DDoS mitigation and the Hobby caps (pause, never bill).
+- **Prefetching is off by default** (`src/components/ui/app-link.tsx`), so a page view is ~3
+  requests instead of ~60. The `prefetch` budget remains for any link that opts in.
 
 ## Limitations and when to add more
 

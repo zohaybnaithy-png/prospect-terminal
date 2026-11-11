@@ -10,6 +10,9 @@ import { isLevelId } from "@/services/players/levels";
  *   ?view=map     → Performance × Momentum points
  * Served from the in-memory level cache; read-only.
  */
+/** Data-state answers must never be kept by Vercel's CDN (src/lib/cdn-cache.ts). */
+const NOT_CACHED = { "Cache-Control": "no-store", "Vercel-CDN-Cache-Control": "no-store" };
+
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const view = params.get("view");
@@ -24,9 +27,9 @@ export async function GET(request: Request) {
   )
     return Response.json({ error: "bad-request" }, { status: 400 });
   const data = await getCompetitionData();
-  if (data.status !== "ok") return Response.json({ error: data.status }, { status: 503 });
+  if (data.status !== "ok") return Response.json({ error: data.status }, { status: 503, headers: NOT_CACHED });
   const ls = data.levels.find((l) => l.level === level);
-  if (!ls) return Response.json({ error: "not-loaded" }, { status: 404 });
+  if (!ls) return Response.json({ error: "not-loaded" }, { status: 404, headers: NOT_CACHED });
   return Response.json(
     view === "map"
       ? trendMapPoints(ls.snapshot, role, window)

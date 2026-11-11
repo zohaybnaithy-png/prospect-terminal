@@ -5,7 +5,9 @@ import { AFL } from "@/ingestion/sources/mlb-config";
 import { loadIngestionVersion } from "@/services/afl/queries";
 import { LEVEL_IDS } from "@/services/players/levels";
 import { createLevelCache, type LevelCache } from "./cache";
-import { dbLevelLoader, loadCompetition, tracedLevelLoader } from "./load";
+import { dbLevelLoader, loadCompetition, tracedLevelLoader, type LevelLoader } from "./load";
+import { DATA_SOURCE_ENV, dataConfigured, dataSource, type DataSource } from "./data-source";
+import { snapshotSource } from "./snapshot-store";
 import { summarizeTrace } from "@/db/instrument";
 import { prepareSnapshot } from "./prepare";
 import type { CompetitionDataResult } from "./types";
@@ -46,8 +48,12 @@ const SLOW_LOAD_MS = 15_000;
 const timingLogs = () => process.env.PT_DATA_TIMING === "1";
 
 function levelCache(): LevelCache {
-  return (processGlobal[CACHE_KEY] ??= createLevelCache({
-    load: tracedLevelLoader(dbLevelLoader(getDatabase(), DATA_SEASON), {
+  return (processGlobal[CACHE_KEY] ??= createSourceCache(dataSource()));
+}
+
+function createSourceCache(source: DataSource): LevelCache {
+  const traced = (loader: LevelLoader) =>
+    tracedLevelLoader(loader, {
       // Build the analytics context and Momentum caches before the snapshot is served, so the
       // first request after a (re)load does not pay the cold compute (~0.5 s per MiLB level).
       prepare: (_level, snapshot) => snapshot && prepareSnapshot(snapshot),
@@ -55,12 +61,21 @@ function levelCache(): LevelCache {
         if (!ok || totalMs > SLOW_LOAD_MS || timingLogs())
           console.error(`[competition-data] ${ok ? "loaded" : "load failed:"} ${summarizeTrace(trace, totalMs)}`);
       },
-    }),
+    });
+  const onBackgroundError = (level: string, error: unknown) =>
+    console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`);
+  if (source.kind === "snapshot") {
+    // Build-time snapshot (docs/VERCEL.md): no database connection is ever opened. The version is
+    // the snapshot's id, constant for the deployment, so a loaded level is never reloaded.
+    const files = snapshotSource(source.dir, DATA_SEASON);
+    return createLevelCache({ load: traced(files.load), version: files.version, checkMs: CHECK_MS, onBackgroundError });
+  }
+  return createLevelCache({
+    load: traced(dbLevelLoader(getDatabase(), DATA_SEASON)),
     version: () => loadIngestionVersion(getDatabase()),
     checkMs: CHECK_MS,
-    onBackgroundError: (level, error) =>
-      console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`),
-  }));
+    onBackgroundError,
+  });
 }
 
 // A level that keeps failing is reported at most once a minute, not once per request.
@@ -72,8 +87,16 @@ function logReadFailure(level: string, error: unknown) {
   console.error(`[competition-data] ${level} read failed (${safeErrorCode(error)})`);
 }
 
+let invalidSourceLogged = false;
+
 async function read(): Promise<CompetitionDataResult> {
-  if (!process.env.DATABASE_URL) return { status: "not-configured" };
+  const source = dataSource();
+  if (source.kind === "invalid") {
+    if (!invalidSourceLogged) console.error(`[competition-data] ${DATA_SOURCE_ENV} must be "database" or "snapshot"; serving no data`);
+    invalidSourceLogged = true;
+    return { status: "unavailable" };
+  }
+  if (!dataConfigured(source)) return { status: "not-configured" };
   try {
     const c = levelCache();
     return await loadCompetition(
@@ -87,7 +110,8 @@ async function read(): Promise<CompetitionDataResult> {
 }
 
 /**
- * Server-side entry point for real data at every level (AFL + Triple-A … Single-A). Never import
+ * Server-side entry point for real data at every level (AFL + Triple-A … Single-A), from the
+ * database or the build-time snapshot (data-source.ts). Never import
  * from a Client Component: the database client stays on the server ("server-only" enforces this).
  */
 export async function getCompetitionData(): Promise<CompetitionDataResult> {
@@ -100,7 +124,7 @@ export async function getCompetitionData(): Promise<CompetitionDataResult> {
  * src/instrumentation.ts), so the first visitor does not wait for the initial load. Never throws.
  */
 export function warmCompetitionData() {
-  if (!process.env.DATABASE_URL) return;
+  if (!dataConfigured(dataSource())) return;
   try {
     levelCache().warm(LEVEL_IDS);
   } catch (error) {
@@ -113,7 +137,7 @@ export function warmCompetitionData() {
  * warm-up for levels whose backoff has expired, so a failed start keeps retrying without visitors.
  */
 export function competitionHealth(): HealthReport {
-  if (!process.env.DATABASE_URL) return healthReport(false, []);
+  if (!dataConfigured(dataSource())) return healthReport(false, []);
   const c = levelCache();
   c.warm(LEVEL_IDS);
   return healthReport(

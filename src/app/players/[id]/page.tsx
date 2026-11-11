@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { z } from "zod";

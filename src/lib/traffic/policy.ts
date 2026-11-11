@@ -170,6 +170,8 @@ export function tooManyRequests(result: TakeResult): Response {
       headers: {
         "Retry-After": String(result.retryAfterSec),
         "Cache-Control": "no-store",
+        // Never let Vercel's CDN store one client's refusal for everyone (src/lib/cdn-cache.ts).
+        "Vercel-CDN-Cache-Control": "no-store",
         "Content-Type": "text/plain; charset=utf-8",
         "X-Robots-Tag": "noindex",
       },

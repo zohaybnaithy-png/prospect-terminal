@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import Image from "next/image";
 import prospectLogo from "../../../prospect-terminal-logo.png";
 import { usePathname } from "next/navigation";

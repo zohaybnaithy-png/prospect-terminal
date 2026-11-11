@@ -1,5 +1,5 @@
 "use client"; // Error boundaries must be Client Components
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 
 /** Generic message only: server error details are not forwarded to the browser in production. */
 export default function PlayersError({

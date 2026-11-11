@@ -18,6 +18,44 @@ branches. Updated after a pre-merge remediation pass that found and fixed severa
 **staged rehearsal**. That means the runbook on a real Lightsail instance against a non-production
 Neon branch, with the launch checks below. It is not ready for real users.
 
+## Phase 6B update: Vercel Hobby + Neon Free target
+
+Phase 6B adds a free second deployment target (docs/VERCEL.md). It is not verified on Vercel or
+Neon: everything ran locally, against PostgreSQL 16 and a built `next start` with emulated Vercel
+variables.
+
+**What changed**
+
+| Item | Change |
+|---|---|
+| Data loading | Build-time snapshot (`PT_DATA_SOURCE=snapshot`): no runtime database access |
+| Navigation | Prefetch off by default: 0 instead of 50–65 prefetches per page view |
+| Caching | CDN caching of public pages, with RSC cache-poisoning and error-caching safeguards |
+| Traffic protection | Vercel identity header and immediate refusals; no paid firewall assumed |
+| Analytics | Vercel Web Analytics, path-only |
+| Indexing | Off by default on Vercel; previews are never indexed |
+
+The single-server target is unchanged.
+
+**Gaps it closes on the Vercel path**
+
+| Gap (above) | Effect |
+|---|---|
+| M5 (writer credential on the web host) | No writer exists on Vercel |
+| M2 (profile capacity) | Mostly absorbed by the CDN |
+| L3 (NAT and kernel limit) | Not applicable on Vercel |
+
+**What it adds**
+
+| Severity | Item | Action |
+|---|---|---|
+| Blocker (public launch) | Data licensing (B1), unchanged | Owner decision; indexing stays off meanwhile |
+| High | Vercel CDN, identity-header overwrite and Hobby usage not verified | Preview checks 1–7 (docs/VERCEL.md) |
+| High | Neon storage vs the Free cap (0.5–1 GB per project) not measured | One read-only query (docs/VERCEL.md, setup step 1) |
+| Medium | Per-instance rate limits; a distributed flood exhausts Hobby caps (pause, about 30 days) rather than billing | Attack Challenge Mode is the free emergency switch; Pro if the site outgrows Hobby |
+| Medium | New data needs a redeploy; no deploy hook is wired to `refresh:data` | Decide before enabling 2027 ingestion |
+| Low | `/health` detail and the monitor do not exist on Vercel | External uptime check on `/health` (public body only) |
+
 ## Phase 6A update (pre-staging): ranked gap list
 
 PRs #10–#14 are merged into `main`. Phase 6A verified `main` (426/426 tests, lint, typecheck,

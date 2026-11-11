@@ -1,7 +1,9 @@
 # Deployment
 
 Nothing is deployed yet. This document records the production architecture, the hosting decision
-and the reasons for both. The step-by-step procedure is in
+and the reasons for both. A second, free target (Vercel Hobby + Neon Free, serving a build-time
+data snapshot) is described in [VERCEL.md](./VERCEL.md); everything below is the single-server
+target and is unchanged by it. The step-by-step procedure is in
 [DEPLOYMENT-RUNBOOK.md](./DEPLOYMENT-RUNBOOK.md); the files it installs are in `deploy/`.
 
 Measurements: production build (`next start`) on a Mac against the Neon test branch (2026 season,
@@ -135,7 +137,8 @@ approximate list prices (others); confirm at purchase.
 | ECS Fargate + Application Load Balancer | ~$55–60 (Fargate 1 vCPU/2 GB ~$36, ALB ~$16–20, IPv4 ~$4) | 2 GB, 1 vCPU | Most AWS concepts (VPC, task definitions, target groups) | Overkill for one process |
 | App Runner | — | — | — | Closed to new customers since 2026-04-30 |
 | Render (Oregon region), 1 CPU / 2 GB | ~$25 (third-party listings; not confirmed) | 2 GB, 1 CPU | Git-push deploys, managed TLS, rollbacks | Simplest to operate, but outside your AWS account and Render does not state which data center its Oregon region uses |
-| Serverless (e.g. Vercel Functions) | — | — | — | Not suitable for this data layer (below) |
+| Vercel Hobby + Neon Free, snapshot mode ([VERCEL.md](./VERCEL.md)) | $0 | 2 GB per function instance | Git-push deploys, managed TLS/CDN; data changes need a redeploy; non-commercial use only; caps pause, never bill | Free private staging now; public use after the licensing decision |
+| Serverless with live database reads | — | — | — | Not suitable for this data layer (below) |
 
 Other costs: a domain (~$10–20/year); Neon (the production branch's compute and storage on your
 current Neon plan; a branch shares storage with its parent until it diverges).
@@ -157,6 +160,11 @@ assumptions:
 
 Serverless becomes reasonable after a data-architecture change: precomputed per-level aggregates
 or view models in the database, or a shared cache. That is a separate change to discuss.
+
+**Phase 6B** made one such change for Vercel without touching the data layer's logic: with
+`PT_DATA_SOURCE=snapshot` every level is read once at build time and bundled with the deployment,
+so a cold instance loads local files (~0.5 s) instead of the database, never runs background
+refreshes, and holds no database connection. See [VERCEL.md](./VERCEL.md).
 
 ## Logging and monitoring
 

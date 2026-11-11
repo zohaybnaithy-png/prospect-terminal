@@ -11,6 +11,12 @@ import { indexingEnabled, NOINDEX_HEADER } from "@/lib/indexing";
  *
  * One limiter per server process. The limiter lives in process memory, which is correct for the
  * single-server deployment; with several servers each would count separately (see the doc).
+ *
+ * On Vercel (docs/VERCEL.md, *Traffic protection*) each function instance has its own limiter, the
+ * client identity is the platform-set `x-vercel-forwarded-for` (src/lib/traffic/client-identity.ts)
+ * and refusals are answered immediately (src/lib/traffic/hold.ts). Limits then hold per instance:
+ * a single abusive address is still refused, while a distributed flood is bounded by Vercel's
+ * free-tier caps (which pause, never bill) and its included DDoS mitigation.
  */
 const KEY = Symbol.for("prospect-terminal.rate-limiter");
 const g = globalThis as typeof globalThis & { [KEY]?: { limiter: Limiter; loggedAt: number; warnedAt: number } };
@@ -81,6 +87,8 @@ async function decide(request: NextRequest): Promise<Response> {
 }
 
 export const config = {
-  // Everything except build assets (hashed, immutable, served without rendering).
-  matcher: ["/((?!_next/static/).*)"],
+  // Everything except build assets (hashed, immutable, served without rendering), the image
+  // optimizer and Vercel's own endpoints (Web Analytics script and beacons under /_vercel/), which
+  // never render a page and on Vercel would otherwise each cost a proxy invocation.
+  matcher: ["/((?!_next/static/|_next/image|_vercel/).*)"],
 };

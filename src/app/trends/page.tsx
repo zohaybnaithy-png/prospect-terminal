@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { Suspense } from "react";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";

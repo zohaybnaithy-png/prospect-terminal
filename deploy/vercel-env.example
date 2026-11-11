@@ -1,0 +1,48 @@
+# Vercel project environment variables (docs/VERCEL.md). A template, not a file to upload:
+# enter each value in Vercel → Project → Settings → Environment Variables, choosing the
+# environment(s) in brackets. Never commit real values. Never paste connection strings into chat.
+#
+# Vercel itself sets VERCEL=1 and VERCEL_ENV (production | preview | development); the app keys
+# its Vercel behaviour off those two. Do not set them yourself.
+
+# --- Data -----------------------------------------------------------------------------------
+# [Production, Preview] Serve every level from the build-time snapshot; no runtime database use.
+PT_DATA_SOURCE=snapshot
+# [Preview] Read ONLY at build time by `npm run snapshot:export`: the SELECT-only pt_web role on the
+# Neon *staging* branch, pooled endpoint, with sslmode=require&channel_binding=require.
+# Mark it "Sensitive". Production gets its own value (pt_web on the production branch) only at
+# launch, after the licensing decision.
+# DATABASE_URL=<set in the Vercel dashboard, never here>
+
+# --- Search indexing -------------------------------------------------------------------------
+# On Vercel indexing is OFF unless VERCEL_ENV=production AND PT_INDEXING=on. Keep it off for
+# private staging. Only after the data-licensing decision (docs/DATA-LICENSING.md):
+# [Production] PT_INDEXING=on
+PT_INDEXING=off
+
+# --- Site origin -----------------------------------------------------------------------------
+# Optional on Vercel: without it, canonical URLs use the deployment's own hostname
+# (VERCEL_PROJECT_PRODUCTION_URL in production, VERCEL_BRANCH_URL on previews).
+# [Production, at launch] PT_SITE_URL=https://<your domain>
+
+# --- Traffic protection ----------------------------------------------------------------------
+# Leave PT_CLIENT_IP_HEADER UNSET on Vercel: the app uses x-vercel-forwarded-for automatically and
+# refuses any other header there. Refusals are answered immediately on Vercel (no hold).
+# Optional tuning (same meaning as on the single server, applied per function instance):
+# PT_PROFILE_BUDGET_RPS=10
+
+# --- Analytics and caching -------------------------------------------------------------------
+# Vercel Web Analytics is on by default on Vercel (enable it in the dashboard too). To turn off:
+# PT_WEB_ANALYTICS=off
+# CDN caching of public pages is on for snapshot builds. To turn off (then redeploy):
+# PT_CDN_CACHE=off
+
+# --- Runtime ---------------------------------------------------------------------------------
+NODE_OPTIONS=--max-old-space-size=1536
+
+# --- NEVER set on Vercel ---------------------------------------------------------------------
+# INGESTION_DATABASE_URL, PT_WRITE_TARGET_ENDPOINT, PT_WRITE_TARGET_DATABASE (ingestion writer:
+#   ingestion stays disabled and never runs on Vercel)
+# ANALYTICS_DEBUG (development pages)
+# PT_CLIENT_IP_HEADER (see above)
+# PT_RATE_LIMIT=off (keeps the per-instance limiter on; it is the free protection layer)
