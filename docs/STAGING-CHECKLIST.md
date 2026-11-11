@@ -45,6 +45,19 @@ verified against Neon or a real server yet.
 - [ ] Optional: enable the monitor and refresh timers for a few days and read their results.
 - [ ] Teardown, or keep for the next rehearsal (Neon *Reset from parent*).
 
+## C′. Vercel staging, the free alternative to C (docs/VERCEL.md)
+
+- [x] Snapshot mode, prefetch off, CDN caching, Vercel traffic protection, Web Analytics,
+      indexing off by default on Vercel. Tested locally (Phase 6B).
+- [ ] Measure Neon storage against the Free cap (read-only query).
+- [ ] **Approve** and create the Vercel project (Hobby) from the GitHub repository. Node 24.x.
+- [ ] Preview environment variables from `deploy/vercel-env.example`. `DATABASE_URL` = `pt_web` on
+      `staging`, marked *Sensitive*. No Production `DATABASE_URL` yet.
+- [ ] Deployment Protection (Vercel Authentication) for previews; Web Analytics enabled; no Neon
+      integration.
+- [ ] Preview deployment, then checks 1–8 in docs/VERCEL.md recorded (8: the CDN questions only a preview can answer).
+- [x] CI workflow (`.github/workflows/ci.yml`): lint, typecheck, tests, default build, snapshot/CDN e2e.
+
 ## D. Before any production launch (not part of staging)
 
 - [ ] **Data licensing decision** (docs/DATA-LICENSING.md).

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { SourceTag } from "./source-tag";
 
 const FEATURES = [

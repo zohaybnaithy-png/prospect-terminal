@@ -44,6 +44,10 @@ Expected clean live AFL snapshot (`afl:2026:all:season:end:all`): 2680 records, 
 
 Scale rules (needed for MiLB volume): apply/preview read only identities and record state referenced by the batch; keep bulk grouping linear; large adapters must not retain raw bodies (`MlbClient` `retainBodies: false`, boxscore projection) and supply `rawContentHash` from the response manifest.
 
+### Vercel target (Phase 6B)
+
+`PT_DATA_SOURCE=snapshot` serves levels from a build-time snapshot (`npm run build:vercel` → `snapshot:export` → `next build`; `.data-snapshot/` is git-ignored, never commit it). Snapshot mode never opens a database connection at runtime. On Vercel (`VERCEL=1`): identity header `x-vercel-forwarded-for`, immediate refusals, indexing off unless production + `PT_INDEXING=on`, Web Analytics path-only. Links come from `@/components/ui/app-link` (prefetch off). Details: `docs/VERCEL.md`.
+
 ### Database safety
 
 - Credentials come from the shell env (`INGESTION_DATABASE_URL`, etc.). Never print, log, commit or ask for connection strings; errors must not leak them.

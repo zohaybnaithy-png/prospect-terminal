@@ -1,4 +1,8 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
+import { cdnCacheEnabled, cdnCacheRules } from "./src/lib/cdn-cache";
 
 /**
  * Former demo-only routes (fictional news, highlights, organizations, leagues, teams, screener)
@@ -44,22 +48,41 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
 ];
 
-const nextConfig: NextConfig = {
-  poweredByHeader: false,
-  // The rate limiter (src/proxy.ts) must see `Next-Router-Prefetch` to give router prefetches their
-  // own budget. By default Next.js deletes that and the other router headers before Proxy runs, so
-  // every prefetch counted as a full profile render (docs/TRAFFIC.md). The proxy reads only the
-  // pathname and never rewrites or redirects, so skipping normalization changes nothing else.
-  skipProxyUrlNormalize: true,
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-  async redirects() {
-    return retired.map(([source, destination]) => ({
-      source,
-      destination,
-      permanent: false,
-    }));
-  },
-};
-export default nextConfig;
+/**
+ * Build-time data snapshot (docs/VERCEL.md). With `PT_DATA_SOURCE=snapshot` the server reads levels
+ * from files written by `npm run snapshot:export`; they must be inside the project so file tracing
+ * can bundle them with every server function, and they must exist when the build runs: a snapshot
+ * build without a snapshot fails here instead of deploying a site with no data.
+ */
+function snapshotTracing(phase: string): NextConfig["outputFileTracingIncludes"] {
+  if (process.env.PT_DATA_SOURCE?.trim() !== "snapshot") return undefined;
+  const dir = path.relative(process.cwd(), path.resolve(process.cwd(), process.env.PT_SNAPSHOT_DIR?.trim() || ".data-snapshot"));
+  if (!dir || dir.startsWith("..") || path.isAbsolute(dir))
+    throw new Error("PT_SNAPSHOT_DIR must be a directory inside the project for a snapshot build");
+  if (phase === PHASE_PRODUCTION_BUILD && !existsSync(path.join(dir, "manifest.json")))
+    throw new Error(`PT_DATA_SOURCE=snapshot but ${dir}/manifest.json is missing: run npm run snapshot:export first (npm run build:vercel does)`);
+  return { "/**/*": [`./${dir.split(path.sep).join("/")}/**/*`] };
+}
+
+export default function nextConfig(phase: string): NextConfig {
+  return {
+    poweredByHeader: false,
+    // The rate limiter (src/proxy.ts) must see `Next-Router-Prefetch` to give router prefetches their
+    // own budget. By default Next.js deletes that and the other router headers before Proxy runs, so
+    // every prefetch counted as a full profile render (docs/TRAFFIC.md). The proxy reads only the
+    // pathname and never rewrites or redirects, so skipping normalization changes nothing else.
+    skipProxyUrlNormalize: true,
+    outputFileTracingIncludes: snapshotTracing(phase),
+    async headers() {
+      // CDN caching (src/lib/cdn-cache.ts) only for snapshot builds; decided at build time.
+      return [{ source: "/:path*", headers: securityHeaders }, ...cdnCacheRules(cdnCacheEnabled())];
+    },
+    async redirects() {
+      return retired.map(([source, destination]) => ({
+        source,
+        destination,
+        permanent: false,
+      }));
+    },
+  };
+}

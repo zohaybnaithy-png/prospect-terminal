@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import type { AflOrganization, AflTeam } from "@/services/afl/types";
 import type { LevelId } from "@/services/players/levels";
 

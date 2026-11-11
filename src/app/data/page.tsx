@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { Suspense } from "react";
 import {
   COMPONENTS_BY_ROLE,
@@ -53,6 +53,7 @@ export default function DataPage() {
         <a href="#momentum">Momentum</a>
         <a href="#reading">Reading Momentum</a>
         <a href="#statistics">Statistics</a>
+        <a href="#privacy">Privacy</a>
         <a href="#in-development">In development</a>
       </nav>
       <div className="method-grid">
@@ -300,6 +301,18 @@ export default function DataPage() {
                 </div>
               ))}
             </dl>
+          </section>
+          <section id="privacy" className="page-section method-section">
+            <h2>Privacy</h2>
+            <p className="method-text">
+              Prospect Terminal has no accounts and sets no cookies. Visits are
+              counted with privacy-friendly, cookieless page-view analytics that
+              record the page path (never the search text or filters in the
+              address), the referring site, and coarse browser, device and
+              country information; no visitor is identified across sites.
+              Player information is limited to what official box scores and
+              rosters publish.
+            </p>
           </section>
         </div>
 

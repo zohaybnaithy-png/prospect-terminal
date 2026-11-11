@@ -4,6 +4,7 @@ import { clientKey } from "@/lib/traffic/client-identity";
 import { recordIdentity, sharedTrafficState } from "@/lib/traffic/health";
 import { holdDecision, refusalDelayMs } from "@/lib/traffic/hold";
 import { indexingEnabled, NOINDEX_HEADER } from "@/lib/indexing";
+import { CDN_CACHE_HEADER, cdnCacheEnabled, cdnCacheableRequest } from "@/lib/cdn-cache";
 
 /**
  * Traffic protection (docs/TRAFFIC.md). Runs before any page or route renders, so a refused request
@@ -11,6 +12,12 @@ import { indexingEnabled, NOINDEX_HEADER } from "@/lib/indexing";
  *
  * One limiter per server process. The limiter lives in process memory, which is correct for the
  * single-server deployment; with several servers each would count separately (see the doc).
+ *
+ * On Vercel (docs/VERCEL.md, *Traffic protection*) each function instance has its own limiter, the
+ * client identity is the platform-set `x-vercel-forwarded-for` (src/lib/traffic/client-identity.ts)
+ * and refusals are answered immediately (src/lib/traffic/hold.ts). Limits then hold per instance:
+ * a single abusive address is still refused, while a distributed flood is bounded by Vercel's
+ * free-tier caps (which pause, never bill) and its included DDoS mitigation.
  */
 const KEY = Symbol.for("prospect-terminal.rate-limiter");
 const g = globalThis as typeof globalThis & { [KEY]?: { limiter: Limiter; loggedAt: number; warnedAt: number } };
@@ -48,6 +55,9 @@ export async function proxy(request: NextRequest) {
   const response = await decide(request);
   // Non-public deployment (PT_INDEXING=off, e.g. staging): every response says noindex.
   if (!indexingEnabled()) response.headers.set("X-Robots-Tag", NOINDEX_HEADER);
+  // Router (RSC) requests and `_rsc` URLs are never stored by Vercel's CDN, whatever the
+  // next.config rule matched (an empty `_rsc` slips through has/missing). src/lib/cdn-cache.ts.
+  if (cdnCacheEnabled() && !cdnCacheableRequest(request.nextUrl, request.headers)) response.headers.set(CDN_CACHE_HEADER, "no-store");
   return response;
 }
 
@@ -81,6 +91,8 @@ async function decide(request: NextRequest): Promise<Response> {
 }
 
 export const config = {
-  // Everything except build assets (hashed, immutable, served without rendering).
-  matcher: ["/((?!_next/static/).*)"],
+  // Everything except build assets (hashed, immutable, served without rendering), the image
+  // optimizer and Vercel's own endpoints (Web Analytics script and beacons under /_vercel/), which
+  // never render a page and on Vercel would otherwise each cost a proxy invocation.
+  matcher: ["/((?!_next/static/|_next/image|_vercel/).*)"],
 };

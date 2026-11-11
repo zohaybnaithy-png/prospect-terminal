@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import type { TopLine } from "@/services/home";
 import type { LevelCoverage } from "@/services/competition/model";
 import type { LevelId } from "@/services/players/levels";

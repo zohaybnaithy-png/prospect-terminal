@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { onVercel } from "@/lib/platform";
 
 /**
  * Who is the client? In production the app listens on 127.0.0.1 only, so every request arrives
@@ -32,11 +33,26 @@ const SPOOFABLE = new Set([
 
 export type IdentityConfig = { header: string } | { header: null; reason: "unset" | "refused" | "invalid" };
 
+/**
+ * On Vercel there is no Caddy. The platform's edge sets `x-vercel-forwarded-for` (like
+ * `x-forwarded-for`, it holds the address of the connection Vercel accepted and Vercel does not
+ * forward client-supplied values on Hobby/Pro: docs/VERCEL.md, *Traffic protection*). It is the
+ * only identity accepted there, and the default when `PT_CLIENT_IP_HEADER` is unset.
+ *
+ * Elsewhere the same header is client-controlled (Caddy passes unknown headers through), so it is
+ * refused off Vercel; and on Vercel every other header is refused, because nothing overwrites it.
+ */
+export const VERCEL_CLIENT_IP_HEADER = "x-vercel-forwarded-for";
+
 export function identityConfig(env: Record<string, string | undefined> = process.env): IdentityConfig {
   const raw = env[CLIENT_IP_HEADER_ENV]?.trim().toLowerCase();
+  if (onVercel(env)) {
+    if (!raw || raw === VERCEL_CLIENT_IP_HEADER) return { header: VERCEL_CLIENT_IP_HEADER };
+    return { header: null, reason: /^[a-z0-9-]{1,64}$/.test(raw) ? "refused" : "invalid" };
+  }
   if (!raw) return { header: null, reason: "unset" };
   if (!/^[a-z0-9-]{1,64}$/.test(raw)) return { header: null, reason: "invalid" };
-  if (SPOOFABLE.has(raw)) return { header: null, reason: "refused" };
+  if (SPOOFABLE.has(raw) || raw === VERCEL_CLIENT_IP_HEADER) return { header: null, reason: "refused" };
   return { header: raw };
 }
 

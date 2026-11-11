@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { SectionTitle } from "@/components/ui/primitives";
 import { AflOrganizationLink, AflTeamLink } from "@/components/afl/links";
 import {

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { Suspense } from "react";
 import { ScoreStrip, ScoreStripFallback } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
 import { metadataBase } from "@/lib/site-url";
 import { indexingEnabled } from "@/lib/indexing";
+import { webAnalyticsEnabled } from "@/lib/web-analytics";
+import { WebAnalytics } from "@/components/layout/web-analytics";
 import "./globals.css";
 /**
  * Request-time metadata so `metadataBase` (the origin of canonical URLs) comes from the server's
@@ -47,6 +49,8 @@ export default function RootLayout({
           <Link href="/trends">Trends</Link>
           <Link href="/data">Data &amp; methodology</Link>
         </footer>
+        {/* Vercel Web Analytics: only on Vercel, path-only page views (src/lib/web-analytics.ts). */}
+        {webAnalyticsEnabled() && <WebAnalytics />}
       </body>
     </html>
   );

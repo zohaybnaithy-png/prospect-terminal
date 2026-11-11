@@ -7,7 +7,9 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { PHASE_PRODUCTION_BUILD } = await import("next/constants");
-  if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD || !process.env.DATABASE_URL) return;
+  if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) return;
+  // Without a data source (no DATABASE_URL and no PT_DATA_SOURCE=snapshot) this is a no-op.
+  if (!process.env.DATABASE_URL && process.env.PT_DATA_SOURCE !== "snapshot") return;
   const { warmCompetitionData } = await import("@/services/competition");
   warmCompetitionData();
 }

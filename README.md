@@ -78,6 +78,7 @@ See [.env.example](.env.example). Never commit credentials.
 | `DATABASE_URL`    | Server-side PostgreSQL URL. The app reads AFL data from it (read-only transactions); also used by database commands. Optional: without it, real-data sections show a "not connected" state |
 | `ALLOW_DEMO_SEED` | Explicit `true` opt-in to seed a disposable development database                                                                                                                           |
 | `PORT`            | Optional Next.js server port (default 3000)                                                                                                                                                |
+| `PT_DATA_SOURCE`  | `database` (default) or `snapshot`: serve levels from the build-time snapshot written by `npm run snapshot:export` (`PT_SNAPSHOT_DIR`, default `.data-snapshot/`); no runtime database access. See `docs/VERCEL.md` |
 
 The lazy database client opens a pool only when requested. TLS behavior comes from provider-supported connection settings; verification is not disabled.
 
@@ -127,6 +128,8 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 ## Deployment
 
 Use a read-only database role for the deployed app's `DATABASE_URL`. Do not seed production. Before any public or commercial launch, confirm MLB Stats API licensing.
+
+Two targets: one long-running server ([Deployment](docs/DEPLOYMENT.md), Lightsail + Caddy) or Vercel Hobby + Neon Free ([Vercel](docs/VERCEL.md)). The Vercel target serves a build-time data snapshot (`PT_DATA_SOURCE=snapshot`, `npm run build:vercel`), with link prefetching off, CDN caching and Vercel-aware traffic protection. It is ready for a private staging preview; nothing is deployed.
 
 See [Architecture](docs/ARCHITECTURE.md), [Analytics](docs/ANALYTICS.md), [Ingestion](docs/INGESTION.md), [Roadmap](docs/ROADMAP.md), [Deployment](docs/DEPLOYMENT.md) and the [deployment runbook](docs/DEPLOYMENT-RUNBOOK.md).
 

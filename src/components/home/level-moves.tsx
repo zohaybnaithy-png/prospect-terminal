@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import type { LevelMove } from "@/services/competition/moves";
 import { levelById, type LevelId } from "@/services/players/levels";
 import { PlayerLink } from "@/components/ui/entity-links";

@@ -117,7 +117,7 @@ describe("5. the proxy can see that a request is a router prefetch", () => {
     // request it hands to Proxy (next/dist/server/web/adapter.js, FLIGHT_HEADERS). Every prefetch
     // was then classified as a full profile render and spent the profile budget: one visitor's
     // page views (~30 profile prefetches each) used it up (found in the end-to-end NAT run).
-    const config = (await import("../next.config")).default;
+    const config = (await import("../next.config")).default("phase-production-server");
     assert.equal(config.skipProxyUrlNormalize, true);
     // The proxy relies only on the pathname, which is the same with or without normalization.
     assert.doesNotMatch(readFileSync(new URL("../src/proxy.ts", import.meta.url), "utf8"), /NextResponse\.(rewrite|redirect)/);

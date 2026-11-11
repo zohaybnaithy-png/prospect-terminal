@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { getCompetitionData, DATA_SEASON } from "@/services/competition";
 import { defaultLevel } from "@/services/competition/model";
 import { aflAsOf, scoreboard } from "@/services/afl/read-model";

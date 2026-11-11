@@ -1,6 +1,6 @@
 "use client";
 import { SourceTag } from "@/components/home/source-tag";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { useState } from "react";
 import type { RecentPerformer } from "@/services/afl/read-model";
 import { PlayerLink } from "@/components/ui/entity-links";

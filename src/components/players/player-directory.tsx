@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/ui/app-link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
 import type { Role } from "@/analytics/config";
