@@ -144,3 +144,4 @@ npm run ingest:afl -- --source=live --season=2026 --dry-run
 For real writes, export INGESTION_DATABASE_URL, migrate that database with `DATABASE_URL="$INGESTION_DATABASE_URL" npm run db:migrate`, then add `--apply`. Source discovery, rosters/organization observations, schedule, completed boxscores, raw game lines, and rolling-stat queries are implemented separately from web rendering. `--from`, `--to`, `--team`, `--games-only`, and `--rosters-only` support incremental work. Optional `--record-dir` preserves raw responses for debugging.
 
 The source adapter was tested offline against native-shaped synthetic fixtures, including PostgreSQL replay/correction and aggregation tests. The project owner verified local API access; this cloud task intentionally made no Stats API request. See [INGESTION.md](docs/INGESTION.md) for exact setup, formulas, source boundaries, additive migrations 0002/0003, and known limitations.
+<!-- Trigger private Vercel staging deployment -->
