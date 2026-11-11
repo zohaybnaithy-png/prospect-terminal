@@ -38,7 +38,7 @@ import {
   writeSnapshotDir,
   type SnapshotManifest,
 } from "../src/services/competition/snapshot-store";
-import { exportSnapshots } from "../src/services/competition/snapshot-export";
+import { exportSnapshots, type ConsistentRead } from "../src/services/competition/snapshot-export";
 import { dataConfigured, dataSource } from "../src/services/competition/data-source";
 import { LEVEL_IDS, type LevelId } from "../src/services/players/levels";
 import type { AflSnapshot } from "../src/services/afl/types";
@@ -48,7 +48,9 @@ import { homeTrending, trendMapPoints, trendRiserLists } from "../src/services/c
 import { MOMENTUM_WINDOW_IDS } from "../src/analytics/config";
 import { scaleSnapshot } from "./milb-scale-support";
 import { trajectorySnapshot } from "./analytics-test-support";
-import { CDN_CACHED_ROUTES, CDN_CACHE_HEADER, CDN_CACHE_VALUE, cdnCacheEnabled, cdnCacheRules } from "../src/lib/cdn-cache";
+import { CDN_CACHED_ROUTES, CDN_CACHE_HEADER, CDN_CACHE_VALUE, UNCACHEABLE_WHEN_PRESENT, cdnCacheEnabled, cdnCacheRules, cdnCacheableRequest, cdnHeadersFor } from "../src/lib/cdn-cache";
+import { matchHas } from "next/dist/shared/lib/router/utils/prepare-destination";
+import { getPathMatch } from "next/dist/shared/lib/router/utils/path-match";
 import { VERCEL_CLIENT_IP_HEADER, clientKey, identityConfig } from "../src/lib/traffic/client-identity";
 import { refusalDelayMs } from "../src/lib/traffic/hold";
 import { createLimiter, tooManyRequests } from "../src/lib/traffic/policy";
@@ -273,70 +275,123 @@ describe("1b. snapshot files: integrity", () => {
   });
 });
 
-describe("1c. snapshot export: read-only, consistent, verified", () => {
-  test("exports every level, reports counts and verifies the files against what was read", async (t) => {
+describe("1c. snapshot export: read-only, one consistent state, verified", () => {
+  /** An in-memory ConsistentRead that records when the state is open and what was read in it. */
+  const memoryRead = (levels: Map<LevelId, AflSnapshot | null>, version = "7:2026-11-07T10:00:00.000Z") => {
+    const log = { opened: 0, open: false, calls: [] as string[] };
+    const read: ConsistentRead = async (work) => {
+      log.opened++;
+      log.open = true;
+      try {
+        return await work({
+          version: async () => (assert.ok(log.open, "version read outside the consistent state"), log.calls.push("version"), version),
+          load: async (l) => (assert.ok(log.open, "level read outside the consistent state"), log.calls.push(l), levels.get(l) ?? null),
+        });
+      } finally {
+        log.open = false;
+      }
+    };
+    return { read, log };
+  };
+
+  test("reads the version and every level inside ONE consistent read, then writes and verifies", async (t) => {
     const dir = path.join(tmp(), "snap");
     t.after(() => rmSync(path.dirname(dir), { recursive: true, force: true }));
     const levels = fixtureLevels();
-    const loaded: string[] = [];
+    const { read, log } = memoryRead(levels);
     const lines: string[] = [];
-    const report = await exportSnapshots({
-      dir,
-      season: 2026,
-      load: async (l) => (loaded.push(l), levels.get(l) ?? null),
-      version: async () => "7:2026-11-07T10:00:00.000Z",
-      log: (l) => lines.push(l),
-    });
-    assert.deepEqual(loaded, [...LEVEL_IDS]);
+    const report = await exportSnapshots({ dir, season: 2026, read, log: (l) => lines.push(l) });
+    assert.equal(log.opened, 1, "exactly one consistent read");
+    assert.deepEqual(log.calls, ["version", ...LEVEL_IDS], "version first, then every level, all inside it");
     assert.equal(report.status, "ok");
+    assert.equal(report.ingestionVersion, "7:2026-11-07T10:00:00.000Z", "the version of that same state");
     assert.deepEqual(report.levels["single-a"], { status: "empty" });
     const aaa = report.levels.aaa;
     assert.ok(aaa.status === "ok" && aaa.players === levels.get("aaa")!.players.length);
-    assert.equal(report.snapshotId, (await readSnapshotManifest(dir, 2026)).snapshotId);
+    const manifest = await readSnapshotManifest(dir, 2026);
+    assert.equal(report.snapshotId, manifest.snapshotId);
+    assert.equal(manifest.ingestionVersion, "7:2026-11-07T10:00:00.000Z");
     assert.ok(lines.some((l) => l.startsWith("verified")));
     assert.ok(!lines.join("\n").includes("postgres"), "logs never contain connection details");
   });
 
-  test("an ingestion run applied during the export fails it and writes nothing", async (t) => {
+  test("files are written only after the consistent read has ended (no file reflects an open state)", async (t) => {
     const dir = path.join(tmp(), "snap");
     t.after(() => rmSync(path.dirname(dir), { recursive: true, force: true }));
-    let v = 0;
-    const levels = fixtureLevels();
-    await assert.rejects(
-      exportSnapshots({ dir, season: 2026, load: async (l) => levels.get(l) ?? null, version: async () => `v${v++}` }),
-      /applied during the export/,
-    );
-    assert.equal(existsSync(dir), false);
+    const { read, log } = memoryRead(fixtureLevels());
+    let dirDuringRead: boolean | undefined;
+    await exportSnapshots({
+      dir,
+      season: 2026,
+      read: (work) => read(async (r) => {
+        const out = await work(r);
+        dirDuringRead = existsSync(dir);
+        return out;
+      }),
+    });
+    assert.equal(dirDuringRead, false);
+    assert.equal(log.open, false);
+    assert.ok(existsSync(path.join(dir, MANIFEST_FILE)));
   });
 
-  test("a level that fails to load fails the export (no partial snapshot)", async (t) => {
+  test("a level that fails to load, or a read that cannot start, fails the export (no snapshot)", async (t) => {
     const dir = path.join(tmp(), "snap");
     t.after(() => rmSync(path.dirname(dir), { recursive: true, force: true }));
     const levels = fixtureLevels();
+    const failing = new Map(levels);
+    const { read } = memoryRead(failing);
     await assert.rejects(
       exportSnapshots({
         dir,
         season: 2026,
-        load: async (l) => {
-          if (l === "high-a") throw new Error("connection reset");
-          return levels.get(l) ?? null;
-        },
-        version: async () => "v",
+        read: (work) => read((r) => work({ ...r, load: async (l) => { if (l === "high-a") throw new Error("connection reset"); return r.load(l); } })),
       }),
       /connection reset/,
     );
     assert.equal(existsSync(dir), false);
+    await assert.rejects(
+      exportSnapshots({ dir, season: 2026, read: async () => { throw new Error("could not begin transaction"); } }),
+      /could not begin/,
+    );
+    assert.equal(existsSync(dir), false);
   });
 
-  test("the CLI exports through the site's read layer with the read-only role and never prints the URL", () => {
+  test("the database reader refuses a transaction that is not READ ONLY, REPEATABLE READ, before any read", async () => {
+    const { databaseConsistentRead } = await import("../src/services/competition/consistent-read");
+    for (const mode of [
+      { isolation: "read committed", read_only: "on" },
+      { isolation: "repeatable read", read_only: "off" },
+      { isolation: "serializable", read_only: "on" },
+    ]) {
+      let config: unknown;
+      let worked = false;
+      const fake = {
+        transaction: async (fn: (tx: unknown) => Promise<unknown>, c: unknown) => {
+          config = c;
+          return fn({ execute: async () => ({ rows: [mode] }) });
+        },
+      };
+      await assert.rejects(
+        databaseConsistentRead(fake as never, 2026)(async () => (worked = true)),
+        /not READ ONLY, REPEATABLE READ/,
+        JSON.stringify(mode),
+      );
+      assert.equal(worked, false, "nothing is read");
+      assert.deepEqual(config, { isolationLevel: "repeatable read", accessMode: "read only" });
+    }
+  });
+
+  test("the CLI uses one READ ONLY, REPEATABLE READ transaction, the read-only role, and never prints the URL", () => {
     const cli = src("scripts/export-snapshot.ts");
-    assert.match(cli, /dbLevelLoader\(db, AFL\.defaultSeason\)/);
-    assert.match(cli, /loadIngestionVersion\(db\)/);
+    assert.match(cli, /read: databaseConsistentRead\(db, AFL\.defaultSeason\)/);
+    assert.doesNotMatch(cli, /dbLevelLoader|loadIngestionVersion/, "no per-level transactions outside the consistent read");
     assert.match(cli, /redact\(/);
     assert.match(cli, /rm\(dir, \{ recursive: true, force: true \}\)/, "a failed export removes any earlier snapshot");
     assert.doesNotMatch(cli, /DATABASE_URL\}|console\.log\(process\.env/);
-    // The loaders read each level in a READ ONLY transaction (the export can never write).
-    assert.match(src("src/services/afl/queries.ts"), /accessMode: "read only"/);
+    const reader = src("src/services/competition/consistent-read.ts");
+    assert.match(reader, /\{ isolationLevel: "repeatable read", accessMode: "read only" \}/);
+    assert.match(reader, /current_setting\('transaction_isolation'\)/, "the mode is checked, not assumed");
+    assert.equal((reader.match(/db\.transaction\(/g) ?? []).length, 1, "one transaction");
   });
 });
 
@@ -449,7 +504,9 @@ describe("3. CDN caching", () => {
   });
 
   test("only public data pages; never /health or development pages", () => {
-    assert.deepEqual([...CDN_CACHED_ROUTES], ["/", "/players", "/players/:id", "/trends", "/trends/data", "/data", "/robots.txt", "/sitemap.xml"]);
+    assert.deepEqual([...CDN_CACHED_ROUTES], ["/", "/players", "/players/:id", "/trends", "/data", "/robots.txt", "/sitemap.xml"]);
+    // /trends/data sets its header itself (a next.config header would override its error no-store).
+    assert.ok(!CDN_CACHED_ROUTES.includes("/trends/data" as never));
     const sources = new Set(cdnCacheRules(true).map((r) => r.source));
     for (const never of ["/health", "/analytics/:path*", "/analytics/models", "/:path*"]) assert.ok(!sources.has(never), never);
     assert.equal(CDN_CACHE_HEADER, "Vercel-CDN-Cache-Control", "a header only Vercel's CDN acts on");
@@ -457,17 +514,128 @@ describe("3. CDN caching", () => {
     assert.doesNotMatch(CDN_CACHE_VALUE, /immutable|public/);
   });
 
-  test("RSC payloads cannot be cached under a page's HTML URL", () => {
-    for (const source of CDN_CACHED_ROUTES) {
-      const rules = cdnCacheRules(true).filter((r) => r.source === source);
-      assert.equal(rules.length, 2, source);
-      // Plain requests: only without the RSC header.
-      assert.deepEqual(rules[0].missing, [{ type: "header", key: "rsc" }]);
-      assert.equal(rules[0].has, undefined);
-      // Router requests: only with the _rsc cache-key parameter.
-      assert.deepEqual(rules[1].has, [{ type: "query", key: "_rsc" }]);
-      for (const r of rules) assert.deepEqual(r.headers, [{ key: CDN_CACHE_HEADER, value: CDN_CACHE_VALUE }]);
+  /**
+   * Which CDN header a request would get, evaluated with Next.js's own route matcher and has/missing
+   * logic (the same semantics Vercel applies to next.config headers).
+   */
+  const cdnHeaderFor = (url: string, headers: Record<string, string> = {}) => {
+    const u = new URL(url, "https://pt.example");
+    const req = { headers: Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v])) };
+    const query = Object.fromEntries(u.searchParams);
+    for (const rule of cdnCacheRules(true))
+      if (getPathMatch(rule.source)(u.pathname) && matchHas(req as never, query, rule.has, rule.missing)) return rule.headers[0].value;
+    return null;
+  };
+  const RSC_HASH = "1a2b3c4d5e";
+
+  test("plain document and data requests to public routes are cached, with any query string", () => {
+    for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?q=smith", "/players?utm_source=x", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31?level=aa", "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"])
+      assert.equal(cdnHeaderFor(url), CDN_CACHE_VALUE, url);
+    assert.equal(cdnHeaderFor("/trends/data?view=map&level=aa&role=hitter&window=14d"), null, "set by the route, not next.config");
+    // Ordinary browser headers do not matter.
+    assert.equal(cdnHeaderFor("/players", { accept: "text/html", "user-agent": "Mozilla/5.0", cookie: "a=b" }), CDN_CACHE_VALUE);
+  });
+
+  test("RSC router requests are never cached, whatever their _rsc value (Vercel skips Next's _rsc validation)", () => {
+    for (const url of ["/players", `/players?_rsc=${RSC_HASH}`, `/players/0a3576f9-75f2-4be1-8342-a820c380ba31?level=aa&_rsc=${RSC_HASH}`, `/?_rsc=${RSC_HASH}`])
+      for (const h of [
+        { rsc: "1" } as Record<string, string>,
+        { RSC: "1" },
+        { rsc: "1", "next-router-prefetch": "1" },
+        { rsc: "1", "next-router-state-tree": "%5B%22%22%5D" },
+        { rsc: "1", "next-router-segment-prefetch": "/_tree" },
+        { "next-router-prefetch": "1" },
+        { "next-router-state-tree": "x" },
+        { "next-url": "/players" },
+        { "next-action": "abc" },
+      ])
+        assert.equal(cdnHeaderFor(url, h), null, `${url} ${JSON.stringify(h)}`);
+  });
+
+  test("next.config rule: no _rsc URL matches, except an empty _rsc (closed by the proxy, next test group)", () => {
+    assert.equal(cdnHeaderFor(`/players?_rsc=${RSC_HASH}`), null);
+    assert.equal(cdnHeaderFor(`/players?level=aa&_rsc=${RSC_HASH}`), null);
+    assert.equal(cdnHeaderFor(`/trends/data?view=map&_rsc=${RSC_HASH}`), null);
+    // An empty `_rsc` counts as absent for has/missing, so the rule alone would match it. Next.js
+    // redirects a bare RSC request to exactly such a URL; the proxy's no-store closes the gap
+    // (unit test below, and measured to win over the rule in scripts/cdn-cache.e2e.ts).
+    assert.equal(cdnHeaderFor("/players?_rsc="), CDN_CACHE_VALUE);
+    assert.equal(cdnHeaderFor("/players?_rsc"), CDN_CACHE_VALUE);
+  });
+
+  test("request-side check (proxy and /trends/data): any router header or any _rsc, even empty, is not plain", () => {
+    const req = (url: string, h: Record<string, string> = {}) => [new URL(url, "https://pt.example"), new Headers(h)] as const;
+    assert.equal(cdnCacheableRequest(...req("/players?level=aa")), true);
+    assert.equal(cdnCacheableRequest(...req("/players", { accept: "text/html" })), true);
+    for (const url of ["/players?_rsc", "/players?_rsc=", "/players?_rsc=abc", "/players?level=aa&_rsc"]) assert.equal(cdnCacheableRequest(...req(url)), false, url);
+    for (const h of ["rsc", "next-router-prefetch", "next-router-state-tree", "next-router-segment-prefetch", "next-url", "next-action"]) {
+      assert.equal(cdnCacheableRequest(...req("/players", { [h]: "1" })), false, h);
+      assert.equal(cdnCacheableRequest(...req("/players", { [h]: "" })), false, `${h} (empty)`);
     }
+  });
+
+  test("/trends/data adds the CDN header only for a plain request with caching on", () => {
+    const on = { PT_DATA_SOURCE: "snapshot" };
+    const url = "https://pt.example/trends/data?view=map&level=aa&role=hitter&window=14d";
+    assert.deepEqual(cdnHeadersFor(new Request(url), on), { [CDN_CACHE_HEADER]: CDN_CACHE_VALUE });
+    assert.deepEqual(cdnHeadersFor(new Request(url), {}), {}, "database mode");
+    assert.deepEqual(cdnHeadersFor(new Request(url), { ...on, PT_CDN_CACHE: "off" }), {});
+    assert.deepEqual(cdnHeadersFor(new Request(`${url}&_rsc=`), on), {});
+    assert.deepEqual(cdnHeadersFor(new Request(url, { headers: { rsc: "1" } }), on), {});
+    const route = src("src/app/trends/data/route.ts");
+    assert.match(route, /"private, max-age=60", \.\.\.cdnHeadersFor\(request\)/, "only on the successful answer");
+    assert.equal((route.match(/cdnHeadersFor\(/g) ?? []).length, 1);
+  });
+
+  test("the proxy marks every non-plain request no-store when caching is on (covers an empty _rsc)", async (t) => {
+    const prev = { ...process.env };
+    const key = Symbol.for("prospect-terminal.rate-limiter");
+    const g = globalThis as Record<symbol, unknown>;
+    t.after(() => {
+      delete g[key];
+      process.env = prev;
+    });
+    delete g[key];
+    // Same environment as the Vercel proxy test below: src/proxy.ts reads its refusal delay once,
+    // at import, so every test in this file imports it on Vercel.
+    Object.assign(process.env, { VERCEL: "1", VERCEL_ENV: "preview" });
+    delete process.env.PT_CLIENT_IP_HEADER;
+    delete process.env.PT_REFUSAL_DELAY_MS;
+    const { proxy } = await import("../src/proxy");
+    const call = (url: string, h: Record<string, string> = {}) =>
+      proxy(new NextRequest(`https://pt.example${url}`, { headers: { "x-vercel-forwarded-for": "192.0.2.77", ...h } }));
+    process.env.PT_DATA_SOURCE = "snapshot";
+    assert.equal((await call("/players?_rsc=")).headers.get("vercel-cdn-cache-control"), "no-store");
+    assert.equal((await call("/players", { rsc: "1" })).headers.get("vercel-cdn-cache-control"), "no-store");
+    assert.equal((await call("/players")).headers.get("vercel-cdn-cache-control"), null, "plain: left to the next.config rule");
+    delete process.env.PT_DATA_SOURCE;
+    assert.equal((await call("/players?_rsc=")).headers.get("vercel-cdn-cache-control"), null, "database mode: no CDN headers at all");
+  });
+
+  test("never cached: health, development pages, retired routes, assets, trailing-slash variants", () => {
+    for (const url of ["/health", "/analytics/models", "/analytics", "/market", "/news", "/teams/x", "/organizations/x", "/screener", "/players/x/y", "/icon.png", "/_next/static/chunks/a.js", "/_vercel/insights/script.js"])
+      assert.equal(cdnHeaderFor(url), null, url);
+    // Path matching is not strict, so `/players/` matches; Next.js answers it with a permanent 308
+    // to `/players` (deterministic, checked in scripts/cdn-cache.e2e.ts), which is safe to cache.
+    assert.equal(cdnHeaderFor("/players/"), CDN_CACHE_VALUE);
+  });
+
+  test("the rules are one per route and list every router signal", () => {
+    const rules = cdnCacheRules(true);
+    assert.equal(rules.length, CDN_CACHED_ROUTES.length);
+    for (const r of rules) {
+      assert.equal(r.has, undefined);
+      assert.deepEqual(r.missing, [...UNCACHEABLE_WHEN_PRESENT]);
+      assert.deepEqual(r.headers, [{ key: CDN_CACHE_HEADER, value: CDN_CACHE_VALUE }]);
+    }
+    assert.deepEqual(
+      UNCACHEABLE_WHEN_PRESENT.map((c) => `${c.type}:${c.key}`),
+      ["header:rsc", "header:next-router-prefetch", "header:next-router-segment-prefetch", "header:next-router-state-tree", "header:next-url", "header:next-action", "query:_rsc"],
+    );
+    // The router headers Next.js itself treats as RSC signals (its Vary list) are all covered.
+    const vary = readFileSync(new URL("node_modules/next/dist/client/components/app-router-headers.js", root), "utf8");
+    for (const name of ["rsc", "next-router-prefetch", "next-router-state-tree", "next-router-segment-prefetch", "next-url", "next-action"])
+      assert.match(vary, new RegExp(`'${name}'|"${name}"`, "i"), name);
   });
 
   test("next.config adds the rules only when the build is a snapshot build, after the security headers", async () => {
@@ -481,7 +649,7 @@ describe("3. CDN caching", () => {
       process.env.PT_DATA_SOURCE = "snapshot";
       const cached = await build("phase-production-server").headers!();
       assert.equal(cached[0].source, "/:path*");
-      assert.equal(cached.length, 1 + CDN_CACHED_ROUTES.length * 2);
+      assert.equal(cached.length, 1 + CDN_CACHED_ROUTES.length);
       assert.ok(cached[0].headers.some((h) => h.key === "Content-Security-Policy"));
     } finally {
       process.env = prev;

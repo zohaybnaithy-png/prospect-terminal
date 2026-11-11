@@ -55,7 +55,8 @@ verified against Neon or a real server yet.
       `staging`, marked *Sensitive*. No Production `DATABASE_URL` yet.
 - [ ] Deployment Protection (Vercel Authentication) for previews; Web Analytics enabled; no Neon
       integration.
-- [ ] Preview deployment, then checks 1–7 in docs/VERCEL.md recorded.
+- [ ] Preview deployment, then checks 1–8 in docs/VERCEL.md recorded (8: the CDN questions only a preview can answer).
+- [x] CI workflow (`.github/workflows/ci.yml`): lint, typecheck, tests, default build, snapshot/CDN e2e.
 
 ## D. Before any production launch (not part of staging)
 

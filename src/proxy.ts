@@ -4,6 +4,7 @@ import { clientKey } from "@/lib/traffic/client-identity";
 import { recordIdentity, sharedTrafficState } from "@/lib/traffic/health";
 import { holdDecision, refusalDelayMs } from "@/lib/traffic/hold";
 import { indexingEnabled, NOINDEX_HEADER } from "@/lib/indexing";
+import { CDN_CACHE_HEADER, cdnCacheEnabled, cdnCacheableRequest } from "@/lib/cdn-cache";
 
 /**
  * Traffic protection (docs/TRAFFIC.md). Runs before any page or route renders, so a refused request
@@ -54,6 +55,9 @@ export async function proxy(request: NextRequest) {
   const response = await decide(request);
   // Non-public deployment (PT_INDEXING=off, e.g. staging): every response says noindex.
   if (!indexingEnabled()) response.headers.set("X-Robots-Tag", NOINDEX_HEADER);
+  // Router (RSC) requests and `_rsc` URLs are never stored by Vercel's CDN, whatever the
+  // next.config rule matched (an empty `_rsc` slips through has/missing). src/lib/cdn-cache.ts.
+  if (cdnCacheEnabled() && !cdnCacheableRequest(request.nextUrl, request.headers)) response.headers.set(CDN_CACHE_HEADER, "no-store");
   return response;
 }
 

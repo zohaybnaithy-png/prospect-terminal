@@ -4,10 +4,11 @@
  *   npm run -s snapshot:export                     # writes .data-snapshot/, JSON report on stdout
  *   PT_SNAPSHOT_DIR=/tmp/snap npm run -s snapshot:export
  *
- * Reads every competition level ONCE through the site's own read layer (each level in a READ ONLY,
- * REPEATABLE READ transaction) and writes the files a `PT_DATA_SOURCE=snapshot` server serves
- * from. Run by `npm run build:vercel` before `next build`, so the deployment never queries the
- * database while serving pages.
+ * Reads every competition level ONCE through the site's own read layer, all inside ONE READ ONLY,
+ * REPEATABLE READ transaction (one database snapshot for every level and the ingestion version;
+ * src/services/competition/consistent-read.ts), and writes the files a `PT_DATA_SOURCE=snapshot`
+ * server serves from. Run by `npm run build:vercel` before `next build`, so the deployment never
+ * queries the database while serving pages.
  *
  * Uses DATABASE_URL: give it the SELECT-only web role (`pt_web`, deploy/neon-readonly-role.sql),
  * never a writer or owner credential. The connection string is never printed; errors report only
@@ -18,9 +19,8 @@ import { rm } from "node:fs/promises";
 import { closeDatabase, getDatabase } from "../src/db/client";
 import { AFL } from "../src/ingestion/sources/mlb-config";
 import { redact } from "../src/ingestion/progress";
-import { loadIngestionVersion } from "../src/services/afl/queries";
 import { snapshotDir } from "../src/services/competition/data-source";
-import { dbLevelLoader } from "../src/services/competition/load";
+import { databaseConsistentRead } from "../src/services/competition/consistent-read";
 import { exportSnapshots } from "../src/services/competition/snapshot-export";
 
 const log = (line: string) => process.stderr.write(`[snapshot] ${line}\n`);
@@ -35,8 +35,8 @@ async function main() {
     const report = await exportSnapshots({
       dir,
       season: AFL.defaultSeason,
-      load: dbLevelLoader(db, AFL.defaultSeason),
-      version: () => loadIngestionVersion(db),
+      // One READ ONLY, REPEATABLE READ transaction for the version and every level.
+      read: databaseConsistentRead(db, AFL.defaultSeason),
       log,
     });
     log(`done: ${(report.totalBytes / 1e6).toFixed(1)} MB in ${(report.durationMs / 1000).toFixed(1)} s`);

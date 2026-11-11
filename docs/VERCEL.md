@@ -30,8 +30,10 @@ instead of billing** when a cap is reached:
 
 1. **`snapshot:export`** (`scripts/export-snapshot.ts`, logic in
    `src/services/competition/snapshot-export.ts`)
-   - Reads every level once, through the site's own read layer (`dbLevelLoader`: each level in a
-     `READ ONLY`, `REPEATABLE READ` transaction), using `DATABASE_URL`. Use the `pt_web` role.
+   - Reads the ingestion version and every level once, through the site's own read layer, all
+     inside **one** `READ ONLY`, `REPEATABLE READ` transaction
+     (`src/services/competition/consistent-read.ts`), using `DATABASE_URL`. Use the `pt_web`
+     role.
    - Writes `.data-snapshot/` (git-ignored, never committed):
      - `manifest.json`: format version, season, ingestion version, snapshot id, and per level the
        file, SHA-256, size and record counts;
@@ -60,8 +62,8 @@ instead of billing** when a cap is reached:
     `<level>.json.gz` names (no path traversal) and a matching id.
   - A bad file fails that level only. The page shows it "temporarily unavailable"; it never shows
     other data.
-- **Consistency.** The ingestion version is read before and after the levels. An apply in between
-  fails the export.
+- **Consistency: one database snapshot for every level** (review finding, PR #16). See
+  *Snapshot consistency* below.
 - **Fail-closed.** Files are swapped in atomically. A failed export or verification leaves no
   snapshot, so the build fails rather than shipping old or partial data.
 - **Read-only.** The export never writes. The integration test runs it on a session with
@@ -79,6 +81,56 @@ size.
 **New data means a new deployment** (Vercel → Redeploy, or a push). That fits "ingestion disabled".
 Before enabling the 2027 refresh, decide how a refresh triggers a redeploy, for example a Vercel
 deploy hook called after `refresh:data`. Not built.
+
+### Snapshot consistency: the exact guarantee
+
+**What the first version did, and why it wasn't enough.** It read the version, then each level in
+its *own* transaction, then the version again, and failed if the two versions differed. That
+made each level consistent but not the set:
+
+- A commit between two level reads produced a snapshot mixing two states.
+- The version (applied-run count and latest completion time) only changes when a completed
+  ingestion run is recorded. A direct correction, or any other write, passed the check unnoticed.
+
+The integration test reproduces exactly this: a correction committed between two level reads is
+visible in the later level, and the version check stays equal.
+
+**What it does now.** The version probe and all five level loads run in one transaction:
+
+- `REPEATABLE READ`: PostgreSQL takes one snapshot at the transaction's first query and serves
+  every later statement from it.
+- The loaders are unchanged. Inside a transaction, Drizzle turns their own `transaction()` calls
+  into savepoints, which keep the outer snapshot (their isolation options only apply at top
+  level).
+- The reader checks `transaction_isolation = repeatable read` and `transaction_read_only = on`
+  before reading anything, and fails otherwise. So a driver change can't silently weaken this.
+
+**Guarantee.** The snapshot files contain exactly the data committed at one instant (the start of
+the export transaction), and the manifest's ingestion version is that same instant's. Anything
+that commits while the export runs is invisible to it: an ingestion apply, a correction, any
+write. It appears only in the next export. Readers never block writers, so a concurrent ingestion
+is neither blocked nor failed by an export.
+
+**Tested** (`npm run test:snapshot:db`, PostgreSQL 16, 8/8). While the export's transaction is
+open after its first level, the test commits a real AFL ingestion apply of an upstream correction
+and a direct row update on other connections. Then:
+
+- the database shows both;
+- the snapshot shows neither: the AFL level has exactly the pre-commit data, and every level
+  matches the earlier export;
+- the manifest carries the pre-commit version;
+- a new export sees the new state.
+
+**Limits.**
+
+- One connection is held for the whole export (seconds).
+- Each statement keeps the 30 s `statement_timeout`. The `pt_web` role's
+  `idle_in_transaction_session_timeout` (60 s) bounds pauses between statements.
+- Neon's pooler runs in transaction mode, so the whole transaction stays on one server connection.
+  Not yet run against Neon; preview check 1 covers it.
+- Row order: players, games and teams come back in the database's physical order (the loaders have
+  no `ORDER BY`; that's existing behaviour, unchanged here). The snapshot freezes the order its read
+  returned. Two exports of identical data can list rows in a different order; the content is equal.
 
 ## 2. Prefetching off by default
 
@@ -99,39 +151,55 @@ can serve.
 Only for snapshot builds (content is fixed per deployment). Switch it off with `PT_CDN_CACHE=off`
 and a redeploy.
 
-- **Header.** `Vercel-CDN-Cache-Control: max-age=300, stale-while-revalidate=86400` on `/`,
-  `/players`, `/players/:id`, `/trends`, `/trends/data`, `/data`, `/robots.txt` and
-  `/sitemap.xml`. Only Vercel's CDN acts on it. Browsers keep Next.js's
-  `Cache-Control: private, no-store`.
-- **Never cached:** `/health`, `/analytics/*`, everything else.
-- **Cache poisoning.** RSC and HTML share a pathname.
-  - The header is added only to requests without an `RSC` header, or with the router's `_rsc`
-    cache-key parameter.
-  - Next.js itself answers an `RSC` request without `_rsc` with a 307 to the `_rsc` URL. Measured,
-    with no CDN header on that 307.
-- **Errors.**
-  - The proxy's 429 and `/trends/data`'s 503/404 data-state answers send
-    `Vercel-CDN-Cache-Control: no-store`, which overrides the rule (measured: the 429 carries
-    `no-store`).
-  - Vercel does not cache 5xx.
-  - A bad 200 (e.g. a level "temporarily unavailable") is cached for at most ~5 minutes before a
-    background revalidation replaces it.
-- **Request-independent content.** No cached page reads cookies or request headers (tested), and
-  Vercel scopes the cache per deployment.
+**Rules.**
 
-Measured against the built server (`next start`, snapshot build) with emulated Vercel variables:
+- **Pages.** `Vercel-CDN-Cache-Control: max-age=300, stale-while-revalidate=86400` on `/`,
+  `/players`, `/players/:id`, `/trends`, `/data`, `/robots.txt` and `/sitemap.xml`, set through
+  next.config `headers()`. Only plain requests get it: **no** `RSC`, `Next-Router-Prefetch`,
+  `Next-Router-Segment-Prefetch`, `Next-Router-State-Tree`, `Next-Url` or `Next-Action` header, and
+  **no** `_rsc` parameter. Browsers keep Next.js's `Cache-Control: private, no-store`.
+- **`/trends/data`.** The route handler sets the same header itself, on its successful answer only.
+- **Proxy.** It marks every non-plain request `no-store` at runtime.
+- **Never cached:** `/health`, `/analytics/*`, retired-route redirects, everything not listed.
 
-| Request | Status | `Vercel-CDN-Cache-Control` |
-|---|---|---|
-| `/`, `/players?level=aa`, a profile, `/trends/data?…`, `/robots.txt` | 200 | `max-age=300, stale-while-revalidate=86400` |
-| Unknown profile | 404 | cached (deterministic per deployment) |
-| `/health`, `/analytics/models` | 200 / 404 | none |
-| `/players` with `RSC: 1`, no `_rsc` | 307 | none |
-| `/players?_rsc=…` with `RSC: 1` | 200 | cached (own key) |
-| Rate-limited profile | 429 | `no-store` |
+### Audit (review finding, PR #16) and fixes
 
-**YOU, on the preview:** confirm Vercel honours it: `curl -sI <url>/players` twice. The second
-response shows `x-vercel-cache: HIT`.
+| Area | Finding | Fix | Regression test |
+|---|---|---|---|
+| RSC payloads | Next.js keeps RSC and HTML apart by validating `_rsc` against the router headers (a mismatch gets a 307), but **only outside minimal mode**, and Vercel runs Next.js in minimal mode (`next/dist/server/base-server.js`). The first version cached RSC requests that carried `_rsc`, so on Vercel a forged RSC request with a real `_rsc` value could have stored a wrong payload under a key real visitors use | RSC and router requests are **never** cached. Cost: each client-side navigation (one RSC request per click; prefetching is off) reaches a function | unit (Next's own `has`/`missing` matcher), e2e |
+| HTML under a router URL | The first version cached HTML requested with `?_rsc=…` and no RSC header, which stored HTML under a router cache key | The rule requires no `_rsc` | unit, e2e |
+| Empty `_rsc` | `has`/`missing` treat an empty value as absent, so `?_rsc` (exactly where Next.js redirects a bare RSC request) still matched the rule | The proxy sets `no-store` for any `_rsc` or router header. Measured: the proxy's header wins over the rule | unit, e2e |
+| Status codes | A next.config header **overrides a route handler's header of the same name**. So `/trends/data`'s 503/404 `no-store` lost, and those data-state answers were marked cacheable (measured) | `/trends/data` removed from the rule; the handler adds the header only to its 200 | e2e |
+| Status codes | The rule cannot see the status: page 404s (unknown player) get it | Correct: deterministic per deployment. Next.js's 308 for `/players/` and the retired-route 307s get no header (measured) | e2e |
+| Status codes | A transient bad 200 (e.g. "temporarily unavailable" after a failed load, streamed with status 200) would be cached | Bounded: `max-age=300`, then revalidated. Accepted | — |
+| Query parameters | Part of the cache key; unknown ones are ignored by the pages | Correct content per key. Varying them bypasses the cache, which the per-client limiter bounds | unit, e2e |
+| Refusals | The proxy's 429 must not be stored | `no-store`; measured to win over the rule | unit, e2e |
+
+### Verified locally vs only on a Vercel preview
+
+**Locally** (`npm run test:cdn:e2e`: a real `next build` and `next start` from a fictional
+snapshot, with `VERCEL=1` emulated and an unreachable `DATABASE_URL`; also run in CI):
+
+- which responses carry the header, for every route, status, query form and router-header form
+  above;
+- that proxy-set `no-store` and route-handler headers behave as described;
+- that browsers never get a cacheable `Cache-Control`;
+- that pages render with no database.
+
+**Only on a Vercel preview** (checks 3 and 8 below). Vercel's CDN can't be emulated locally:
+
+1. Vercel acts on `Vercel-CDN-Cache-Control` for a function response whose `Cache-Control` is
+   `private, no-store`: the second identical request shows `x-vercel-cache: HIT`.
+2. Vercel applies next.config headers, and the proxy's headers, **before** its cache decision. If
+   it only honoured headers set by the function itself, the rule would be a no-op. That's a safe
+   failure (nothing cached, higher usage), and the fix would be per-page headers.
+3. The statuses Vercel stores: 200 and 404 yes, 5xx and 429 no. The cache is scoped per
+   deployment, so a redeploy starts empty.
+4. Whether the proxy runs on cache hits. That decides whether a cached page still costs a proxy
+   invocation, and whether rate limiting applies to cached pages.
+5. That Deployment Protection is checked before the cache, so cached preview pages stay private.
+6. Vercel runs Next.js in minimal mode, so the 307 for a bare RSC request seen locally does not
+   happen there. The rules don't depend on it.
 
 ## 4. Traffic protection on Vercel (no paid features)
 
@@ -220,8 +288,8 @@ explicit `PT_SITE_URL` is not silently replaced.
 
 ### Checks on the preview
 
-1. The build log shows `[snapshot] verified 5 levels` and the snapshot size. `/health` returns
-   `{"status":"ready"}`.
+1. The build log shows `[snapshot] verified 5 levels` and the snapshot size: the single export
+   transaction worked through Neon's pooler. `/health` returns `{"status":"ready"}`.
 2. Neon console: connections only during the build, nothing while you browse.
 3. `curl -sI` a page twice: `x-vercel-cache: HIT` the second time, and `x-robots-tag: noindex,
    nofollow`.
@@ -239,6 +307,16 @@ explicit `PT_SITE_URL` is not silently replaced.
      `PT_RATE_LIMIT=off` and report it.
    - If neither run is refused, requests were spread over several instances. Repeat with a faster
      loop.
+8. CDN details (each answers one preview-only question from section 3):
+   - Fetch a profile twice. The second response must show `x-vercel-cache: HIT`; otherwise Vercel
+     ignores routing-layer headers (question 2: safe, but no caching).
+   - `curl -sI '<url>/players?_rsc=x' -H 'RSC: 1'` twice: never `HIT`.
+   - `curl -sI '<url>/players?_rsc='` twice: never `HIT`.
+   - `/trends/data?view=map&level=<an empty level>&role=hitter&window=14d` twice: 404, never `HIT`.
+   - An unknown profile twice: `HIT` the second time is fine.
+   - A rate-limited 429 (check 7) never shows `HIT`.
+   - Signed out, request a cached preview page: Vercel's login, not the page (question 5).
+   - After a redeploy, the first request is a `MISS` (per-deployment scoping, question 3).
 
 ## Free-tier budget (estimates from local measurements; check 6 gives real numbers)
 
@@ -261,18 +339,33 @@ At ~10k page views a month plus a full crawl of ~3.3k profiles:
 | Domain (only at public launch) | ~$10–20/year |
 | If outgrown | Vercel Pro $20/month per member; Neon Launch usage-based (~$5–20/month here) |
 
+## CI
+
+`.github/workflows/ci.yml` (added with the review fixes; there was no CI before) runs on every pull
+request and on pushes to `main`, read-only (`contents: read`), with no secrets:
+
+- **checks:** `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` (the
+  default single-server build).
+- **cdn-e2e:** `npm run test:cdn:e2e` (snapshot build plus cache-header matrix, fictional data,
+  unreachable database).
+
+Not in CI yet: the seven PostgreSQL integration suites (`test:*:db`). They need a disposable
+PostgreSQL service and migrations per suite, which is a natural next step. They were run locally
+for this change.
+
 ## What was verified, and where
 
 | Check | Where | Result |
 |---|---|---|
-| Unit tests (`scripts/vercel.test.ts`, 49) plus the full suite | local | 501/501 |
-| Export against PostgreSQL 16 (`npm run test:snapshot:db`) | local disposable DB | 6/6 |
-| Export CLI success, unreachable-DB failure (URL not printed, old snapshot removed) | local | as designed |
+| Unit tests (`scripts/vercel.test.ts`, 57) plus the full suite | local | 509/509 |
+| Export against PostgreSQL 16, including concurrent commits (`npm run test:snapshot:db`) | local disposable DB | 8/8 |
+| Existing AFL and MiLB read suites (`test:afl:db`, `test:milb:db`) | local disposable DBs | 5/5, 14/14 |
+| Export CLI through the single transaction; unreachable-DB failure (URL not printed, old snapshot removed) | local | as designed |
 | Snapshot build, file tracing into every function, missing-snapshot guard | `next build` | as designed |
-| Server with an unreachable `DATABASE_URL`: ready, real pages, no database errors | `next start` | as designed |
-| Cache headers, 307 for RSC without `_rsc`, 429 `no-store` | `next start` | table above |
+| Cache-header matrix, header precedence, no-database serving (`npm run test:cdn:e2e`) | `next build` + `next start` | 8/8 |
 | Prefetch count, click navigation, analytics script request, CSP | Chromium | 0 prefetches, no violations |
-| Vercel CDN, edge headers, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks |
+| Lint, typecheck, default build | local; CI on every PR | clean |
+| Vercel CDN behaviour, edge headers, minimal mode, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks 1–8 |
 
 ## Public launch (not part of this phase)
 

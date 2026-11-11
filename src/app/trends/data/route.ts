@@ -2,6 +2,7 @@ import { MOMENTUM_WINDOW_IDS, type MomentumWindow, type Role } from "@/analytics
 import { getCompetitionData } from "@/services/competition";
 import { trendMapPoints, trendRiserLists } from "@/services/competition/prepare";
 import { isLevelId } from "@/services/players/levels";
+import { cdnHeadersFor } from "@/lib/cdn-cache";
 
 /**
  * One role × window of a Trends view for one level, fetched when the viewer switches role or
@@ -34,6 +35,8 @@ export async function GET(request: Request) {
     view === "map"
       ? trendMapPoints(ls.snapshot, role, window)
       : trendRiserLists(ls.snapshot, role, window),
-    { headers: { "Cache-Control": "private, max-age=60" } },
+    // CDN caching only for this successful answer (src/lib/cdn-cache.ts): set here, not in
+    // next.config, so the data-state answers above stay uncached.
+    { headers: { "Cache-Control": "private, max-age=60", ...cdnHeadersFor(request) } },
   );
 }

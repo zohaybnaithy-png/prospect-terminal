@@ -1,13 +1,18 @@
 /**
  * Build-time export of every competition level to snapshot files (snapshot-store.ts). The CLI is
- * scripts/export-snapshot.ts; this module takes the loader and version probe as arguments so the
- * whole procedure is tested against in-memory loaders and against PostgreSQL.
+ * scripts/export-snapshot.ts; this module takes the reader as an argument so the whole procedure
+ * is tested against in-memory readers and against PostgreSQL.
  *
  * Guarantees:
- * - Read-only: the level loader is the site's own (`dbLevelLoader`: each level in a READ ONLY,
- *   REPEATABLE READ transaction). The export never writes to the database.
- * - Consistent: the applied-ingestion version is read before and after the levels. If an
- *   ingestion run was applied in between, the export fails instead of mixing two data states.
+ * - Atomic across levels: the ingestion version and every level are read through ONE
+ *   `ConsistentRead`. The database implementation (consistent-read.ts) is one READ ONLY,
+ *   REPEATABLE READ transaction: PostgreSQL gives every statement in it the same snapshot, taken at
+ *   its first query, so the exported data is exactly the committed state at one instant. Writes
+ *   that commit while the export runs (an ingestion apply, a manual correction, anything) are
+ *   invisible to it, and the recorded ingestion version describes exactly that state. Tested with
+ *   concurrent commits in scripts/snapshot-db.integration.ts.
+ * - Read-only: the transaction is READ ONLY (PostgreSQL rejects any write), and the export runs as
+ *   the SELECT-only web role.
  * - Exact: every level is written, read back through the same path the server uses (size, hash,
  *   gunzip, unpack, shape) and compared with what the database returned. Any difference fails the
  *   export, so a snapshot can only ever contain exactly the database's data.
@@ -21,11 +26,23 @@ import { LEVEL_IDS, type LevelId } from "@/services/players/levels";
 import { snapshotsEqual } from "./snapshot-format";
 import { SnapshotIntegrityError, snapshotSource, writeSnapshotDir, type SnapshotManifest } from "./snapshot-store";
 
+/** Reads of one consistent database state. */
+export interface LevelReader {
+  /** The applied-ingestion version of that state (same probe as the live cache). */
+  version(): Promise<string>;
+  load(level: LevelId): Promise<AflSnapshot | null>;
+}
+
+/**
+ * Runs `work` with a reader whose every call sees the same database state, then releases it.
+ * Implementations: `databaseConsistentRead` (one transaction) and in-memory readers in tests.
+ */
+export type ConsistentRead = <T>(work: (reader: LevelReader) => Promise<T>) => Promise<T>;
+
 export interface ExportOptions {
   dir: string;
   season: number;
-  load: (level: LevelId) => Promise<AflSnapshot | null>;
-  version: () => Promise<string>;
+  read: ConsistentRead;
   log?: (line: string) => void;
   now?: () => Date;
 }
@@ -43,23 +60,23 @@ export interface ExportReport {
 export async function exportSnapshots(o: ExportOptions): Promise<ExportReport> {
   const log = o.log ?? (() => {});
   const started = Date.now();
-  const before = await o.version();
-  const levels = new Map<LevelId, AflSnapshot | null>();
-  for (const level of LEVEL_IDS) {
-    const t = Date.now();
-    const snapshot = await o.load(level);
-    levels.set(level, snapshot);
-    log(
-      snapshot
-        ? `${level}: ${snapshot.players.length} players, ${snapshot.games.length} games, ${snapshot.batting.length} batting and ${snapshot.pitching.length} pitching lines (${Date.now() - t} ms)`
-        : `${level}: no data (not ingested)`,
-    );
-  }
-  const after = await o.version();
-  if (after !== before)
-    throw new SnapshotIntegrityError("an ingestion run was applied during the export; run it again");
+  const { version, levels } = await o.read(async (reader) => {
+    const version = await reader.version();
+    const levels = new Map<LevelId, AflSnapshot | null>();
+    for (const level of LEVEL_IDS) {
+      const t = Date.now();
+      const snapshot = await reader.load(level);
+      levels.set(level, snapshot);
+      log(
+        snapshot
+          ? `${level}: ${snapshot.players.length} players, ${snapshot.games.length} games, ${snapshot.batting.length} batting and ${snapshot.pitching.length} pitching lines (${Date.now() - t} ms)`
+          : `${level}: no data (not ingested)`,
+      );
+    }
+    return { version, levels };
+  });
 
-  const manifest = await writeSnapshotDir(o.dir, { season: o.season, ingestionVersion: before, levels, now: o.now?.() });
+  const manifest = await writeSnapshotDir(o.dir, { season: o.season, ingestionVersion: version, levels, now: o.now?.() });
   try {
     await verifyRoundTrip(o.dir, o.season, manifest, levels);
   } catch (error) {
@@ -82,7 +99,7 @@ export async function exportSnapshots(o: ExportOptions): Promise<ExportReport> {
     status: "ok",
     season: o.season,
     snapshotId: manifest.snapshotId,
-    ingestionVersion: before,
+    ingestionVersion: version,
     levels: report,
     totalBytes,
     durationMs: Date.now() - started,
