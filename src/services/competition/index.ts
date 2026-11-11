@@ -4,12 +4,12 @@ import { getDatabase } from "@/db/client";
 import { AFL } from "@/ingestion/sources/mlb-config";
 import { loadIngestionVersion } from "@/services/afl/queries";
 import { LEVEL_IDS } from "@/services/players/levels";
-import { createLevelCache, type LevelCache } from "./cache";
-import { dbLevelLoader, loadCompetition, tracedLevelLoader, type LevelLoader } from "./load";
+import type { LevelCache } from "./cache";
+import { dbLevelLoader, loadCompetition } from "./load";
 import { DATA_SOURCE_ENV, dataConfigured, dataSource, type DataSource } from "./data-source";
 import { snapshotSource } from "./snapshot-store";
-import { summarizeTrace } from "@/db/instrument";
-import { prepareSnapshot } from "./prepare";
+import { summarizeTrace, type LoadTrace } from "@/db/instrument";
+import { competitionLevelCache, preparesOnLoad } from "./source-cache";
 import type { CompetitionDataResult } from "./types";
 import { healthReport, type HealthReport } from "./health";
 
@@ -52,29 +52,28 @@ function levelCache(): LevelCache {
 }
 
 function createSourceCache(source: DataSource): LevelCache {
-  const traced = (loader: LevelLoader) =>
-    tracedLevelLoader(loader, {
-      // Build the analytics context and Momentum caches before the snapshot is served, so the
-      // first request after a (re)load does not pay the cold compute (~0.5 s per MiLB level).
-      prepare: (_level, snapshot) => snapshot && prepareSnapshot(snapshot),
-      onTrace: (trace, totalMs, ok) => {
-        if (!ok || totalMs > SLOW_LOAD_MS || timingLogs())
-          console.error(`[competition-data] ${ok ? "loaded" : "load failed:"} ${summarizeTrace(trace, totalMs)}`);
-      },
-    });
-  const onBackgroundError = (level: string, error: unknown) =>
-    console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`);
+  const common = {
+    checkMs: CHECK_MS,
+    // Database mode prepares every level's analytics on load (warm-up off the request path);
+    // snapshot mode prepares on first use, only the levels a request needs (source-cache.ts).
+    prepareOnLoad: preparesOnLoad(source),
+    onTrace: (trace: LoadTrace, totalMs: number, ok: boolean) => {
+      if (!ok || totalMs > SLOW_LOAD_MS || timingLogs())
+        console.error(`[competition-data] ${ok ? "loaded" : "load failed:"} ${summarizeTrace(trace, totalMs)}`);
+    },
+    onBackgroundError: (level: string, error: unknown) =>
+      console.error(`[competition-data] ${level} refresh failed (${safeErrorCode(error)}); serving the previous snapshot`),
+  };
   if (source.kind === "snapshot") {
     // Build-time snapshot (docs/VERCEL.md): no database connection is ever opened. The version is
     // the snapshot's id, constant for the deployment, so a loaded level is never reloaded.
     const files = snapshotSource(source.dir, DATA_SEASON);
-    return createLevelCache({ load: traced(files.load), version: files.version, checkMs: CHECK_MS, onBackgroundError });
+    return competitionLevelCache({ ...common, load: files.load, version: files.version });
   }
-  return createLevelCache({
-    load: traced(dbLevelLoader(getDatabase(), DATA_SEASON)),
+  return competitionLevelCache({
+    ...common,
+    load: dbLevelLoader(getDatabase(), DATA_SEASON),
     version: () => loadIngestionVersion(getDatabase()),
-    checkMs: CHECK_MS,
-    onBackgroundError,
   });
 }
 
