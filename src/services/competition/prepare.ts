@@ -1,6 +1,8 @@
 /**
- * Per-snapshot memoization of the page view models, and the warm-up run on every freshly loaded
- * level before it is served. Cached level snapshots are immutable (the cache replaces them as a
+ * Per-snapshot memoization of the page view models, and the warm-up (`prepareSnapshot`) that fills
+ * those memos early. Database mode runs the warm-up on every freshly loaded level before it is
+ * served; snapshot mode skips it and lets the first request that needs a level compute it
+ * (src/services/competition/source-cache.ts). The memos make the results identical either way. Cached level snapshots are immutable (the cache replaces them as a
  * whole), so a view model computed once per snapshot object is reused by every request until the
  * level reloads. Formulas are untouched: these call the same functions the pages called before.
  */
@@ -45,7 +47,8 @@ export const levelCoverageSummary = memoBySnapshot("coverage", (s) => coverageSu
 
 /**
  * Builds the analytics context and every role × window Momentum result (the expensive, cold part
- * of the Trending, Trends and directory views) for a freshly loaded snapshot. A failure is only
+ * of the Trending, Trends and directory views) for a freshly loaded snapshot (database mode only;
+ * see source-cache.ts). A failure is only
  * logged: the level's data is still served, and the page that needs the view reports the error.
  */
 export function prepareSnapshot(s: AflSnapshot) {
