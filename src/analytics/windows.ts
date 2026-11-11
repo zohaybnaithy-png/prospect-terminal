@@ -41,6 +41,12 @@ export interface AnalyticsDataset {
   pitching: Map<string, DatedLine<AflPitchingLine>[]>;
 }
 
+/**
+ * Per-player line lists whose dates were verified to be in ascending order under plain string
+ * comparison (the comparison `linesInRange` filters with). Only these may be binary-searched.
+ */
+const ordered = new WeakSet<object>();
+
 function index<T extends { playerId: string; gameId: string }>(
   lines: T[],
   dates: Map<string, string>,
@@ -53,8 +59,13 @@ function index<T extends { playerId: string; gameId: string }>(
     if (list) list.push({ date, line });
     else out.set(line.playerId, [{ date, line }]);
   }
-  for (const list of out.values())
+  for (const list of out.values()) {
     list.sort((a, b) => a.date.localeCompare(b.date));
+    // ISO dates sort the same under localeCompare and plain comparison; verify rather than assume.
+    let sorted = true;
+    for (let i = 1; i < list.length && sorted; i++) sorted = list[i - 1].date <= list[i].date;
+    if (sorted) ordered.add(list);
+  }
   return out;
 }
 
@@ -81,8 +92,34 @@ export interface ComparisonRanges {
   baseline: DateRange | null;
 }
 
+/**
+ * Memo for `comparisonRanges`, scoped to each dataset object (a WeakMap, so it is freed with the
+ * snapshot's analytics context). The ranges depend only on the season, league, end date and window,
+ * but `windowBounds` validates every input on every call, and Momentum asks for the same few
+ * ranges once per player, checkpoint and window. Only successful results are cached (invalid input
+ * still throws), and every call returns fresh objects, so no caller shares or can mutate a cached
+ * value and serialized outputs are unchanged.
+ */
+const rangeMemo = new WeakMap<object, Map<string, ComparisonRanges>>();
+
 /** "What changed in the last N days compared with everything before?" as date ranges. */
 export function comparisonRanges(
+  ds: Pick<AnalyticsDataset, "seasonYear" | "leagueId">,
+  end: string,
+  window: MomentumWindow,
+): ComparisonRanges {
+  let memo = rangeMemo.get(ds);
+  if (!memo) rangeMemo.set(ds, (memo = new Map()));
+  const key = `${ds.seasonYear}|${ds.leagueId}|${end}|${window}`;
+  let ranges = memo.get(key);
+  if (!ranges) memo.set(key, (ranges = computeComparisonRanges(ds, end, window)));
+  return {
+    recent: { ...ranges.recent },
+    baseline: ranges.baseline ? { ...ranges.baseline } : null,
+  };
+}
+
+function computeComparisonRanges(
   ds: Pick<AnalyticsDataset, "seasonYear" | "leagueId">,
   end: string,
   window: MomentumWindow,
@@ -102,10 +139,31 @@ export function comparisonRanges(
   };
 }
 
+/** First index whose date satisfies `pred` (monotone over an ordered list), else `lines.length`. */
+function firstIndex<T>(lines: DatedLine<T>[], pred: (date: string) => boolean) {
+  let lo = 0,
+    hi = lines.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (pred(lines[mid].date)) hi = mid;
+    else lo = mid + 1;
+  }
+  return lo;
+}
+
+/**
+ * The lines dated within `r` (inclusive), in list order. On a verified date-ordered list (see
+ * `index`) the matching lines are one contiguous run, found by binary search: exactly the lines,
+ * in exactly the order, that the linear filter selects. Any other list is filtered linearly.
+ */
 export function linesInRange<T>(lines: DatedLine<T>[] | undefined, r: DateRange) {
-  return (lines ?? [])
-    .filter((l) => l.date >= r.from && l.date <= r.to)
-    .map((l) => l.line);
+  if (!lines) return [];
+  if (!ordered.has(lines))
+    return lines.filter((l) => l.date >= r.from && l.date <= r.to).map((l) => l.line);
+  const end = firstIndex(lines, (d) => d > r.to);
+  const out: T[] = [];
+  for (let i = firstIndex(lines, (d) => d >= r.from); i < end; i++) out.push(lines[i].line);
+  return out;
 }
 
 /** Aggregated sample for a role and range; null when the player has no lines in it. */
