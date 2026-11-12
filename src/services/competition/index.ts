@@ -67,7 +67,9 @@ function createSourceCache(source: DataSource): LevelCache {
   if (source.kind === "snapshot") {
     // Build-time snapshot (docs/VERCEL.md): no database connection is ever opened. The version is
     // the snapshot's id, constant for the deployment, so a loaded level is never reloaded.
-    const files = snapshotSource(source.dir, DATA_SEASON);
+    // Precomputed view models (views-store.ts) are used only with the source fingerprint this
+    // server was built from; next.config.ts inlines it into snapshot builds.
+    const files = snapshotSource(source.dir, DATA_SEASON, { views: { fingerprint: process.env.PT_SOURCE_FINGERPRINT } });
     return competitionLevelCache({ ...common, load: files.load, version: files.version });
   }
   return competitionLevelCache({

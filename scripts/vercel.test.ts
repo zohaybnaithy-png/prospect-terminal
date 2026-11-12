@@ -414,11 +414,11 @@ describe("1d. data source selection", () => {
     const end = index.indexOf("return competitionLevelCache({\n    ...common,\n    load: dbLevelLoader");
     assert.ok(start > 0 && end > start, "snapshot and database branches found");
     const snapshotBranch = index.slice(start, end);
-    assert.match(snapshotBranch, /snapshotSource\(source\.dir, DATA_SEASON\)/);
+    assert.match(snapshotBranch, /snapshotSource\(source\.dir, DATA_SEASON, \{ views: \{ fingerprint: process\.env\.PT_SOURCE_FINGERPRINT \} \}\)/);
     assert.doesNotMatch(snapshotBranch, /getDatabase|loadIngestionVersion/);
     // The database client is only created lazily inside the database branch.
     assert.doesNotMatch(index.slice(0, index.indexOf("function createSourceCache")), /getDatabase\(\)/);
-    for (const f of ["snapshot-store.ts", "snapshot-format.ts", "data-source.ts"])
+    for (const f of ["snapshot-store.ts", "snapshot-format.ts", "data-source.ts", "views-store.ts", "views-format.ts", "views-build.ts", "views-fingerprint.ts"])
       assert.doesNotMatch(src(`src/services/competition/${f}`), /@\/db|from "pg"|drizzle/, f);
     assert.match(src("src/instrumentation.ts"), /PT_DATA_SOURCE !== "snapshot"/);
   });
@@ -426,7 +426,8 @@ describe("1d. data source selection", () => {
   test("snapshot data is git-ignored and built only by the Vercel build", () => {
     assert.match(src(".gitignore"), /^\.data-snapshot\/$/m);
     const pkg = JSON.parse(src("package.json"));
-    assert.equal(pkg.scripts["build:vercel"], "npm run -s snapshot:export && next build");
+    // Precomputed view models are computed from the exported files, between export and build.
+    assert.equal(pkg.scripts["build:vercel"], "npm run -s snapshot:export && npm run -s snapshot:views && next build");
     assert.equal(pkg.scripts.build, "next build", "the single-server build is unchanged");
     const vercel = JSON.parse(src("vercel.json"));
     assert.equal(vercel.buildCommand, "npm run build:vercel");

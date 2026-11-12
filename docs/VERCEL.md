@@ -177,6 +177,104 @@ MiLB level, about 0.8 s for `/players` without `?level=`, which needs every leve
 work happened during startup, so the same request still finishes far sooner from a cold start.
 Real Vercel numbers must be read from the deployment's function metrics.
 
+### Precomputed view models (Phase 2B)
+
+After phase 1, a cold request still spent 0.4–1.5 s computing the Momentum-derived view models of
+the page it rendered (directory rows, Trending, Trends lists and map, coverage), plus 0.45–0.8 s
+decoding the five level files. Both are now mostly done at build time.
+
+**Pipeline:** `npm run build:vercel` = `snapshot:export` → `snapshot:views` → `next build`.
+`snapshot:views` (`scripts/build-snapshot-views.ts`, `src/services/competition/views-build.ts`)
+reads only the snapshot files (no database) and writes `<snapshot>/views/`:
+`manifest.json` plus one gzip file per **part** per level. That is 17 parts per level:
+- `directory-rows|<level>|<window>` × 4 stat windows;
+- `home-trending`, `home-top-lines`, `coverage`;
+- `trend-comparable`, `trend-riser-lists`;
+- `trend-map-points|<role>|<window>` × 6;
+- `level-move-spans`;
+- `shared` (see below).
+
+**At runtime** (`src/services/competition/views-store.ts`, snapshot mode only): a page function
+that misses its per-snapshot memo (`prepare.ts`, `players/adapter.ts`, `moves.ts`) first reads
+**that one part**, and computes live if there is none. Nothing is decoded at load, and a page
+decodes only what it renders. Cross-level views (the "All levels" directory, level moves) are
+still computed per request from the per-level parts. Profiles always compute live.
+
+**Exactness (why pages are byte-identical, not just equal):**
+- Each part is computed by the same page functions, on a snapshot with no views linked.
+- React's RSC serializer writes a repeated object as a back-reference, so the *sharing* of
+  objects matters, not only their values. The encoding (`views-format.ts`) preserves the
+  reference graph:
+  - snapshot objects become pointers to the loaded snapshot's own objects;
+  - objects shared within a part use `$d`/`$r` references;
+  - objects shared across parts go to the level's `shared` pool, decoded once per level (for
+    example, Season and 14-day rows share their 14-day Momentum `sample`).
+- The build fails, writing nothing, unless every part decodes to a strictly deep-equal value
+  with the same key order and the same reference graph. Undefined properties, `-0`, NaN, cycles
+  and reserved keys are refused.
+
+**Checks, all failing safe to live computation** (logged once as `[competition-views] … computing
+live`):
+- the `PT_PRECOMPUTED_VIEWS` switch (unset or `on`; `off` = rollback; any other value = off);
+- a valid views manifest computed from this data snapshot (`snapshotId`);
+- the source fingerprint: `views-fingerprint.ts` hashes `src/**` and the lockfile;
+  `snapshot:views` records it; `next build` inlines it as `PT_SOURCE_FINGERPRINT` and fails a
+  snapshot build whose views came from other source;
+- V8 `major.minor` and `Math.tanh`/`Math.sqrt` probe results identical to the build's;
+- each part's size and SHA-256.
+
+Database mode never links views. At startup the server logs `[competition-views] precomputed
+views on (snapshot …, N levels)` or the reason they are off. With `PT_DATA_TIMING=1` it logs one
+line per decoded part.
+
+**Fast snapshot decoder** (`snapshot-format.ts`): `unpackValue` no longer builds a path string
+for every value. On any failure it reruns the original checked unpacker (`unpackChecked`), so
+errors and their messages are unchanged.
+
+**Tests:**
+- `scripts/precomputed-views.test.ts` (25), covering:
+  - parity across fixtures: values, key order and reference graph per level and per page
+    response;
+  - laziness;
+  - missing, tampered and corrupt parts and pool;
+  - malformed or foreign manifests; fingerprint, V8 and `Math` mismatches; the switch;
+  - database mode;
+  - build refusals;
+  - fast-decoder parity and errors;
+  - the fingerprint and the `next.config` guard.
+- `npm run test:views:e2e` (5, CI job `views-e2e`): one build served with views off and on. It
+  checks:
+  - 27 HTML documents byte-identical, plus unknown-player 404s;
+  - RSC payloads byte-identical (except Next's per-request boundary id);
+  - headers;
+  - and that the parts were really decoded.
+
+**Measured** (local container; the same fictional full-scale snapshot for both: 4 MiLB levels of
+780 players / 46.5k lines each plus the AFL. Server pinned to one core, median of 3 cold
+instances; "content" is when the Suspense content chunk arrives):
+
+| Cold first request | main | Phase 2B |
+|---|---|---|
+| `/` (default level, AFL) | 1.57 s | 1.04 s |
+| `/players` (all levels) | 2.38 s | 1.13 s |
+| `/players?level=aaa` / `aa` / `high-a` / `single-a` | 1.66 / 1.64 / 1.85 / 1.64 s | 1.16 / 1.20 / 1.07 / 1.18 s |
+| `/trends` / `/trends?level=aa` | 1.25 / 2.12 s | 1.16 / 1.33 s |
+| Player profile (computed live, unchanged path) | 1.85 s | 1.63 s |
+| AFL home → High-A click (RSC request / click to content, median of 5) | 667 / 759 ms | 176 / 273 ms |
+| RSS after 31 distinct pages / CPU for them | 452 MB / 4.6 s | 413 MB / 2.7 s |
+
+**Cost:**
+- `snapshot:views` takes 5–6 s.
+- 0.96 MB is added to every function's traced files (2.42 MB of snapshot instead of 1.46 MB).
+- `next build` time is unchanged.
+
+**Rollback:**
+- Set `PT_PRECOMPUTED_VIEWS=off`. On Vercel an environment-variable change applies to new
+  deployments, so redeploy. With the switch off the site computes live: cold `/players`
+  2.34 s, about main's.
+- Or drop `snapshot:views` from `build:vercel`. With no views, everything computes live.
+- Or use Vercel's instant rollback.
+
 ## 2. Prefetching off by default
 
 `src/components/ui/app-link.tsx` is the site's only `Link`: Next.js's `Link` with
@@ -432,6 +530,8 @@ request and on pushes to `main`, read-only (`contents: read`), with no secrets:
   unreachable database).
 - **nav-e2e:** `npm run test:nav:e2e` (two snapshot builds, `next start`, headless Chromium:
   router cache, pending hint, filters and levels across history, 404s, headers, redeploy).
+- **views-e2e:** `npm run test:views:e2e` (one snapshot build with precomputed views served with
+  views off and on: byte-identical HTML, RSC payloads, statuses and headers).
 
 Not in CI yet: the seven PostgreSQL integration suites (`test:*:db`). They need a disposable
 PostgreSQL service and migrations per suite, which is a natural next step. They were run locally
@@ -449,6 +549,7 @@ for this change.
 | Cache-header matrix, header precedence, no-database serving (`npm run test:cdn:e2e`) | `next build` + `next start` | 8/8 |
 | Prefetch count, click navigation, analytics script request, CSP | Chromium | 0 prefetches, no violations |
 | Router cache, pending hint, filters/levels across history, 404s, headers, redeploy (`npm run test:nav:e2e`) | `next build` + `next start` + Chromium | 8/8 |
+| Precomputed views: byte-identical pages, RSC payloads and 404s, views off vs on (`npm run test:views:e2e`) | `next build` + two `next start` | 5/5 |
 | Lint, typecheck, default build | local; CI on every PR | clean |
 | Vercel CDN behaviour, edge headers, minimal mode, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks 1–8 |
 

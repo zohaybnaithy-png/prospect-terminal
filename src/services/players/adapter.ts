@@ -19,6 +19,7 @@ import {
 } from "./directory";
 import { levelOrder, type LevelId } from "./levels";
 import { processWeakMap } from "@/lib/process-memo";
+import { precomputedPart } from "@/services/competition/views-store";
 
 const memo = processWeakMap<AflSnapshot, Map<string, PlayerDirectoryRow[]>>("directory-rows");
 
@@ -33,6 +34,12 @@ export function levelDirectoryRows(
   const key = `${level}|${window}`;
   const hit = byKey.get(key);
   if (hit) return hit;
+  // Precomputed at snapshot build (views-store.ts) when available; otherwise computed below.
+  const pre = precomputedPart<PlayerDirectoryRow[]>(snapshot, `directory-rows|${key}`);
+  if (pre) {
+    byKey.set(key, pre);
+    return pre;
+  }
   const ctx = analyticsContextFor(snapshot);
   const mWindow = momentumWindowFor(window);
   const asOf = aflAsOf(snapshot);
