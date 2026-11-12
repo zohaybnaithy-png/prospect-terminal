@@ -49,3 +49,19 @@ jobs:
       # Writes a fictional snapshot, builds with PT_DATA_SOURCE=snapshot and checks cache headers
       # against `next start` with an unreachable DATABASE_URL.
       - run: npm run test:cdn:e2e
+
+  nav-e2e:
+    name: Client navigation end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      # Two fictional snapshot builds, `next start` and headless Chromium: router cache, pending
+      # hint, filters and levels across history, 404s, headers and a redeploy on the same origin.
+      - run: npm run test:nav:e2e

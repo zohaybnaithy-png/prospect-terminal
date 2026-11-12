@@ -1,4 +1,5 @@
 import Link from "@/components/ui/app-link";
+import { LinkPendingHint } from "@/components/ui/link-pending-hint";
 import type { LevelId } from "@/services/players/levels";
 
 /**
@@ -17,5 +18,6 @@ export const PlayerLink = ({
 }) => (
   <Link className="player-name" href={playerHref(player.id, level)}>
     {player.name}
+    <LinkPendingHint />
   </Link>
 );

@@ -260,6 +260,9 @@ The same limiter runs in each Vercel function instance:
   first by the CDN cache, then by Vercel's DDoS mitigation and the Hobby caps (pause, never bill).
 - **Prefetching is off by default** (`src/components/ui/app-link.tsx`), so a page view is ~3
   requests instead of ~60. The `prefetch` budget remains for any link that opts in.
+- **Router cache (Phase 2A, docs/VERCEL.md *Navigation*):** a page revisited within 5 minutes in the
+  same tab makes no request; first visits still make one RSC request each. A 13-step browsing flow
+  went from 9 to 5 server requests. Budgets are unchanged: the cache only removes requests.
 
 ## Limitations and when to add more
 

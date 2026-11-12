@@ -36,7 +36,8 @@
     "check:db-roles": "node --import tsx scripts/ops/check-db-roles.ts",
     "test:milb:db": "node --import tsx --test scripts/milb-db.integration.ts",
     "test:snapshot:db": "node --import tsx --test scripts/snapshot-db.integration.ts",
-    "test:cdn:e2e": "node --import tsx --test --test-timeout=600000 scripts/cdn-cache.e2e.ts"
+    "test:cdn:e2e": "node --import tsx --test --test-timeout=600000 scripts/cdn-cache.e2e.ts",
+    "test:nav:e2e": "node --import tsx --test --test-timeout=900000 --test-concurrency=1 scripts/navigation.e2e.ts"
   },
   "repository": {
     "type": "git",

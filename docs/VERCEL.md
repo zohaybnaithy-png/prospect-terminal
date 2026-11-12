@@ -191,6 +191,43 @@ Real Vercel numbers must be read from the deployment's function metrics.
 Clicking a player link still navigates client-side with one RSC request (`?_rsc=…`), which the CDN
 can serve.
 
+### Navigation: router cache and pending hint (Phase 2A)
+
+Every page is dynamic, and Next.js 16 keeps dynamic pages in the browser's router cache for 0 s by
+default, so every click (including a revisit) was one RSC request reaching a function, and a slow
+(cold) one showed nothing until it answered.
+
+- **Router cache:** `next.config.ts` sets `experimental.staleTimes.dynamic` to 300 s
+  (`ROUTER_CACHE_DYNAMIC_SECONDS`). A page visited in the last 5 minutes is shown from memory with
+  no request. The cache is per tab, in memory, keyed by URL including the query string, so each
+  filter, search and level is its own entry. A full reload empties it. `static` (default 300 s) is
+  not overridden. `staleTimes` is still experimental (14.2+; Next.js 15 changed the dynamic default
+  from 30 s to 0), so `scripts/navigation.e2e.ts` pins the behaviour across upgrades.
+- **Staleness bound:** cached pages can be up to 5 minutes older than the server. The data changes
+  only per snapshot build (a deployment), so in practice this is "up to 5 minutes after a deploy".
+  After a deployment, the first navigation that reaches the server sees a different build and
+  Next.js loads a full document from the new deployment, which empties the cache; builds are never
+  mixed in one page (e2e-verified, with different data in the two builds).
+- **Pending hint:** `src/components/ui/link-pending-hint.tsx` (`useLinkStatus`, stable since
+  15.3) renders a 2 px bar along the bottom of the clicked header tab or player-name link. It is
+  absolutely positioned (no layout shift), `aria-hidden`, and hidden for the first 150 ms, so
+  cached and fast navigations never show it. Reduced motion: shown without the pulse.
+- **Not used:** `loading.tsx`. A loading boundary streams the page, which fixes the status at 200
+  before the profile is looked up, so an unknown player would become a soft 404 (200 with a "not
+  found" body). `scripts/navigation.test.ts` fails if one is added under `src/app`. Prefetching
+  stays off (no hover or viewport requests).
+
+| Navigation flow (13 steps, Chromium, `next start`, snapshot, median of 3) | Cache off (main) | Cache on |
+|---|---|---|
+| Server requests for the flow | 9 | **5** |
+| Revisit within 5 min | 1 request, 112 ms | **0 requests, 85 ms** |
+| Revisit with +300 ms simulated server/network latency | 406 ms | **84 ms** |
+| First visit | 1 request (unchanged) | 1 request |
+| Back / Forward | 0 requests (Next.js history cache) | 0 requests |
+| Hover | 0 requests | 0 requests |
+
+Single-core runs show the same shape (revisit 117 → 78 ms; with +300 ms, 395 → 85 ms).
+
 ## 3. CDN caching (`src/lib/cdn-cache.ts`)
 
 Only for snapshot builds (content is fixed per deployment). Switch it off with `PT_CDN_CACHE=off`
@@ -393,6 +430,8 @@ request and on pushes to `main`, read-only (`contents: read`), with no secrets:
   default single-server build).
 - **cdn-e2e:** `npm run test:cdn:e2e` (snapshot build plus cache-header matrix, fictional data,
   unreachable database).
+- **nav-e2e:** `npm run test:nav:e2e` (two snapshot builds, `next start`, headless Chromium:
+  router cache, pending hint, filters and levels across history, 404s, headers, redeploy).
 
 Not in CI yet: the seven PostgreSQL integration suites (`test:*:db`). They need a disposable
 PostgreSQL service and migrations per suite, which is a natural next step. They were run locally
@@ -409,6 +448,7 @@ for this change.
 | Snapshot build, file tracing into every function, missing-snapshot guard | `next build` | as designed |
 | Cache-header matrix, header precedence, no-database serving (`npm run test:cdn:e2e`) | `next build` + `next start` | 8/8 |
 | Prefetch count, click navigation, analytics script request, CSP | Chromium | 0 prefetches, no violations |
+| Router cache, pending hint, filters/levels across history, 404s, headers, redeploy (`npm run test:nav:e2e`) | `next build` + `next start` + Chromium | 8/8 |
 | Lint, typecheck, default build | local; CI on every PR | clean |
 | Vercel CDN behaviour, edge headers, minimal mode, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks 1–8 |
 

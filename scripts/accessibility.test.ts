@@ -227,7 +227,8 @@ describe("screen-reader text", () => {
     assert.match(html, /<details class="map-points"><summary>List the 2 players on this map<\/summary>/);
     assert.match(html, /role="region"/);
     // Every point is a real link, highest Momentum first.
-    const names = [...html.matchAll(/<a class="player-name" href="\/players\/[^"]+\?level=aa">([^<]+)<\/a>/g)].map((m) => m[1]);
+    // Player links carry the aria-hidden navigation pending hint after their name.
+    const names = [...html.matchAll(/<a class="player-name" href="\/players\/[^"]+\?level=aa">([^<]+)(?:<span aria-hidden="true" class="link-hint" data-pending="false"><\/span>)?<\/a>/g)].map((m) => m[1]);
     assert.deepEqual(names, ["High Mover", "Low Mover"]);
   });
 });

@@ -64,9 +64,26 @@ function snapshotTracing(phase: string): NextConfig["outputFileTracingIncludes"]
   return { "/**/*": [`./${dir.split(path.sep).join("/")}/**/*`] };
 }
 
+/**
+ * Client router cache for dynamic pages (docs/VERCEL.md, *Navigation*). Every page is rendered per
+ * request, and Next.js 16 by default keeps a visited dynamic page in the browser's router cache
+ * for 0 s, so every click, revisits included, was a server request (on Vercel, an uncached
+ * function invocation; ~3 s on a cold instance). With 300 s, a page visited in this tab is
+ * reused for 5 minutes: no request, no invocation. Data only changes on a redeploy (build-time
+ * snapshot), so the reused page is the same page; a navigation that reaches a new deployment
+ * makes Next.js reload the document, which clears this cache.
+ *
+ * `staleTimes` is an experimental Next.js option (introduced in 14.2; its dynamic default changed
+ * from 30 s to 0 in 15). scripts/navigation.e2e.ts pins the behaviour, so an upgrade that changes
+ * it fails CI. Removing this line restores the previous behaviour exactly. Prefetching
+ * stays off (src/components/ui/app-link.tsx): this adds no requests.
+ */
+export const ROUTER_CACHE_DYNAMIC_SECONDS = 300;
+
 export default function nextConfig(phase: string): NextConfig {
   return {
     poweredByHeader: false,
+    experimental: { staleTimes: { dynamic: ROUTER_CACHE_DYNAMIC_SECONDS } },
     // The rate limiter (src/proxy.ts) must see `Next-Router-Prefetch` to give router prefetches their
     // own budget. By default Next.js deletes that and the other router headers before Proxy runs, so
     // every prefetch counted as a full profile render (docs/TRAFFIC.md). The proxy reads only the
