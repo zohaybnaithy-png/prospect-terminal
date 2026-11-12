@@ -410,7 +410,10 @@ describe("1d. data source selection", () => {
 
   test("in snapshot mode the competition service never touches the database", () => {
     const index = src("src/services/competition/index.ts");
-    const snapshotBranch = index.slice(index.indexOf('if (source.kind === "snapshot")'), index.indexOf("return createLevelCache({\n    load: traced(dbLevelLoader"));
+    const start = index.indexOf('if (source.kind === "snapshot")');
+    const end = index.indexOf("return competitionLevelCache({\n    ...common,\n    load: dbLevelLoader");
+    assert.ok(start > 0 && end > start, "snapshot and database branches found");
+    const snapshotBranch = index.slice(start, end);
     assert.match(snapshotBranch, /snapshotSource\(source\.dir, DATA_SEASON\)/);
     assert.doesNotMatch(snapshotBranch, /getDatabase|loadIngestionVersion/);
     // The database client is only created lazily inside the database branch.

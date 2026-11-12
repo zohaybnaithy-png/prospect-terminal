@@ -132,6 +132,51 @@ and a direct row update on other connections. Then:
   no `ORDER BY`; that's existing behaviour, unchanged here). The snapshot freezes the order its read
   returned. Two exports of identical data can list rows in a different order; the content is equal.
 
+### Lazy analytics preparation (Momentum performance, phase 1)
+
+Measured cause of the ~4.4 s cold start (overnight audit): every new instance prepared
+the analytics of all five levels (`prepareSnapshot`: analytics context, every role × window
+Momentum result, Trending) before any page could render, and Momentum spent most of that time
+re-validating identical date ranges and re-scanning each player's lines.
+
+**What changed** (no formula, weight, threshold, classification or output changed):
+
+1. **Snapshot mode prepares lazily** (`src/services/competition/source-cache.ts`). Levels are still
+   loaded and decoded at boot, but analytics are computed by the first request that needs a level,
+   through the existing per-snapshot memos, and reused afterwards. Database mode (single server)
+   still prepares every level eagerly on load.
+2. **Output-preserving Momentum optimizations** (`src/analytics/windows.ts`): `comparisonRanges`
+   memoized per dataset; `linesInRange` binary-searches the verified date-ordered line lists.
+
+**Guarantees:**
+- `scripts/momentum-golden.test.ts` pins 2,638 Momentum outputs (every player × role × window ×
+  model, timelines, profiles, discovery lists, directory rows, scales, settings variants) generated
+  from the unmodified engine. It passes unchanged; the golden file was not regenerated.
+- `scripts/lazy-prepare.test.ts`: identical page view models eager vs lazy; serving one level
+  prepares only that level; concurrent first requests share one load and one computation.
+- The original and optimized builds were compared live: 60/60 `/trends/data` responses
+  byte-identical, 62/62 pages identical in content, status and CDN header.
+
+**Measured** (local container, fictional MiLB-scale snapshot: 3,149 players, 187k stat lines;
+same build settings, 1,536 MB heap cap; median of 3 cold runs):
+
+| | Before | After |
+|---|---|---|
+| Startup to `/health` ready | 4.23 s, 6.5 CPU-s | 1.23 s, 1.8 CPU-s |
+| Cold `/` (default level, AFL) | 4.40 s | 1.24 s |
+| Cold `/?level=aa` (full MiLB level) | 4.31 s | 1.80 s |
+| Cold `/players` (all levels) | 4.16 s | 2.04 s |
+| Cold `/trends` / `/trends?level=aa` | 4.08 / 4.36 s | 1.09 / 1.65 s |
+| Cold player profile | 4.27 s | 1.47 s |
+| Warm profile (median) | 172 ms | 121 ms |
+| Momentum warm-up, one MiLB level | 699 ms | 325 ms |
+| Peak memory after a 300-profile crawl | 826 MB | 769 MB |
+
+**Trade-off:** a request that is the first to need a level now computes it (about 0.5 s for a full
+MiLB level, about 0.8 s for `/players` without `?level=`, which needs every level). Before, that
+work happened during startup, so the same request still finishes far sooner from a cold start.
+Real Vercel numbers must be read from the deployment's function metrics.
+
 ## 2. Prefetching off by default
 
 `src/components/ui/app-link.tsx` is the site's only `Link`: Next.js's `Link` with

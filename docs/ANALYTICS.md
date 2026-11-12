@@ -69,6 +69,16 @@ Checkpoints: the same window ending today, 7, 14 and 21 days earlier (`stepDays`
 | Skills-heavy | .15 | .25 | .35 | .25 | | .45 | .35 | .15 | .05 |
 | **Balanced (V1 default)** | .25 | .25 | .25 | .25 | | .30 | .25 | .25 | .20 |
 
+## Performance (no effect on outputs)
+
+`windows.ts` memoizes `comparisonRanges` per dataset (the ranges depend only on season, league,
+end date and window) and binary-searches each player's date-ordered lines in `linesInRange`
+(same rows, same order as a linear filter). Momentum warm-up per MiLB level fell from ~700 to
+~325 ms. `scripts/momentum-golden.test.ts` pins every Momentum output generated from the engine
+before these changes; it must never be regenerated to make a performance change pass
+(`MOMENTUM_GOLDEN_UPDATE=1` is only for a deliberate, discussed change to Momentum itself). On
+Vercel (snapshot mode) analytics are prepared per level on first use; see docs/VERCEL.md.
+
 ## Known limitations
 
 - The AFL season is ~4–6 weeks: for much of it the **30D window has no valid earlier baseline**, so 30D is shown as *unavailable* (never estimated). 14D persistence can only reach ~2–3 checkpoints.
