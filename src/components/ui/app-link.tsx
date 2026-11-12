@@ -1,6 +1,9 @@
 import NextLink from "next/link";
 import type { ComponentProps } from "react";
 
+/** Pending state of the enclosing Link (see src/components/ui/link-pending-hint.tsx). */
+export { useLinkStatus } from "next/link";
+
 /**
  * The site's only `Link` (ESLint forbids importing `next/link` elsewhere). Identical to Next.js's
  * `Link`, except that prefetching is OFF unless a caller opts in with `prefetch`.

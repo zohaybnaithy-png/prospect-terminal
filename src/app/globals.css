@@ -2439,3 +2439,47 @@ html:has(.profile-tabs) {
     display: none;
   }
 }
+
+/*
+ * Inline navigation pending hint (src/components/ui/link-pending-hint.tsx). A thin bar under the
+ * clicked link, absolutely positioned (no layout shift), shown only if the navigation is still
+ * pending after 150 ms so cached navigations never flash it.
+ */
+a:has(> .link-hint) {
+  position: relative;
+}
+.link-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--link);
+  opacity: 0;
+  transform-origin: left center;
+  pointer-events: none;
+}
+.link-hint[data-pending="true"] {
+  animation:
+    link-hint-show 0s linear 150ms forwards,
+    link-hint-pulse 1.2s ease-in-out 150ms infinite;
+}
+@keyframes link-hint-show {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes link-hint-pulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .link-hint[data-pending="true"] {
+    animation: link-hint-show 0s linear 150ms forwards;
+  }
+}
