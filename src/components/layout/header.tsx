@@ -1,5 +1,6 @@
 "use client";
 import Link from "@/components/ui/app-link";
+import { LinkPendingHint } from "@/components/ui/link-pending-hint";
 import Image from "next/image";
 import prospectLogo from "../../../prospect-terminal-logo.png";
 import { usePathname } from "next/navigation";
@@ -50,6 +51,7 @@ export function Header() {
               aria-current={active ? "page" : undefined}
             >
               {label}
+              <LinkPendingHint />
             </Link>
           );
         })}
