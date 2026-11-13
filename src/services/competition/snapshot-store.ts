@@ -24,6 +24,7 @@ import { z } from "zod";
 import type { AflSnapshot } from "@/services/afl/types";
 import { LEVEL_IDS, type LevelId } from "@/services/players/levels";
 import { SnapshotFormatError, packSnapshot, unpackSnapshot } from "./snapshot-format";
+import { checkViews, linkLevelViews, logViewsStatus, type ViewsStatus } from "./views-store";
 
 export const SNAPSHOT_FORMAT = "prospect-terminal/level-snapshots";
 export const SNAPSHOT_FORMAT_VERSION = 1;
@@ -192,19 +193,32 @@ export async function readSnapshotManifest(dir: string, season: number): Promise
  * deployment, so the cache never reloads), `load` reads and verifies one level file. The manifest
  * is read once per process; a failed read is retried on the next call (the cache's backoff paces
  * that).
+ *
+ * With `views`, levels are linked to the snapshot's precomputed view models when they pass every
+ * check (views-store.ts); without it (the default) views are never used.
  */
-export function snapshotSource(dir: string, season: number) {
+export function snapshotSource(dir: string, season: number, options: { views?: { fingerprint: string | undefined } } = {}) {
   let manifest: Promise<SnapshotManifest> | undefined;
   const getManifest = () => {
     manifest ??= readSnapshotManifest(dir, season);
     manifest.catch(() => (manifest = undefined));
     return manifest;
   };
+  let views: Promise<ViewsStatus> | undefined;
+  const getViews = (m: SnapshotManifest) => {
+    if (!options.views) return undefined;
+    views ??= checkViews(dir, { snapshotId: m.snapshotId, fingerprint: options.views.fingerprint }).then((status) => {
+      logViewsStatus(status);
+      return status;
+    });
+    return views;
+  };
   return {
     manifest: getManifest,
     version: async () => (await getManifest()).snapshotId,
     load: async (level: LevelId): Promise<AflSnapshot | null> => {
-      const entry = (await getManifest()).levels[level];
+      const m = await getManifest();
+      const entry = m.levels[level];
       if (!entry) throw new SnapshotIntegrityError(`snapshot has no entry for ${level}`);
       if (entry.status === "empty") return null;
       let file: Buffer | null = null;
@@ -213,7 +227,10 @@ export function snapshotSource(dir: string, season: number) {
       } catch {
         file = null;
       }
-      return decodeLevel(entry, file, season);
+      const snapshot = decodeLevel(entry, file, season);
+      const status = await getViews(m);
+      if (snapshot && status) linkLevelViews(snapshot, level, status);
+      return snapshot;
     },
   };
 }

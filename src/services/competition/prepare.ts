@@ -12,35 +12,60 @@ import { analyticsContextFor, comparableCount, mapSets, riserSets } from "@/anal
 import { coverageSummary, latestTopLines, trendingSets } from "@/services/home";
 import type { AflSnapshot } from "@/services/afl/types";
 import { processWeakMap } from "@/lib/process-memo";
+import { precomputedPart } from "./views-store";
 
-function memoBySnapshot<T>(name: string, compute: (s: AflSnapshot) => T): (s: AflSnapshot) => T {
+/**
+ * `part`: the precomputed view model (views-store.ts) that fills this memo on a miss when the
+ * snapshot has one; otherwise, or when it fails a check, the value is computed live as before.
+ */
+function memoBySnapshot<T>(
+  name: string,
+  compute: (s: AflSnapshot) => T,
+  part: (s: AflSnapshot) => T | undefined = (s) => precomputedPart<T>(s, name),
+): (s: AflSnapshot) => T {
   const memo = processWeakMap<AflSnapshot, T>(`view.${name}`);
   return (s) => {
     if (memo.has(s)) return memo.get(s)!;
-    const value = compute(s);
+    const value = part(s) ?? compute(s);
     memo.set(s, value);
     return value;
   };
 }
 
+/** Never precomputed (intermediate results of the precomputed views). */
+const live = () => undefined;
+
 /** Homepage Trending lists (6 per list), Trends risers/fallers (10), map points, coverage. */
 export const homeTrending = memoBySnapshot("home-trending", (s) => trendingSets(s));
 export const homeTopLines = memoBySnapshot("home-top-lines", (s) => latestTopLines(s));
-export const trendRisers = memoBySnapshot("trend-risers", (s) => riserSets(s));
-export const trendMap = memoBySnapshot("trend-map", (s) => mapSets(s));
-/** Display-ready Trends models (what the client components receive). */
-const trendRiserView = memoBySnapshot("trend-riser-view", (s) => riserListsView(trendRisers(s)));
+export const trendRisers = memoBySnapshot("trend-risers", (s) => riserSets(s), live);
+export const trendMap = memoBySnapshot("trend-map", (s) => mapSets(s), live);
 /** Players with a valid comparison per role × window (0 = window unavailable). */
-export const trendComparable = (s: AflSnapshot) => trendRisers(s).comparable;
+export const trendComparable = memoBySnapshot("trend-comparable", (s) => trendRisers(s).comparable);
+/**
+ * Display-ready Trends models (what the client components receive). Precomputed as its `lists`
+ * only: its `comparable` is the same object as `trendComparable`'s, live and precomputed alike.
+ */
+const trendRiserView = memoBySnapshot(
+  "trend-riser-view",
+  (s) => riserListsView(trendRisers(s)),
+  (s) => {
+    const lists = precomputedPart<ReturnType<typeof riserListsView>["lists"]>(s, "trend-riser-lists");
+    return lists && { lists, comparable: trendComparable(s) };
+  },
+);
+/** Every role × window of the display-ready riser lists (what the views build precomputes). */
+export const trendRiserListsAll = (s: AflSnapshot) => trendRiserView(s).lists;
 /** Risers / fallers for every category of one role × window. */
 export const trendRiserLists = (s: AflSnapshot, role: Role, window: MomentumWindow) =>
   trendRiserView(s).lists[role][window];
-const mapPointMemo = memoBySnapshot("trend-map-points", () => new Map<string, MapPointCompact[]>());
+const mapPointMemo = memoBySnapshot("trend-map-points", () => new Map<string, MapPointCompact[]>(), live);
 export function trendMapPoints(s: AflSnapshot, role: Role, window: MomentumWindow) {
   const memo = mapPointMemo(s);
   const key = `${role}|${window}`;
   let points = memo.get(key);
-  if (!points) memo.set(key, (points = mapPointsView(trendMap(s), role, window)));
+  if (!points)
+    memo.set(key, (points = precomputedPart<MapPointCompact[]>(s, `trend-map-points|${key}`) ?? mapPointsView(trendMap(s), role, window)));
   return points;
 }
 export const levelCoverageSummary = memoBySnapshot("coverage", (s) => coverageSummary(s));

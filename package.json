@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "build:vercel": "npm run -s snapshot:export && next build",
+    "build:vercel": "npm run -s snapshot:export && npm run -s snapshot:views && next build",
     "snapshot:export": "node --import tsx scripts/export-snapshot.ts",
+    "snapshot:views": "node --import tsx scripts/build-snapshot-views.ts",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
@@ -37,6 +38,7 @@
     "test:milb:db": "node --import tsx --test scripts/milb-db.integration.ts",
     "test:snapshot:db": "node --import tsx --test scripts/snapshot-db.integration.ts",
     "test:cdn:e2e": "node --import tsx --test --test-timeout=600000 scripts/cdn-cache.e2e.ts",
+    "test:views:e2e": "node --import tsx --test --test-timeout=900000 --test-concurrency=1 scripts/precomputed-views.e2e.ts",
     "test:nav:e2e": "node --import tsx --test --test-timeout=900000 --test-concurrency=1 scripts/navigation.e2e.ts"
   },
   "repository": {

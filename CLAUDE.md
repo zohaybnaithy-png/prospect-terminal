@@ -46,7 +46,7 @@ Scale rules (needed for MiLB volume): apply/preview read only identities and rec
 
 ### Vercel target (Phase 6B)
 
-`PT_DATA_SOURCE=snapshot` serves levels from a build-time snapshot (`npm run build:vercel` → `snapshot:export` → `next build`; `.data-snapshot/` is git-ignored, never commit it). Snapshot mode never opens a database connection at runtime. On Vercel (`VERCEL=1`): identity header `x-vercel-forwarded-for`, immediate refusals, indexing off unless production + `PT_INDEXING=on`, Web Analytics path-only. Links come from `@/components/ui/app-link` (prefetch off). Details: `docs/VERCEL.md`.
+`PT_DATA_SOURCE=snapshot` serves levels from a build-time snapshot (`npm run build:vercel` → `snapshot:export` → `snapshot:views` (precomputed per-level view models; `PT_PRECOMPUTED_VIEWS=off` disables) → `next build`; `.data-snapshot/` is git-ignored, never commit it). Snapshot mode never opens a database connection at runtime. On Vercel (`VERCEL=1`): identity header `x-vercel-forwarded-for`, immediate refusals, indexing off unless production + `PT_INDEXING=on`, Web Analytics path-only. Links come from `@/components/ui/app-link` (prefetch off). Details: `docs/VERCEL.md`.
 
 ### Database safety
 
