@@ -45,15 +45,30 @@ export interface HealthExtras {
   process: { uptimeSeconds: number; rssMB: number; heapUsedMB: number; heapLimitMB: number };
 }
 
+/**
+ * Vercel Preview deployments only (`VERCEL=1` and `VERCEL_ENV=preview`), which sit behind Vercel
+ * Authentication: /health also reports whether precomputed view models are in use
+ * (docs/VERCEL.md, *Precomputed view models*). Production, development and every non-Vercel
+ * deployment answer exactly as before.
+ */
+export const previewViewsDiagnostics = (env: Record<string, string | undefined>) =>
+  env.VERCEL === "1" && env.VERCEL_ENV === "preview";
+
 export function buildHealthResponse(
   report: HealthReport,
   traffic: { status: TrafficHealthStatus; reason?: string },
   extras: HealthExtras,
   local: boolean,
+  /**
+   * Preview only (see `previewViewsDiagnostics`): coarse view status and part counts. Never paths,
+   * fingerprints, snapshot ids or rejection reasons. Omitted, the response is unchanged.
+   */
+  views?: { status: "pending" | "on" | "off"; decoded: number; fallbacks: number },
 ): { status: 200 | 503; body: Record<string, unknown> } {
   const blocked = trafficBlocksHealth(traffic.status);
   const status = healthHttpStatus(report) === 200 && !blocked ? 200 : 503;
-  if (!local) return { status, body: { status: status === 200 ? "ready" : "unavailable" } };
+  const diag = views ? { views: { status: views.status, decoded: views.decoded, fallbacks: views.fallbacks } } : {};
+  if (!local) return { status, body: { status: status === 200 ? "ready" : "unavailable", ...diag } };
   return {
     status,
     body: {
@@ -61,6 +76,7 @@ export function buildHealthResponse(
       ...(blocked && report.status === "ready" ? { status: "misconfigured" } : {}),
       traffic,
       ...extras,
+      ...diag,
     },
   };
 }

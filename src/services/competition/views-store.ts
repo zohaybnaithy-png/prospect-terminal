@@ -136,8 +136,44 @@ export function linkLevelViews(s: AflSnapshot, level: LevelId, status: ViewsStat
   if (parts) links.set(s, { dir: path.join(status.dir, level), level, parts });
 }
 
+/**
+ * Runtime diagnostics of this process, kept on `globalThis`: Next.js bundles instrumentation and
+ * the route handlers separately, so a module-level object would exist once per bundle and /health
+ * would not see what instrumentation recorded or what a page decoded. Recording only: nothing reads
+ * these values to decide anything.
+ * - `status`: `pending` until a snapshot source with views has checked its views, then `on`/`off`;
+ * - `decoded` / `fallbacks`: parts served precomputed / parts that fell back to live computation.
+ */
+export interface ViewsDiagnostics {
+  status: "pending" | "on" | "off";
+  decoded: number;
+  fallbacks: number;
+}
+const DIAGNOSTICS = Symbol.for("prospect-terminal.views-diagnostics");
+const slot = globalThis as typeof globalThis & { [DIAGNOSTICS]?: ViewsDiagnostics };
+const diagnostics = (): ViewsDiagnostics => (slot[DIAGNOSTICS] ??= { status: "pending", decoded: 0, fallbacks: 0 });
+
 /** Parts decoded and parts that fell back to live computation, this process (tests, diagnostics). */
-export const viewsCounters = { decoded: 0, fallbacks: 0 };
+export const viewsCounters = diagnostics();
+
+/** Records the outcome of the views check (coarse: on or off, never the reason). */
+export function recordViewsStatus(status: ViewsStatus) {
+  diagnostics().status = status.on ? "on" : "off";
+}
+
+/**
+ * A copy of this process's diagnostics. `snapshotMode: false` (database mode, or no data source):
+ * views are never used, so the status is `off` rather than a `pending` that would never resolve.
+ */
+export function viewsDiagnostics(snapshotMode: boolean): ViewsDiagnostics {
+  const d = diagnostics();
+  return { status: snapshotMode ? d.status : "off", decoded: d.decoded, fallbacks: d.fallbacks };
+}
+
+/** Test hook: back to the state of a fresh process. */
+export function resetViewsDiagnostics() {
+  Object.assign(diagnostics(), { status: "pending", decoded: 0, fallbacks: 0 });
+}
 
 /** Reads one part file and checks it against its manifest entry. */
 function readPart(link: LevelLink, entry: ViewsPartEntry): unknown {

@@ -24,7 +24,7 @@ import { z } from "zod";
 import type { AflSnapshot } from "@/services/afl/types";
 import { LEVEL_IDS, type LevelId } from "@/services/players/levels";
 import { SnapshotFormatError, packSnapshot, unpackSnapshot } from "./snapshot-format";
-import { checkViews, linkLevelViews, logViewsStatus, type ViewsStatus } from "./views-store";
+import { checkViews, linkLevelViews, logViewsStatus, recordViewsStatus, type ViewsStatus } from "./views-store";
 
 export const SNAPSHOT_FORMAT = "prospect-terminal/level-snapshots";
 export const SNAPSHOT_FORMAT_VERSION = 1;
@@ -209,6 +209,7 @@ export function snapshotSource(dir: string, season: number, options: { views?: {
     if (!options.views) return undefined;
     views ??= checkViews(dir, { snapshotId: m.snapshotId, fingerprint: options.views.fingerprint }).then((status) => {
       logViewsStatus(status);
+      recordViewsStatus(status);
       return status;
     });
     return views;

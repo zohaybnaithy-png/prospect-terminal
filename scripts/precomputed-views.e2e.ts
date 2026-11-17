@@ -36,7 +36,7 @@ interface Server {
   base: string;
   output: string;
 }
-const servers: Record<"live" | "views", Server> = {} as never;
+const servers: Record<"live" | "views" | "production", Server> = {} as never;
 
 const freePort = () =>
   new Promise<number>((resolve, reject) => {
@@ -56,7 +56,7 @@ const buildEnv = (): NodeJS.ProcessEnv => {
   return env;
 };
 
-async function start(views: "on" | "off"): Promise<Server> {
+async function start(views: "on" | "off", vercelEnv: "preview" | "production" = "preview"): Promise<Server> {
   const port = await freePort();
   const server: Server = { proc: undefined as never, base: `http://127.0.0.1:${port}`, output: "" };
   server.proc = spawn(NEXT, ["start", "-p", String(port), "-H", "127.0.0.1"], {
@@ -66,7 +66,7 @@ async function start(views: "on" | "off"): Promise<Server> {
       NODE_ENV: "production",
       DATABASE_URL: UNREACHABLE_DB,
       VERCEL: "1",
-      VERCEL_ENV: "preview",
+      VERCEL_ENV: vercelEnv,
       VERCEL_BRANCH_URL: "pt-git-views-e2e.vercel.app",
       PT_PRECOMPUTED_VIEWS: views,
       PT_DATA_TIMING: "1", // one log line per decoded view part
@@ -77,12 +77,16 @@ async function start(views: "on" | "off"): Promise<Server> {
   server.proc.stderr!.on("data", (d) => (server.output += d));
   for (let i = 0; i < 240; i++) {
     try {
-      if ((await fetch(`${server.base}/health`)).status === 200) return server;
+      const status = (await fetch(`${server.base}/health`)).status;
+      // Emulated Production is not fully configured (traffic protection), so its /health answers
+      // 503 "unavailable"; it only needs to be listening.
+      if (status === 200 || (vercelEnv === "production" && status === 503)) return server;
     } catch {
       /* not listening yet */
     }
     await new Promise((r) => setTimeout(r, 250));
   }
+  server.proc.kill("SIGKILL"); // never leave a stray server behind (it would keep the test alive)
   throw new Error(`server did not become ready:\n${server.output}`);
 }
 
@@ -101,6 +105,8 @@ before(async () => {
   assert.equal(build.status, 0, `next build failed:\n${build.stdout}\n${build.stderr}`);
   servers.live = await start("off");
   servers.views = await start("on");
+  // Same build, served as Production: /health must not carry the Preview-only diagnostic.
+  servers.production = await start("on", "production");
 });
 
 after(() => {
@@ -212,4 +218,34 @@ test("views were really used: the views server decoded the parts the pages need;
   assert.doesNotMatch(servers.live.output, /\[competition-views\] [a-z-]+ [a-z0-9|-]+: \d+ B in/, "the live server decodes nothing");
   assert.doesNotMatch(servers.views.output, /computing live|cannot be decoded|integrity check failed/);
   assert.doesNotMatch(servers.views.output + servers.live.output, /\[db\]|ECONNREFUSED|load failed/, "no database access");
+});
+
+test("/health on Preview reports views on (with parts decoded) or off; Production /health has no views field", async () => {
+  const health = async (srv: Server) => {
+    const r = await get(srv, "/health");
+    assert.equal(r.headers.get("cache-control"), "no-store");
+    return { status: r.status, body: (await r.json()) as Record<string, unknown> };
+  };
+  // The views server has served every page above, so it decoded parts; nothing fell back.
+  const on = await health(servers.views);
+  assert.equal(on.status, 200);
+  assert.deepEqual(Object.keys(on.body).sort(), ["status", "views"]);
+  const v = on.body.views as { status: string; decoded: number; fallbacks: number };
+  assert.equal(v.status, "on");
+  assert.ok(v.decoded > 0, `decoded ${v.decoded}`);
+  assert.equal(v.fallbacks, 0);
+  assert.deepEqual(Object.keys(v).sort(), ["decoded", "fallbacks", "status"], "coarse: no reasons, paths or ids");
+  // A request that needs a part no earlier test decoded (High-A pitcher 7-day map) raises the count.
+  await (await get(servers.views, "/trends/data?view=map&level=high-a&role=pitcher&window=7d")).text();
+  const after = (await health(servers.views)).body.views as { decoded: number };
+  assert.ok(after.decoded > v.decoded, `${after.decoded} > ${v.decoded}`);
+  // The rollback switch: off, nothing decoded.
+  assert.deepEqual((await health(servers.live)).body, { status: "ready", views: { status: "off", decoded: 0, fallbacks: 0 } });
+  // Production: exactly the public answer it always had.
+  await (await get(servers.production, "/players?level=aa")).text();
+  const prod = await health(servers.production);
+  assert.deepEqual(Object.keys(prod.body), ["status"]);
+  assert.ok(["ready", "unavailable"].includes(prod.body.status as string));
+  const raw = await (await get(servers.production, "/health")).text();
+  assert.doesNotMatch(raw, /views|decoded|fallbacks/);
 });
