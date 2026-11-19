@@ -81,13 +81,70 @@ export function packValue(value: unknown, path = "$"): unknown {
   throw new SnapshotFormatError(`${path}: unsupported ${value === undefined ? "undefined" : typeof value === "object" ? (value as object).constructor?.name ?? "object" : typeof value} value`);
 }
 
+/**
+ * Unpacks a packed value. The fast path below does exactly the same checks and builds exactly the
+ * same objects, but without a path string per value (the checked version built ~1M of them per
+ * MiLB level, most of a cold start's decode time). On ANY failure it reruns the checked version,
+ * so errors (and their messages, with the offending path) are exactly those of `unpackChecked`.
+ */
 export function unpackValue(value: unknown, path = "$"): unknown {
+  try {
+    return unpackFast(value);
+  } catch {
+    return unpackChecked(value, path);
+  }
+}
+
+/** Fails without a message; `unpackValue` then reruns `unpackChecked` for the real error. */
+class FastPathMiss extends Error {}
+
+function unpackFast(value: unknown): unknown {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new FastPathMiss();
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const out = new Array(value.length);
+    for (let i = 0; i < value.length; i++) {
+      if (!(i in value)) throw new FastPathMiss(); // sparse: let the checked path decide
+      out[i] = unpackFast(value[i]);
+    }
+    return out;
+  }
+  if (!isPlainObject(value)) throw new FastPathMiss();
+  if (TABLE in value) {
+    const keys = value[TABLE];
+    const rows = value[ROWS];
+    if (Object.keys(value).length !== 2 || !Array.isArray(keys) || !Array.isArray(rows)) throw new FastPathMiss();
+    if (!keys.every((k) => typeof k === "string") || new Set(keys).size !== keys.length) throw new FastPathMiss();
+    const out = new Array(rows.length);
+    for (let i = 0; i < rows.length; i++) {
+      if (!(i in rows)) throw new FastPathMiss();
+      const row = rows[i];
+      if (!Array.isArray(row) || row.length !== keys.length) throw new FastPathMiss();
+      const o: Plain = {};
+      for (let j = 0; j < keys.length; j++) {
+        if (!(j in row)) throw new FastPathMiss();
+        o[keys[j] as string] = unpackFast(row[j]);
+      }
+      out[i] = o;
+    }
+    return out;
+  }
+  const out: Plain = {};
+  for (const k of Object.keys(value)) out[k] = unpackFast(value[k]);
+  return out;
+}
+
+/** The original unpacker: validates as it goes and names the path of the first problem. */
+export function unpackChecked(value: unknown, path = "$"): unknown {
   if (value === null || typeof value === "string" || typeof value === "boolean") return value;
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new SnapshotFormatError(`${path}: non-finite number`);
     return value;
   }
-  if (Array.isArray(value)) return value.map((v, i) => unpackValue(v, `${path}[${i}]`));
+  if (Array.isArray(value)) return value.map((v, i) => unpackChecked(v, `${path}[${i}]`));
   if (isPlainObject(value)) {
     if (TABLE in value) {
       const keys = value[TABLE];
@@ -100,12 +157,12 @@ export function unpackValue(value: unknown, path = "$"): unknown {
         if (!Array.isArray(row) || row.length !== keys.length)
           throw new SnapshotFormatError(`${path}[${i}]: row has the wrong number of values`);
         const o: Plain = {};
-        keys.forEach((k: string, j) => (o[k] = unpackValue(row[j], `${path}[${i}].${k}`)));
+        keys.forEach((k: string, j) => (o[k] = unpackChecked(row[j], `${path}[${i}].${k}`)));
         return o;
       });
     }
     const out: Plain = {};
-    for (const k of Object.keys(value)) out[k] = unpackValue(value[k], `${path}.${k}`);
+    for (const k of Object.keys(value)) out[k] = unpackChecked(value[k], `${path}.${k}`);
     return out;
   }
   throw new SnapshotFormatError(`${path}: unsupported value`);

@@ -8,6 +8,7 @@
 import { completedGames } from "@/services/afl/read-model";
 import type { AflSnapshot, AflTeam } from "@/services/afl/types";
 import { processWeakMap } from "@/lib/process-memo";
+import { precomputedPart } from "./views-store";
 import { levelOrder, type LevelId } from "@/services/players/levels";
 import type { LevelSnapshot } from "./types";
 
@@ -42,9 +43,16 @@ interface Stay {
 const spanMemo = processWeakMap<AflSnapshot, Map<string, Span>>("level-move-spans");
 
 /** Per player: first/last completed game and games played at this level (memoized per snapshot). */
-function levelSpans(s: AflSnapshot): Map<string, Span> {
+export function levelSpans(s: AflSnapshot): Map<string, Span> {
   const hit = spanMemo.get(s);
   if (hit) return hit;
+  // Precomputed at snapshot build as [playerId, span] entries (views-store.ts), in Map order.
+  const pre = precomputedPart<[string, Span][]>(s, "level-move-spans");
+  if (pre) {
+    const spans = new Map(pre);
+    spanMemo.set(s, spans);
+    return spans;
+  }
   const dates = new Map(completedGames(s).map((g) => [g.id, g.date]));
   const spans = new Map<string, Span>();
   const games = new Map<string, Set<string>>();

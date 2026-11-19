@@ -65,3 +65,18 @@ jobs:
       # Two fictional snapshot builds, `next start` and headless Chromium: router cache, pending
       # hint, filters and levels across history, 404s, headers and a redeploy on the same origin.
       - run: npm run test:nav:e2e
+
+  views-e2e:
+    name: Precomputed view models end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # One snapshot build with precomputed views, served with views off and on: HTML, RSC
+      # payloads, statuses and headers must be byte-identical.
+      - run: npm run test:views:e2e
