@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants";
 import { cdnCacheEnabled, cdnCacheRules } from "./src/lib/cdn-cache";
 import { sourceFingerprint } from "./src/services/competition/views-fingerprint";
+import { vercelBuildConfigError } from "./src/lib/vercel-build-guard";
 
 /**
  * Former demo-only routes (fictional news, highlights, organizations, leagues, teams, screener)
@@ -111,6 +112,12 @@ function snapshotViewsEnv(phase: string): Record<string, string> | undefined {
 export const ROUTER_CACHE_DYNAMIC_SECONDS = 300;
 
 export default function nextConfig(phase: string): NextConfig {
+  // Vercel production/preview builds must be snapshot builds; fail instead of deploying a site that
+  // silently runs in database mode (src/lib/vercel-build-guard.ts). Other builds are unaffected.
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    const problem = vercelBuildConfigError(process.env);
+    if (problem) throw new Error(problem);
+  }
   return {
     poweredByHeader: false,
     experimental: { staleTimes: { dynamic: ROUTER_CACHE_DYNAMIC_SECONDS } },

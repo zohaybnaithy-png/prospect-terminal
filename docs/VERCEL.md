@@ -461,6 +461,13 @@ explicit `PT_SITE_URL` is not silently replaced.
      `sslmode=require&channel_binding=require`, marked *Sensitive*;
    - leave **Production** without `DATABASE_URL` until launch, so a production build fails
      instead of serving anything.
+   - **Build guard** (`src/lib/vercel-build-guard.ts`, called by `next.config.ts`): a Vercel
+     production or preview build (`VERCEL=1`, `VERCEL_ENV` production/preview) fails when
+     `PT_DATA_SOURCE` is not exactly `snapshot` (after trimming, as the app reads it). Without it
+     such a build used to succeed without the snapshot and run in database mode; on staging that
+     showed as `/health` `unavailable` with views `off`. Local, CI and e2e builds (no `VERCEL`) are
+     unaffected. Set `PT_DATA_SOURCE=snapshot` for **both** Preview and Production before a
+     deployment that includes the guard.
 4. **Deployment Protection.** Vercel Authentication for previews (included on Hobby). Staging is
    then visible only to members of your Vercel account.
 5. **Web Analytics.** Enable it in the project.
