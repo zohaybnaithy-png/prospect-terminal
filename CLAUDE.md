@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 @AGENTS.md
 
 # Prospect Terminal
@@ -6,13 +10,29 @@ Player-first baseball prospect / player-development analytics platform. The cent
 
 ## Correct checkout
 
-Work only in `/Users/ZohaybNaithy/prospect-terminal/prospect-terminal` (the inner directory, which has the `ingest:afl` script). The outer `/Users/ZohaybNaithy/prospect-terminal` is an older, separate repo copy — do not edit it.
+On the owner's Mac, work only in `/Users/ZohaybNaithy/prospect-terminal/prospect-terminal` (the inner directory, which has the `ingest:afl` script). The outer `/Users/ZohaybNaithy/prospect-terminal` is an older, separate repo copy — do not edit it. In cloud sessions the clone root is the correct checkout.
 
 ## Stack
 
 Next.js App Router (a recent version with breaking changes — see AGENTS.md), TypeScript, Tailwind, PostgreSQL (Neon for live dev), Drizzle ORM, Zod, Recharts, Node ingestion scripts run via `tsx`. Don't add infrastructure without justification. Future modeling may use Python/pandas/scikit-learn.
 
 Scripts are in `package.json`; check it rather than assuming. There is no `db:check` script.
+
+## Commands
+
+- `npm run dev` / `npm run build` / `npm start` (port 3000; without `DATABASE_URL` real-data sections show a "not connected" state).
+- `npm run typecheck` (`next typegen && tsc --noEmit`), `npm run lint`, `npm test` (every `scripts/*.test.ts`, node:test via tsx).
+- One file: `node --import tsx --test scripts/<name>.test.ts`; one test: add `--test-name-pattern="<substring>"`.
+- E2E against a real `next build` + `next start` (fictional snapshot, unreachable DB): `npm run test:cdn:e2e`, `test:nav:e2e` (headless Chromium), `test:views:e2e`. They leave `.next/` holding a snapshot build; run `npm run build` afterwards. CI (`.github/workflows/ci.yml`) runs checks + these three.
+- `*.integration.ts` (`npm run test:*:db`) need disposable PostgreSQL databases (see each file's env var); never point them at Neon.
+- Momentum golden file (`scripts/fixtures/momentum-golden.json`): only regenerate with `MOMENTUM_GOLDEN_UPDATE=1` after an approved formula change, never to make a test pass.
+- Next.js 16.4 refuses about every other `next build` when it detects an AI agent outside CI (`SecurityFatalError`, upgrade nudge); rerunning immediately succeeds. `test:nav:e2e` builds twice in a row, so its redeploy test cannot pass locally under an agent; CI is authoritative. Upgrading Next.js is the owner's decision.
+
+## Request path (big picture)
+
+Every page and `/health` go through `getCompetitionData()` (`src/services/competition/index.ts`, server-only): a process-wide level cache (`cache.ts`, `source-cache.ts`) loaded either from PostgreSQL (`load.ts` → `src/services/afl/queries.ts`, database mode) or from build-time snapshot files (`snapshot-store.ts`, `PT_DATA_SOURCE=snapshot`). `src/instrumentation.ts` starts the warm-up at boot. Pages then call pure, per-snapshot-memoized view functions: `services/competition/prepare.ts` (Trending, Trends lists/map, coverage), `services/players/adapter.ts` (directory rows), `services/competition/moves.ts`, `model.ts` (default level, cross-level presence), which call the Momentum engine in `src/analytics`. `src/proxy.ts` does rate limiting / traffic protection; `src/lib/cdn-cache.ts` the CDN header rules.
+
+Next.js bundles instrumentation and route handlers separately, so per-process state shared between them (caches, memos, diagnostics) lives on `globalThis` via `Symbol.for(...)` / `src/lib/process-memo.ts`, never in module-level variables.
 
 ## Current phase: trustworthy real data (AFL + MiLB Data Foundation V1)
 
@@ -48,6 +68,10 @@ Scale rules (needed for MiLB volume): apply/preview read only identities and rec
 
 `PT_DATA_SOURCE=snapshot` serves levels from a build-time snapshot (`npm run build:vercel` → `snapshot:export` → `snapshot:views` (precomputed per-level view models; `PT_PRECOMPUTED_VIEWS=off` disables) → `next build`; `.data-snapshot/` is git-ignored, never commit it). Snapshot mode never opens a database connection at runtime. On Vercel (`VERCEL=1`): identity header `x-vercel-forwarded-for`, immediate refusals, indexing off unless production + `PT_INDEXING=on`, Web Analytics path-only. Links come from `@/components/ui/app-link` (prefetch off). Details: `docs/VERCEL.md`.
 
+- `PT_DATA_SOURCE` must be exactly `snapshot` for both the Vercel build and runtime. Otherwise the build still succeeds but silently skips snapshot tracing and the views fingerprint, and the deployment runs in database mode (on a Preview, `/health` then answers `unavailable` with views `off`).
+- Precomputed views (Phase 2B, `src/services/competition/views-*.ts`): per-level view models are computed at build by the page functions and decoded lazily on a memo miss. The encoding preserves object identity (RSC payload parity), and any failed check falls back to live computation. Parity is enforced by `scripts/precomputed-views.test.ts` and `test:views:e2e`; keep it byte-identical. On Vercel Preview only, `/health` adds a coarse `views` object (`on`/`off`/`pending`, decoded/fallback counts); Production `/health` output must stay unchanged.
+- Navigation (Phase 2A): `experimental.staleTimes.dynamic = 300` (router cache) and a delayed `useLinkStatus` pending hint. Do not add `loading.tsx`: streaming fixes the status at 200 and turns unknown-player 404s into soft 404s (guarded by `scripts/navigation.test.ts`).
+
 ### Database safety
 
 - Credentials come from the shell env (`INGESTION_DATABASE_URL`, etc.). Never print, log, commit or ask for connection strings; errors must not leak them.
@@ -64,7 +88,7 @@ Momentum V1 lives in `src/analytics` (see `docs/ANALYTICS.md`). Balanced is the 
 
 ## UI / design (preserve)
 
-Light, information-dense, Baseball Savant / FanGraphs-like: white background, charcoal text, thin gray borders, restrained teal accent, compact data typography, desktop-first. Avoid dark AI dashboards, gradients, neon/glow, glassmorphism, oversized cards, excess whitespace. Don't revert to dark mode or redesign unless asked. Logo is a stitched baseball circle, no tagline (`prospect-terminal-logo.png` at repo root, imported by `src/components/layout/header.tsx`). Homepage demo data is intentional until AFL data is wired in.
+Light, information-dense, Baseball Savant / FanGraphs-like: white background, charcoal text, thin gray borders, restrained teal accent, compact data typography, desktop-first. Avoid dark AI dashboards, gradients, neon/glow, glassmorphism, oversized cards, excess whitespace. Don't revert to dark mode or redesign unless asked. Logo is a stitched baseball circle, no tagline (`prospect-terminal-logo.png` at repo root, imported by `src/components/layout/header.tsx`). Every route shows real ingested data or an honest "not available" state; `src/data/demo.ts` fixtures are for tests and the opt-in dev seed only, never imported by a route.
 
 ## Data licensing
 
