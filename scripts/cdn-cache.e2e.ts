@@ -116,7 +116,8 @@ test("serves real pages from the snapshot with an unreachable database", async (
 
 test("public pages: 200 with the CDN header; browsers get no cacheable Cache-Control", async () => {
   const profile = /\/players\/[0-9a-f-]{36}/.exec(await (await get("/players?level=aa")).text())![0];
-  for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?utm_source=x", profile, `${profile}?level=aa`, "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"]) {
+  const compare = `/compare?level=aa&ids=${profile.slice("/players/".length)},00000000-0000-4000-8000-000000000000`;
+  for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?utm_source=x", profile, `${profile}?level=aa`, "/compare", compare, "/compare?level=nope&ids=bad", "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"]) {
     const r = await get(url);
     assert.equal(r.status, 200, url);
     assert.equal(cdn(r), CDN_CACHE_VALUE, url);

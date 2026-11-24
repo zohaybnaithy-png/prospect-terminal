@@ -537,6 +537,53 @@ describe("responses unchanged", () => {
   });
 });
 
+describe("player comparison", () => {
+  test("profile → Add to compare → compare page shows the player; a pasted profile link adds another", async () => {
+    const t = await open();
+    try {
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      const links = t.page.locator("a.player-name");
+      const hrefs = [await links.nth(0).getAttribute("href"), await links.nth(1).getAttribute("href")];
+      const names = [(await links.nth(0).textContent())!.trim(), (await links.nth(1).textContent())!.trim()];
+      const ids = hrefs.map((h) => new URL(h!, base).pathname.split("/").pop()!);
+      await clickTo(t, links.nth(0), pathIs(`/players/${ids[0]}`));
+
+      t.reset();
+      await clickTo(t, t.page.getByRole("link", { name: "Add to compare" }), pathIs("/compare"));
+      assert.deepEqual(rscRequests(t).map((r) => r.path), ["/compare"], "client navigation, one RSC request");
+      const u = new URL(t.page.url());
+      assert.deepEqual([u.searchParams.get("level"), u.searchParams.get("ids"), u.searchParams.get("role")], ["aa", ids[0], null]);
+      const main = () => t.page.locator("main").textContent();
+      assert.match((await main()) ?? "", new RegExp(`Add at least 2 players to compare\\.\\s*So far: ${names[0]}`));
+
+      // No JavaScript needed: a plain GET form, answered as a full document.
+      await t.page.fill("#compare-add", `${base}${hrefs[1]}`);
+      await Promise.all([t.page.waitForURL((x) => x.searchParams.has("add")), t.page.click("form.compare-add button[type=submit]")]);
+      await t.page.waitForLoadState("networkidle");
+      const columns = await t.page.locator("table.compare-table thead th.compare-player a.player-name").allTextContents();
+      assert.deepEqual(columns.map((c) => c.trim()), names);
+      assert.ok((await t.page.locator("table.compare-table td.best").count()) > 0, "best values marked");
+      // Removing a player is a plain link back to the one-player state.
+      await clickTo(t, t.page.getByRole("link", { name: `Remove ${names[1]} from the comparison` }), (x) => x.searchParams.get("ids") === ids[0]);
+      assert.match((await main()) ?? "", /Add at least 2 players/);
+      assert.deepEqual([...t.errors], []);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("bad comparison input is a notice on a 200 page, never a 404", async () => {
+    const t = await open();
+    try {
+      const r = await t.page.goto(`${base}/compare?level=nope&ids=not-a-uuid`);
+      assert.equal(r?.status(), 200);
+      assert.match((await t.page.locator("main").textContent()) ?? "", /not recognised[\s\S]*1 invalid player id was ignored/);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+});
+
 describe("new deployment", () => {
   test("cached pages stay boundedly stale; the next server navigation loads the new build", { timeout: 600_000 }, async () => {
     const t = await open();

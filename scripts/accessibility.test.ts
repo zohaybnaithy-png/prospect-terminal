@@ -15,6 +15,7 @@ import { DataTable } from "../src/components/ui/data-table";
 import { ScrollRegion } from "../src/components/ui/scroll-region";
 import { LevelNav } from "../src/components/levels/level-nav";
 import { MapPointList } from "../src/components/analytics/performance-map";
+import { CompareTable } from "../src/components/compare/compare-table";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const CSS = readFileSync(join(ROOT, "src/app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -149,6 +150,43 @@ describe("links and focus (WCAG 1.4.1 / 2.4.7)", () => {
       assert.match(body, /min-height:\s*24px/, `${sel} has a 24px minimum height`);
       if (sel === ".trending-context a") assert.match(body, /min-width:\s*24px/, `${sel} has a 24px minimum width`);
     }
+  });
+});
+
+describe("player comparison (/compare)", () => {
+  test("Remove links in column headers have a 24px target (WCAG 2.5.8)", () => {
+    const sel = ".compare-table .compare-remove";
+    assert.ok(rules.find((r) => r.selector === sel), `${sel} rule exists`);
+    assert.match(CSS.slice(CSS.indexOf(`${sel} {`)).split("}")[0], /min-height:\s*24px/);
+  });
+
+  test("best values are not shown by colour alone, and the row header stays readable when sticky", () => {
+    const best = CSS.slice(CSS.indexOf(".compare-table td.best strong {")).split("}")[0];
+    assert.match(best, /font-weight:\s*700/);
+    const rowHead = CSS.slice(CSS.indexOf('.compare-table tbody th[scope="row"] {')).split("}")[0];
+    assert.match(rowHead, /position:\s*sticky/);
+    assert.match(rowHead, /background:\s*#fff/, "opaque, so scrolled values never show through");
+  });
+
+  test("the compare table is a named, focusable region with row and column headers", () => {
+    const html = renderToStaticMarkup(
+      createElement(CompareTable, {
+        level: "aa",
+        role: "hitter",
+        players: [
+          { id: "00000000-0000-4000-8000-000000000001", name: "First Fixture", position: "SS", age: 21, team: null, organization: null, available: true, notice: null, opportunities: 40, percentileQualified: true },
+          { id: "00000000-0000-4000-8000-000000000002", name: "Second Fixture", position: null, age: null, team: null, organization: null, available: false, notice: "No Double-A batting line", opportunities: null, percentileQualified: null },
+        ],
+        groups: [{ id: "season", label: "Double-A season", rows: [{ id: "ops", label: "OPS", direction: 1, cells: [{ text: ".800", value: 0.8, best: false }, null] }] }],
+      }),
+    );
+    assert.match(html, /^<div class="table-scroll compare-scroll" tabindex="0" role="region" aria-label="Double-A hitters compared/);
+    assert.match(html, /<caption class="sr-only">/);
+    assert.match(html, /<th scope="col" class="compare-stat-head">Stat<\/th>/);
+    assert.match(html, /<th scope="rowgroup" colSpan="3">Double-A season<\/th>/);
+    assert.match(html, /<th scope="row">OPS<\/th>/);
+    assert.match(html, /—<span class="sr-only"> no line<\/span>/, "a missing value is announced, not silent");
+    assert.match(html, /Remove<span class="sr-only"> Second Fixture from the comparison<\/span>/);
   });
 });
 

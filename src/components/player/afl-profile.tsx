@@ -37,6 +37,7 @@ import { WhatChanged } from "@/components/analytics/what-changed";
 import { DevelopmentTimeline } from "@/components/analytics/development-timeline";
 import { timelineViews } from "@/analytics/trend-views";
 import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
+import { COMPARE_MAX, addToCompareLink } from "@/services/compare/query";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
 const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
@@ -55,6 +56,7 @@ export function AflPlayerProfileView({
   analytics,
   level = "afl",
   presence = [],
+  compareIds = [],
 }: {
   profile: AflPlayerProfile;
   snapshot: AflSnapshot;
@@ -62,6 +64,8 @@ export function AflPlayerProfileView({
   level?: LevelId;
   /** Every level the player appears at this season (most recent first). */
   presence?: PlayerLevelPresence[];
+  /** Players already in a comparison (the profile URL's `ids`), for "Add to compare". */
+  compareIds?: string[];
 }) {
   const lvl = levelById(level);
   const { player, row, asOf } = profile;
@@ -73,6 +77,9 @@ export function AflPlayerProfileView({
   const asOfLabel = asOf ? shortDate(asOf) : null;
   const battingLog = profile.gameLog.filter((g) => g.batting);
   const pitchingLog = profile.gameLog.filter((g) => g.pitching);
+  // Compare in the player's primary role at this level (the role the analytics view leads with).
+  const compareRole = analytics.roles[0]?.role ?? (hasPitching && !hasBatting ? "pitcher" : "hitter");
+  const compare = addToCompareLink(player.id, level, compareRole, compareIds);
   const sections = [
     ["Recent games", "recent"],
     ["Trend", "trend"],
@@ -144,6 +151,20 @@ export function AflPlayerProfileView({
               </div>
             </nav>
           )}
+          <p className="profile-actions">
+            <Link href={compare.href} className="button-link">
+              {compare.included
+                ? "View comparison"
+                : compare.full
+                  ? `Comparison full (${COMPARE_MAX}) — view`
+                  : "Add to compare"}
+            </Link>
+            {!compare.included && !compare.full && (
+              <span className="small-muted">
+                {lvl.short} {compareRole === "pitcher" ? "pitching" : "batting"} line
+              </span>
+            )}
+          </p>
           <dl className="bio-line">
             {row.age !== null && (
               <div title={asOfLabel ? `Age as of ${asOfLabel}` : undefined}>
