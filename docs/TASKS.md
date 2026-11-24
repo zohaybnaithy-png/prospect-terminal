@@ -11,7 +11,7 @@ e2e suites, green CI, `verify:preview` 33+/all pass, docs updated (this file + P
 
 ## Milestone 1 — Engineering foundation
 
-### T-101 Project source-of-truth docs — `in-review` (branch `claude/project-foundation`)
+### T-101 Project source-of-truth docs — `in-review` (PR #24, owner merges)
 PRODUCT, ROADMAP, TASKS, ARCHITECTURE (current system), DECISIONS, RELEASE_CHECKLIST, PROJECT_STATUS; agent
 definitions in `.claude/agents/`; staging merge gate. Risk: low (but touches agent rules → owner merges).
 
