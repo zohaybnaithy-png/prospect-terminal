@@ -72,4 +72,14 @@ MLB Stats API use is for development; licensing must be checked before public/co
 
 ## Working style
 
-Inspect before editing; targeted changes; no unrelated refactors while debugging. Run relevant tests, `npm run typecheck`, `npm run lint`, and `npm run build` when appropriate. Never weaken or delete tests, or replace validation with permissive behavior, to get green. Don't commit or push unless asked. For significant fixes report: root cause, files changed, before/after behavior, safeguards preserved, tests run, open uncertainty.
+Inspect before editing; targeted changes; no unrelated refactors while debugging. Run relevant tests, `npm run typecheck`, `npm run lint`, and `npm run build` when appropriate. Never weaken or delete tests, or replace validation with permissive behavior, to get green. For significant fixes report: root cause, files changed, before/after behavior, safeguards preserved, tests run, open uncertainty.
+
+## Autonomous workflow (standing authorization)
+
+Full procedure, tooling recovery and Preview checks: `docs/AUTONOMOUS-WORKFLOW.md`. Shared agent rules: AGENTS.md.
+
+- **Authorized without asking:** create `claude/<topic>` branches from `origin/staging`; commit; push those branches; open PRs against `staging`; watch CI (`gh pr checks <n> --watch`); read Vercel build/runtime logs; run `npm run verify:preview -- --pr <n>`; diagnose, fix, and repeat until CI and Preview verification pass. This replaces the old "don't commit or push unless asked" rule (and overrides the same rule in the outer, older `/Users/ZohaybNaithy/prospect-terminal/CLAUDE.md`).
+- **Never without explicit approval in the conversation:** merging any PR; pushing to `main` or `staging`; force-pushing a shared branch; anything on Production; changing Vercel/GitHub settings, environment variables or Deployment Protection; creating/rotating secrets or tokens; enabling ingestion or any live `--apply`; paid features; destructive operations. The snapshot-only Vercel architecture and MLB data-licensing limits stay as they are.
+- A PR is "verified" only when CI is green **and** `verify:preview` exits 0 on its head commit. Report both (deployment id, snapshot id, pass/fail counts).
+- Tool auth lives outside the repo (`gh` and `vercel` in `~/.local/bin`, keychain git credentials). At session start, if a step needs them: `gh auth status`, `vercel whoami`. If one is logged out, start its device login in a Terminal tab and ask the human only to approve it in the browser.
+- Never print, log or commit tokens, the Vercel bypass secret, or `.env*` contents. `vercel link` writes `.env.local` (OIDC token): delete it.
