@@ -40,7 +40,7 @@ Require PRs and the CI checks listed in `scripts/staging-gate-support.ts`; no fo
 
 ## Milestone 2 — Discovery and comparison
 
-### T-201 Player comparison page — `ready`
+### T-201 Player comparison page — `in-review` (PR #25, branch `claude/t-201-player-compare`; needs a human merge: touches src/lib/cdn-cache.ts)
 `/compare?level=<id>&ids=<uuid,uuid[,…]>` (2–4 players, same role, same level). Side-by-side season line,
 selected window line, within-level percentile fingerprint, Momentum with confidence, sample sizes; "add to
 compare" from profiles and directory rows; invalid/mixed ids give a clear notice, unknown ids 404-free notice.
@@ -64,6 +64,9 @@ AC: data from the snapshot only; 404 for unknown; cacheable; tests. Risk: medium
 ### T-205 Typeahead search — `ready` (after T-201)
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
+
+### T-206 Compare entry point from the directory — `ready` (after T-201)
+A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
 
 ## Milestone 3 — Performance and reliability
 

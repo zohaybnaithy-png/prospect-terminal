@@ -8,7 +8,7 @@ Last updated: 2026-11-24 (session that set up autonomous development). Read this
   views on, 5 levels, snapshot `3aa112749316`, Deployment Protection on. After PR #22 alone: `dpl_25kxCio97zSdPH1KhKKJExwh4ABq` 33/33.
 - Local on `db82ec8`: lint, typecheck, build pass; `npm test` 596/597 (Momentum golden fails on macOS only, Math.tanh; CI/Linux passes; T-305).
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
-- In review: PR #24 (T-101: docs, `.claude/agents/`, `npm run gate:staging`, dev-loop lock). Product work in progress: T-201 (see TASKS.md).
+- In review: PR #24 (T-101: docs, `.claude/agents/`, `npm run gate:staging`, dev-loop lock). Product work: T-201 player comparison in PR #25.
 
 ## Recent work
 - 2026-11-24: T-101 finished on `claude/project-foundation` (PR #24): DECISIONS, RELEASE_CHECKLIST, ARCHITECTURE "Current system", links from CLAUDE.md/AGENTS.md, AUTONOMOUS-WORKFLOW §6 (gate) and §7 (scheduled runs). Staging gate hardened after an independent security review (forged Preview reports, >100-file PRs, renames, missed ingestion/DB/indexing paths, skipped required checks, more secret forms, fail-closed secret lookup, head re-check, trusted-code requirement). 20 gate tests.
