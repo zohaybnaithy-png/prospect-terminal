@@ -1,7 +1,14 @@
 "use client";
 import Link from "@/components/ui/app-link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import type { Role } from "@/analytics/config";
 import {
   MIN_SAMPLE_OPTIONS,
@@ -14,14 +21,22 @@ import {
   type StatWindow,
 } from "@/services/players/directory";
 import {
+  AGE_MAX,
+  AGE_MIN,
   DIRECTORY_PAGE_SIZES,
   DIRECTORY_SORTS,
   QUERY_MAX_LENGTH,
+  STAT_FILTERS,
+  battingBabip,
+  battingIso,
   directorySearch,
   hasActiveFilters,
   pageList,
+  parseAge,
+  parseStatFilter,
   type DirectorySort,
   type DirectoryState,
+  type StatFilter,
 } from "@/services/players/directory-query";
 import { LEVELS, type LevelId } from "@/services/players/levels";
 import {
@@ -149,6 +164,14 @@ function hitterColumns(short: string): Column<Row>[] {
     num("obp", "OBP", (r) => b(r).obp, formatRate),
     num("slg", "SLG", (r) => b(r).slg, formatRate),
     num("ops", "OPS", (r) => b(r).ops, formatRate),
+    num("iso", "ISO", (r) => battingIso(b(r)), formatRate, "Isolated power: SLG − AVG"),
+    num(
+      "babip",
+      "BABIP",
+      (r) => battingBabip(b(r)),
+      formatRate,
+      "Batting average on balls in play: (H − HR) / (AB − SO − HR + SF)",
+    ),
     num("bbp", "BB%", (r) => b(r).bbPct, formatPct),
     num("kp", "K%", (r) => b(r).kPct, formatPct),
   ];
@@ -179,6 +202,155 @@ function pitcherColumns(short: string): Column<Row>[] {
     num("bbp", "BB%", (r) => p(r).bbPct, formatPct),
     num("kbb", "K−BB%", kbb, formatPct),
   ];
+}
+
+const sameStatFilter = (a: StatFilter | null, b: StatFilter | null) =>
+  a === b || (a !== null && b !== null && a.stat === b.stat && a.op === b.op && a.value === b.value);
+
+/**
+ * Age bounds and one stat threshold. Inputs are local while editing and commit on change (selects),
+ * blur or Enter (numbers); the parent re-keys this on URL state so external changes reset it.
+ * Without JavaScript the fields submit with the GET form under the same names the server parses.
+ */
+function DepthFilters({
+  state,
+  commit,
+}: {
+  state: DirectoryState;
+  commit: (patch: Pick<DirectoryState, "minAge" | "maxAge" | "statFilter">) => void;
+}) {
+  const role = state.role;
+  const [minAge, setMinAge] = useState(state.minAge?.toString() ?? "");
+  const [maxAge, setMaxAge] = useState(state.maxAge?.toString() ?? "");
+  const [stat, setStat] = useState(state.statFilter?.stat ?? "");
+  const [op, setOp] = useState<string>(state.statFilter?.op ?? "gte");
+  const [value, setValue] = useState(state.statFilter?.value.toString() ?? "");
+  const apply = (next: { minAge?: string; maxAge?: string; stat?: string; op?: string; value?: string }) => {
+    const v = { minAge, maxAge, stat, op, value, ...next };
+    const patch = {
+      minAge: parseAge(v.minAge),
+      maxAge: parseAge(v.maxAge),
+      statFilter: parseStatFilter(role, v.stat, v.op, v.value),
+    };
+    // An out-of-range value is not applied (the previous threshold stays); an empty value clears.
+    if (v.stat && v.value.trim() && !patch.statFilter) patch.statFilter = state.statFilter;
+    if (
+      patch.minAge === state.minAge &&
+      patch.maxAge === state.maxAge &&
+      sameStatFilter(patch.statFilter, state.statFilter)
+    )
+      return;
+    commit(patch);
+  };
+  const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    apply({});
+  };
+  const def = stat ? STAT_FILTERS[role][stat] : undefined;
+  return (
+    <>
+      <div className="filter-group" role="group" aria-labelledby="directory-age-label">
+        <span id="directory-age-label">Age</span>
+        <div className="filter-inline">
+          <label>
+            <span className="sr-only">Minimum age</span>
+            <input
+              type="number"
+              name="minAge"
+              inputMode="numeric"
+              min={AGE_MIN}
+              max={AGE_MAX}
+              step={1}
+              placeholder="Min"
+              value={minAge}
+              onChange={(e) => setMinAge(e.target.value)}
+              onBlur={() => apply({})}
+              onKeyDown={onEnter}
+            />
+          </label>
+          <span aria-hidden="true">–</span>
+          <label>
+            <span className="sr-only">Maximum age</span>
+            <input
+              type="number"
+              name="maxAge"
+              inputMode="numeric"
+              min={AGE_MIN}
+              max={AGE_MAX}
+              step={1}
+              placeholder="Max"
+              value={maxAge}
+              onChange={(e) => setMaxAge(e.target.value)}
+              onBlur={() => apply({})}
+              onKeyDown={onEnter}
+            />
+          </label>
+        </div>
+      </div>
+      <div className="filter-group" role="group" aria-labelledby="directory-stat-label">
+        <span id="directory-stat-label">Stat filter</span>
+        <div className="filter-inline">
+          <label>
+            <span className="sr-only">Statistic</span>
+            <select
+              name="stat"
+              value={stat}
+              onChange={(e) => {
+                const next = e.target.value;
+                // Keep a typed value unless the unit changes (rate ↔ %) between two columns.
+                const same = !def || !next || def.pct === STAT_FILTERS[role][next].pct;
+                const nextValue = same ? value : "";
+                setStat(next);
+                setValue(nextValue);
+                apply({ stat: next, value: nextValue });
+              }}
+            >
+              <option value="">None</option>
+              {Object.entries(STAT_FILTERS[role]).map(([key, d]) => (
+                <option key={key} value={key}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">Comparison</span>
+            <select
+              name="op"
+              value={op}
+              onChange={(e) => {
+                setOp(e.target.value);
+                apply({ op: e.target.value });
+              }}
+            >
+              <option value="gte">≥</option>
+              <option value="lte">≤</option>
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">
+              Value{def?.pct ? " in percent (25 means 25%)" : ""}
+            </span>
+            <input
+              type="number"
+              name="value"
+              inputMode="decimal"
+              step="any"
+              min={def?.min}
+              max={def?.max}
+              placeholder={def?.pct ? "25" : def ? (def.max > 10 ? "4.00" : ".800") : "Value"}
+              title={def?.pct ? "Percent: 25 means 25%" : undefined}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={() => apply({})}
+              onKeyDown={onEnter}
+            />
+          </label>
+        </div>
+      </div>
+    </>
+  );
 }
 
 /** Plain left clicks are handled in-app (with pending feedback); modified clicks open normally. */
@@ -288,14 +460,28 @@ export function PlayerDirectory({
     ...columns,
   ];
   const active = hasActiveFilters(state);
-  const filterCount = [state.teamId, state.organizationId, state.position, state.minSample].filter(
-    Boolean,
-  ).length;
+  const filterCount = [
+    state.teamId,
+    state.organizationId,
+    state.position,
+    state.minSample,
+    state.minAge !== null || state.maxAge !== null,
+    state.statFilter,
+  ].filter(Boolean).length;
   const clear = () => {
     clearTimeout(timer.current);
     setText("");
     setSent("");
-    navigate({ query: "", teamId: "", organizationId: "", position: "", minSample: 0 });
+    navigate({
+      query: "",
+      teamId: "",
+      organizationId: "",
+      position: "",
+      minSample: 0,
+      minAge: null,
+      maxAge: null,
+      statFilter: null,
+    });
   };
   const roleLabel = state.role === "hitter" ? "hitters" : "pitchers";
 
@@ -331,7 +517,16 @@ export function PlayerDirectory({
                 key={r}
                 className="button-link"
                 aria-current={state.role === r ? "page" : undefined}
-                {...linkTo({ role: r, position: "", sort: state.sort?.key === "mom" ? state.sort : null })}
+                {...linkTo({
+                  role: r,
+                  position: "",
+                  sort: state.sort?.key === "mom" ? state.sort : null,
+                  // A threshold survives only when the other role has the same column (K%, BB%).
+                  statFilter:
+                    state.statFilter && Object.hasOwn(STAT_FILTERS[r], state.statFilter.stat)
+                      ? state.statFilter
+                      : null,
+                })}
               >
                 {r === "hitter" ? "Hitters" : "Pitchers"}
               </Link>
@@ -461,6 +656,18 @@ export function PlayerDirectory({
               ))}
             </select>
           </label>
+          <DepthFilters
+            key={[
+              state.role,
+              state.minAge,
+              state.maxAge,
+              state.statFilter?.stat,
+              state.statFilter?.op,
+              state.statFilter?.value,
+            ].join("|")}
+            state={state}
+            commit={(patch) => navigate(patch)}
+          />
           <label className="filter-group">
             <span>Stats</span>
             <select

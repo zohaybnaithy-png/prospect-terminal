@@ -23,7 +23,13 @@ import { aflDirectoryRows } from "../src/services/players/adapter";
 import { directoryOptions, filterDirectory, type PlayerDirectoryRow } from "../src/services/players/directory";
 import {
   DEFAULT_PAGE_SIZE,
+  DIRECTORY_SORTS,
+  battingBabip,
+  battingIso,
   directorySearch,
+  hasActiveFilters,
+  parseAge,
+  parseStatFilter,
   opportunities,
   pageList,
   parseDirectoryScope,
@@ -32,6 +38,8 @@ import {
   type DirectoryState,
 } from "../src/services/players/directory-query";
 import { sortByValue } from "../src/lib/table-sort";
+import { aggregateBatting, type BattingCounts } from "../src/statistics/aggregate";
+import { formatRate } from "../src/services/afl/format";
 import { levelMoves } from "../src/services/competition/moves";
 import type { LevelSnapshot } from "../src/services/competition/types";
 import { IDS, STRONG, bl, dayDate, syntheticSnapshot, trajectorySnapshot, u } from "./analytics-test-support";
@@ -45,6 +53,9 @@ const state = (patch: Partial<DirectoryState> = {}): DirectoryState => ({
   organizationId: "",
   position: "",
   minSample: 0,
+  minAge: null,
+  maxAge: null,
+  statFilter: null,
   sort: null,
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
@@ -152,6 +163,234 @@ describe("directory query (server-side filter, sort, pagination)", () => {
     assert.deepEqual(pageList(4, 25), [1, 2, 3, 4, 5, 6, null, 25]);
     assert.deepEqual(pageList(1, 7), [1, 2, 3, null, 7]);
     assert.deepEqual(pageList(25, 25), [1, null, 23, 24, 25]);
+  });
+});
+
+const counts = (patch: Partial<BattingCounts>): BattingCounts => ({
+  plateAppearances: 0,
+  atBats: 0,
+  hits: 0,
+  doubles: 0,
+  triples: 0,
+  homeRuns: 0,
+  walks: 0,
+  strikeouts: 0,
+  hitByPitch: 0,
+  sacrificeFlies: 0,
+  stolenBases: 0,
+  ...patch,
+});
+
+describe("directory depth: ISO and BABIP", () => {
+  test("hand-computed values from counting fields (summed over game lines)", () => {
+    // Totals: 100 AB, 30 H (6 2B, 1 3B, 5 HR), 25 SO, 3 SF.
+    // AVG 30/100 = .300; SLG (30 + 6 + 2·1 + 3·5)/100 = .530; ISO .230.
+    // BABIP (30 − 5)/(100 − 25 − 5 + 3) = 25/73 = .342.
+    const b = aggregateBatting([
+      counts({ plateAppearances: 68, atBats: 60, hits: 18, doubles: 4, homeRuns: 3, strikeouts: 15, walks: 6, sacrificeFlies: 1 }),
+      counts({ plateAppearances: 48, atBats: 40, hits: 12, doubles: 2, triples: 1, homeRuns: 2, strikeouts: 10, walks: 4, hitByPitch: 2, sacrificeFlies: 2 }),
+    ]);
+    assert.ok(Math.abs(battingIso(b)! - 0.23) < 1e-12);
+    assert.equal(battingBabip(b), 25 / 73);
+    assert.equal(formatRate(battingIso(b)), ".230");
+    assert.equal(formatRate(battingBabip(b)), ".342");
+  });
+
+  test("sacrifice flies count as balls in play", () => {
+    // 2 AB, 2 SO, 1 SF: denominator 2 − 2 − 0 + 1 = 1, no hits → .000 (not missing).
+    const b = aggregateBatting([counts({ plateAppearances: 3, atBats: 2, strikeouts: 2, sacrificeFlies: 1 })]);
+    assert.equal(battingBabip(b), 0);
+    assert.equal(formatRate(battingBabip(b)), ".000");
+    // Without the SF the same line has no balls in play.
+    const noSf = aggregateBatting([counts({ plateAppearances: 2, atBats: 2, strikeouts: 2 })]);
+    assert.equal(battingBabip(noSf), null);
+  });
+
+  test("zero denominators are missing, shown as —", () => {
+    // 3 AB: 1 HR, 2 SO, no SF → no balls in play. ISO is defined (SLG 4/3 − AVG 1/3 = 1).
+    const tto = aggregateBatting([counts({ plateAppearances: 3, atBats: 3, hits: 1, homeRuns: 1, strikeouts: 2 })]);
+    assert.equal(battingBabip(tto), null);
+    assert.equal(formatRate(battingBabip(tto)), "—");
+    assert.ok(Math.abs(battingIso(tto)! - 1) < 1e-12);
+    // Walks only: AB 0 → AVG/SLG and so ISO are missing; BABIP denominator 0 too.
+    const walks = aggregateBatting([counts({ plateAppearances: 4, walks: 4 })]);
+    assert.equal(battingIso(walks), null);
+    assert.equal(formatRate(battingIso(walks)), "—");
+    assert.equal(battingBabip(walks), null);
+  });
+
+  test("columns are sortable hitter keys with unavailable values last", () => {
+    assert.ok(DIRECTORY_SORTS.hitter.iso && DIRECTORY_SORTS.hitter.babip);
+    assert.ok(!DIRECTORY_SORTS.pitcher.iso && !DIRECTORY_SORTS.pitcher.babip);
+    const rows = manyRows(2);
+    for (const key of ["iso", "babip"]) {
+      const { rows: page, sort } = queryDirectory(rows, state({ sort: { key, direction: "desc" }, pageSize: 250 }));
+      assert.deepEqual(sort, { key, direction: "desc" });
+      const values = page.map((r) => DIRECTORY_SORTS.hitter[key](r) as number | null);
+      const firstNull = values.indexOf(null);
+      if (firstNull >= 0) assert.ok(values.slice(firstNull).every((v) => v === null));
+      const known = values.filter((v): v is number => v !== null);
+      assert.ok(known.length > 0);
+      assert.deepEqual(known, [...known].sort((a, b) => b - a));
+    }
+  });
+});
+
+describe("directory depth: age and stat-threshold filters", () => {
+  /** Ages 18–29 by position; every fifth row has an unknown age. */
+  const aged = () => manyRows(2).map((r, i) => ({ ...r, age: i % 5 === 0 ? null : 18 + (i % 12) }));
+
+  test("age parsing: whole years 15–45, everything else dropped", () => {
+    assert.deepEqual(
+      ["15", "45", " 22 ", "14", "46", "20.5", "-20", "abc", "", "1e1", "100"].map(parseAge),
+      [15, 45, 22, null, null, null, null, null, null, null, null],
+    );
+  });
+
+  test("age bounds are inclusive; unknown ages are excluded only when a bound is set", () => {
+    const rows = aged();
+    assert.ok(rows.some((r) => r.age === null));
+    assert.equal(queryDirectory(rows, state({ pageSize: 250 })).matched, rows.length);
+    const band = queryDirectory(rows, state({ minAge: 20, maxAge: 23, pageSize: 250 }));
+    assert.equal(band.matched, rows.filter((r) => r.age !== null && r.age >= 20 && r.age <= 23).length);
+    assert.ok(band.rows.every((r) => r.age !== null && r.age >= 20 && r.age <= 23));
+    assert.ok(band.rows.some((r) => r.age === 20) && band.rows.some((r) => r.age === 23));
+    const min = queryDirectory(rows, state({ minAge: 27, pageSize: 250 }));
+    assert.equal(min.matched, rows.filter((r) => r.age !== null && r.age >= 27).length);
+    const max = queryDirectory(rows, state({ maxAge: 19, pageSize: 250 }));
+    assert.equal(max.matched, rows.filter((r) => r.age !== null && r.age <= 19).length);
+    assert.equal(queryDirectory(rows, state({ minAge: 30, maxAge: 20 })).matched, 0);
+  });
+
+  test("stat parsing: per-role allow-list, gte|lte, finite plain decimals in range", () => {
+    assert.deepEqual(parseStatFilter("hitter", "ops", "gte", "0.800"), { stat: "ops", op: "gte", value: 0.8 });
+    assert.deepEqual(parseStatFilter("hitter", "ops", "lte", ".750"), { stat: "ops", op: "lte", value: 0.75 });
+    assert.deepEqual(parseStatFilter("hitter", "kp", "lte", "25"), { stat: "kp", op: "lte", value: 25 });
+    assert.deepEqual(parseStatFilter("hitter", "babip", "gte", "0.3"), { stat: "babip", op: "gte", value: 0.3 });
+    assert.deepEqual(parseStatFilter("pitcher", "kbb", "gte", "-5"), { stat: "kbb", op: "gte", value: -5 });
+    assert.deepEqual(parseStatFilter("pitcher", "era", "lte", "3.50"), { stat: "era", op: "lte", value: 3.5 });
+    for (const stat of ["avg", "obp", "slg", "ops", "iso", "babip", "bbp", "kp"])
+      assert.ok(parseStatFilter("hitter", stat, "gte", "0.2"), stat);
+    for (const stat of ["era", "whip", "kp", "bbp", "kbb"])
+      assert.ok(parseStatFilter("pitcher", stat, "gte", "1"), stat);
+    for (const [role, stat, op, value] of [
+      ["hitter", "era", "lte", "3"], // pitcher-only column
+      ["pitcher", "ops", "gte", ".8"], // hitter-only column
+      ["hitter", "hr", "gte", "5"], // counting column, not a rate
+      ["hitter", "mom", "gte", "10"],
+      ["hitter", "constructor", "gte", "1"],
+      ["hitter", "ops", "gt", ".8"],
+      ["hitter", "ops", "", ".8"],
+      ["hitter", "ops", "gte", ""],
+      ["hitter", "ops", "gte", "abc"],
+      ["hitter", "ops", "gte", "Infinity"],
+      ["hitter", "ops", "gte", "NaN"],
+      ["hitter", "ops", "gte", "1e3"],
+      ["hitter", "kp", "gte", "0x10"],
+      ["hitter", "avg", "gte", "1.5"], // above range
+      ["hitter", "ops", "gte", "-0.1"], // below range
+      ["hitter", "kp", "gte", "101"],
+      ["pitcher", "kbb", "gte", "-101"],
+      ["hitter", "ops", "gte", "0.80000000000001"], // too long
+    ] as const)
+      assert.equal(parseStatFilter(role, stat, op, value), null, `${role} ${stat} ${op} ${value}`);
+  });
+
+  test("threshold keeps rows at or beyond the value; undefined values are excluded", () => {
+    const rows = manyRows(2);
+    const ops = (r: PlayerDirectoryRow) => r.batting?.ops ?? null;
+    const known = rows.map(ops).filter((v): v is number => v !== null).sort((a, b) => a - b);
+    const mid = known[Math.floor(known.length / 2)];
+    const gte = queryDirectory(rows, state({ statFilter: { stat: "ops", op: "gte", value: mid }, pageSize: 250 }));
+    assert.equal(gte.matched, known.filter((v) => v >= mid).length);
+    assert.ok(gte.rows.every((r) => ops(r) !== null && ops(r)! >= mid));
+    const lte = queryDirectory(rows, state({ statFilter: { stat: "ops", op: "lte", value: mid }, pageSize: 250 }));
+    assert.equal(lte.matched, known.filter((v) => v <= mid).length);
+    assert.ok(lte.rows.every((r) => ops(r) !== null && ops(r)! <= mid));
+    // A row without the stat (BABIP with no balls in play) never passes an active filter.
+    const noBip = rows.map((r, i) =>
+      i === 0 ? { ...r, batting: { ...r.batting!, ...counts({ plateAppearances: 2, walks: 2 }) } } : r,
+    );
+    assert.equal(battingBabip(noBip[0].batting!), null);
+    const babip = queryDirectory(noBip, state({ statFilter: { stat: "babip", op: "gte", value: 0 }, pageSize: 250 }));
+    assert.ok(!babip.rows.some((r) => r.id === noBip[0].id));
+    assert.equal(babip.matched, noBip.filter((r) => battingBabip(r.batting!) !== null).length);
+  });
+
+  test("percent thresholds are in percent units (25 = 25%)", () => {
+    const rows = manyRows(2);
+    const res = queryDirectory(rows, state({ statFilter: { stat: "kp", op: "lte", value: 25 }, pageSize: 250 }));
+    assert.equal(res.matched, rows.filter((r) => r.batting!.kPct !== null && r.batting!.kPct <= 25).length);
+    assert.ok(res.rows.every((r) => r.batting!.kPct! <= 25));
+  });
+
+  test("combines with minimum sample and the other filters", () => {
+    const rows = aged();
+    const res = queryDirectory(
+      rows,
+      state({ statFilter: { stat: "obp", op: "gte", value: 0.3 }, minSample: 25, minAge: 19, pageSize: 250 }),
+    );
+    const expected = rows.filter(
+      (r) =>
+        r.batting!.plateAppearances >= 25 &&
+        r.age !== null &&
+        r.age >= 19 &&
+        r.batting!.obp !== null &&
+        r.batting!.obp >= 0.3,
+    );
+    assert.equal(res.matched, expected.length);
+    assert.deepEqual(new Set(res.rows.map((r) => r.id)), new Set(expected.map((r) => r.id)));
+  });
+
+  test("new params round-trip with sort, pagination and every existing param", () => {
+    const rows = manyRows(1);
+    const options = directoryOptions(rows);
+    const params = {
+      q: "star",
+      team: options.teams[0].id,
+      min: "10",
+      window: "30d",
+      minAge: "19",
+      maxAge: "24",
+      stat: "ops",
+      op: "gte",
+      value: "0.800",
+      sort: "babip",
+      dir: "asc",
+      page: "2",
+      size: "50",
+    };
+    const s = parseDirectoryState(params, parseDirectoryScope(params, ["afl"]), options);
+    assert.deepEqual([s.minAge, s.maxAge], [19, 24]);
+    assert.deepEqual(s.statFilter, { stat: "ops", op: "gte", value: 0.8 });
+    assert.deepEqual(s.sort, { key: "babip", direction: "asc" });
+    assert.deepEqual([s.page, s.pageSize, s.minSample, s.window], [2, 50, 10, "30d"]);
+    assert.ok(hasActiveFilters(s));
+    const sp = new URLSearchParams(directorySearch(s));
+    assert.deepEqual(
+      [sp.get("minAge"), sp.get("maxAge"), sp.get("stat"), sp.get("op"), sp.get("value"), sp.get("page")],
+      ["19", "24", "ops", "gte", "0.8", "2"],
+    );
+    const back = Object.fromEntries(sp);
+    assert.deepEqual(parseDirectoryState(back, parseDirectoryScope(back, ["afl"]), options), s);
+    // Page links keep the new filters (the component builds them from state with a new page).
+    const next = new URLSearchParams(directorySearch({ ...s, page: 3 }));
+    assert.deepEqual(
+      [next.get("minAge"), next.get("stat"), next.get("value"), next.get("sort"), next.get("page")],
+      ["19", "ops", "0.8", "babip", "3"],
+    );
+    // Invalid values are dropped silently, and a stat from the other role does not apply.
+    const junk = { minAge: "12", maxAge: "x", stat: "era", op: "lte", value: "3" };
+    const j = parseDirectoryState(junk, parseDirectoryScope(junk, ["afl"]), options);
+    assert.deepEqual([j.minAge, j.maxAge, j.statFilter], [null, null, null]);
+    assert.equal(directorySearch(j), "");
+    const pit = { role: "pitchers", stat: "era", op: "lte", value: "3" };
+    assert.deepEqual(parseDirectoryState(pit, parseDirectoryScope(pit, ["afl"]), options).statFilter, {
+      stat: "era",
+      op: "lte",
+      value: 3,
+    });
+    assert.ok(!hasActiveFilters(state()));
   });
 });
 
