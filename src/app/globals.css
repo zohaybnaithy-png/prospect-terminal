@@ -1624,6 +1624,22 @@ a.reset-button {
   padding: 0 6px;
   font-size: 12px;
 }
+.directory-controls .filter-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.directory-controls .filter-inline select {
+  max-width: 90px;
+}
+.directory-controls .filter-group input[type="number"] {
+  width: 64px;
+  height: 30px;
+  min-height: 0;
+  border: 1px solid var(--border);
+  padding: 0 6px;
+  font-size: 12px;
+}
 .directory-controls .button-link {
   display: inline-flex;
   align-items: center;
@@ -1777,6 +1793,13 @@ a.reset-button {
   }
   .directory-controls .filter-group select {
     max-width: none;
+    width: 100%;
+  }
+  .directory-controls .filter-inline > label {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .directory-controls .filter-group .filter-inline input[type="number"] {
     width: 100%;
   }
   .directory-search {
