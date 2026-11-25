@@ -1,12 +1,15 @@
 # Vercel Hobby + Neon Free (Phase 6B)
 
-**Status: code ready for a private Vercel staging deployment. Nothing is deployed.** No Vercel
-project, Neon branch or domain was created, no Neon data was changed and ingestion stays disabled.
-Steps marked **YOU** are console actions for the project owner. Public launch is still blocked on
+**Status (2026-11): active target.** The Vercel project `prospect-terminal` (team `zo-s`, Hobby) builds
+protected Preview deployments for `staging` and `claude/*` branches and a protected Production deployment
+for `main` (no public domain). Ingestion stays disabled; the runtime never opens a database connection.
+Current state and evidence: [PROJECT_STATUS.md](./PROJECT_STATUS.md); verification: `npm run verify:preview`
+([AUTONOMOUS-WORKFLOW.md](./AUTONOMOUS-WORKFLOW.md)). The setup steps below are kept as the record of how
+the project was created. Steps marked **YOU** are console actions for the project owner. Public launch is still blocked on
 data licensing ([DATA-LICENSING.md](./DATA-LICENSING.md)); see *Public launch* below.
 
-This is a second deployment target next to the single server ([DEPLOYMENT.md](./DEPLOYMENT.md),
-Lightsail + Caddy). The single server is unchanged: every new behaviour below switches on only
+The single-server target ([DEPLOYMENT.md](./DEPLOYMENT.md), Lightsail + Caddy) is a dormant
+alternative (decision D-003). The single server is unchanged: every new behaviour below switches on only
 with `PT_DATA_SOURCE=snapshot` or on Vercel (`VERCEL=1`, set by the platform).
 
 ## Why the code had to change

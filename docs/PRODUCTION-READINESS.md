@@ -1,5 +1,7 @@
 # Production readiness audit (Phase 5, updated after the pre-merge remediation and Phase 6A)
 
+> **Historical.** This records the Phase 5–6A state and the single-server plan, before Vercel became the active target (decision D-003). For the current state see [PROJECT_STATUS.md](./PROJECT_STATUS.md) and the release gates in [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md).
+
 Review of `main` (`c22c095`, Phases 1–5A) together with the open, remediated Phase 5B
 (traffic protection, PR #12, head `77ffdb9`) and Phase 5C (data refresh, PR #13, head `0054a0a`)
 branches. Updated after a pre-merge remediation pass that found and fixed several defects in both

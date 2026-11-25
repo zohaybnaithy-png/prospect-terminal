@@ -21,12 +21,12 @@ Extend `verify:preview` to record cold and warm response times (server timing + 
 AC: report contains per-path cold/warm ms; unit test for the timing summary; numbers recorded in
 docs/PROJECT_STATUS.md for staging. Risk: low. Depends: —.
 
-### T-103 Remove dead demo-era code — `in-review` (branch `claude/t-103-demo-fixtures`: fixtures moved to scripts/fixtures/demo, guard test added)
+### T-103 Remove dead demo-era code — `done` (PR #28, merged 2026-11-25)
 `src/services/prospects.ts`, `src/services/discovery.ts`, `src/data/demo.ts` users: confirm no route imports
 them (build + grep), delete or move to test fixtures, keep the opt-in seed working or retire it explicitly.
 AC: no user-facing import of demo data; tests updated (not weakened); bundle unchanged or smaller. Risk: low.
 
-### T-104 Stale doc cleanup — `ready`
+### T-104 Stale doc cleanup — `in-review` (branch `claude/t-104-stale-docs`; owner merges: touches CLAUDE.md)
 README "nothing is deployed", VERCEL.md header, REDESIGN/VISUAL-DESIGN (mark historical or fold into
 DECISIONS), Lightsail docs labelled "dormant alternative" consistently (DECISIONS D-003). AC: no doc
 contradicts PROJECT_STATUS.md. Risk: low.

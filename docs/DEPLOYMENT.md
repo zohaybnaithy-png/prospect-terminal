@@ -1,9 +1,11 @@
 # Deployment
 
-Nothing is deployed yet. This document records the production architecture, the hosting decision
-and the reasons for both. A second, free target (Vercel Hobby + Neon Free, serving a build-time
-data snapshot) is described in [VERCEL.md](./VERCEL.md); everything below is the single-server
-target and is unchanged by it. The step-by-step procedure is in
+> **Dormant alternative (decision D-003).** The single-server Lightsail + Caddy target is kept but not run; Vercel (Hobby) is the active target ([VERCEL.md](./VERCEL.md)): protected Preview deployments for `staging` and `claude/*`, and a protected Production deployment for `main` with no public domain. Public launch is blocked on data licensing. Current state: [PROJECT_STATUS.md](./PROJECT_STATUS.md).
+
+This document records the production architecture, the hosting decision
+and the reasons for both. The active target (Vercel Hobby + Neon Free, serving a build-time
+data snapshot) is described in [VERCEL.md](./VERCEL.md); everything below is the dormant single-server
+target. The step-by-step procedure is in
 [DEPLOYMENT-RUNBOOK.md](./DEPLOYMENT-RUNBOOK.md); the files it installs are in `deploy/`.
 
 Measurements: production build (`next start`) on a Mac against the Neon test branch (2026 season,
