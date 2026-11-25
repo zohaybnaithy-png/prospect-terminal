@@ -10,6 +10,7 @@ const links = [
   ["Players", "/players"],
   ["Trends", "/trends"],
   ["Data", "/data"],
+  ["Watchlist", "/watchlist"],
 ] as const;
 export function Header() {
   const path = usePathname();

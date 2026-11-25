@@ -172,7 +172,7 @@ function sampleOf(row: PlayerDirectoryRow | undefined, role: Role): Sample | nul
 }
 
 /** Name of a player from any loaded level (one identity across levels), for notices. */
-function anyName(levels: LevelSnapshot[], id: string) {
+export function anyName(levels: LevelSnapshot[], id: string) {
   for (const ls of levels) {
     const p = ls.snapshot.players.find((x) => x.id === id);
     if (p) return p.name;

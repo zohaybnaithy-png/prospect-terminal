@@ -38,6 +38,7 @@ import { DevelopmentTimeline } from "@/components/analytics/development-timeline
 import { timelineViews } from "@/analytics/trend-views";
 import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
 import { COMPARE_MAX, addToCompareLink } from "@/services/compare/query";
+import { WatchlistStar } from "@/components/watchlist/star-button";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
 const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
@@ -152,6 +153,7 @@ export function AflPlayerProfileView({
             </nav>
           )}
           <p className="profile-actions">
+            <WatchlistStar playerId={player.id} name={player.name} variant="labelled" />
             <Link href={compare.href} className="button-link">
               {compare.included
                 ? "View comparison"
