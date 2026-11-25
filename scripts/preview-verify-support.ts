@@ -232,3 +232,72 @@ export const LEVEL_LABELS: Record<string, string | null> = {
   "single-a": "Single-A",
   afl: null,
 };
+
+/**
+ * One timed request (T-102). `ttfbMs` = until response headers, `totalMs` = until the body is read.
+ * `cache` is Vercel's `x-vercel-cache` (HIT/MISS/STALE/PRERENDER…) and `serverTiming` the raw
+ * `server-timing` header, both when present.
+ */
+export type TimingSample = { status: number; ttfbMs: number; totalMs: number; cache: string | null; serverTiming: string | null };
+
+export type PathTiming = {
+  path: string;
+  /** First request this run made to the path: the "cold" number (a fresh instance or CDN miss is likely, not guaranteed). */
+  first: TimingSample;
+  /** Later requests to the same path in quick succession: the "warm" numbers. */
+  warm: TimingSample[];
+};
+
+export type TimingSummaryRow = {
+  path: string;
+  status: number;
+  firstTtfbMs: number;
+  firstTotalMs: number;
+  firstCache: string | null;
+  warmTtfbMedianMs: number | null;
+  warmTotalMedianMs: number | null;
+  warmTotalMaxMs: number | null;
+  warmCache: string[];
+};
+
+const median = (xs: number[]): number | null => {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+};
+
+/**
+ * Reduces raw samples to one row per path (rounded ms). Warm samples whose status differs from the
+ * first answer are left out of the warm numbers. Informational only: no thresholds, never a failed check.
+ */
+export function summarizeTimings(paths: PathTiming[]): TimingSummaryRow[] {
+  return paths.map((p) => {
+    const warmOk = p.warm.filter((w) => w.status === p.first.status);
+    const totals = warmOk.map((w) => Math.round(w.totalMs));
+    return {
+      path: p.path,
+      status: p.first.status,
+      firstTtfbMs: Math.round(p.first.ttfbMs),
+      firstTotalMs: Math.round(p.first.totalMs),
+      firstCache: p.first.cache,
+      warmTtfbMedianMs: median(warmOk.map((w) => Math.round(w.ttfbMs))),
+      warmTotalMedianMs: median(totals),
+      warmTotalMaxMs: totals.length ? Math.max(...totals) : null,
+      warmCache: [...new Set(warmOk.map((w) => w.cache ?? "-"))],
+    };
+  });
+}
+
+/** Fixed-width table for `--timings` (printed on stderr). */
+export function formatTimingTable(rows: TimingSummaryRow[]): string {
+  const cell = (v: number | null) => (v === null ? "-" : String(v));
+  const header = ["path", "status", "first ttfb", "first total", "first cache", "warm ttfb p50", "warm total p50", "warm total max", "warm cache"];
+  const body = rows.map((r) => [
+    r.path, String(r.status), cell(r.firstTtfbMs), cell(r.firstTotalMs), r.firstCache ?? "-",
+    cell(r.warmTtfbMedianMs), cell(r.warmTotalMedianMs), cell(r.warmTotalMaxMs), r.warmCache.join("/") || "-",
+  ]);
+  const widths = header.map((h, i) => Math.max(h.length, ...body.map((b) => b[i].length)));
+  const line = (cols: string[]) => cols.map((c, i) => (i === 0 ? c.padEnd(widths[i]) : c.padStart(widths[i]))).join("  ");
+  return [line(header), line(widths.map((w) => "-".repeat(w))), ...body.map(line)].join("\n");
+}
