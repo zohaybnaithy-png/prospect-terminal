@@ -79,6 +79,12 @@ before these changes; it must never be regenerated to make a performance change 
 (`MOMENTUM_GOLDEN_UPDATE=1` is only for a deliberate, discussed change to Momentum itself). On
 Vercel (snapshot mode) analytics are prepared per level on first use; see docs/VERCEL.md.
 
+**Canonical platform for the golden test: Linux x64 (CI).** The golden file was generated on Linux and the
+comparison is bit-exact. On macOS arm64 one of the 2638 outputs differs in the last bit of a `Math.tanh`
+result (V8 uses the platform's math library), so a local `npm test` on a Mac shows exactly that one failure.
+It is not a regression and is never "fixed" by regenerating or loosening the test (decision D-015). Judge the
+test by CI; any other mismatch, or any mismatch on Linux, means Momentum output changed.
+
 ## Known limitations
 
 - The AFL season is ~4–6 weeks: for much of it the **30D window has no valid earlier baseline**, so 30D is shown as *unavailable* (never estimated). 14D persistence can only reach ~2–3 checkpoints.
