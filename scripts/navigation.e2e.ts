@@ -584,6 +584,94 @@ describe("player comparison", () => {
   });
 });
 
+describe("watchlist (per browser)", () => {
+  test("star on a directory row → /watchlist lists the player → unstar → empty; profile star persists", async () => {
+    const t = await open();
+    try {
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      const link = t.page.locator("a.player-name").first();
+      const name = (await link.textContent())!.trim();
+      const id = new URL((await link.getAttribute("href"))!, base).pathname.split("/").pop()!;
+      // Server HTML is neutral; the stored state appears after hydration.
+      const star = t.page.getByRole("button", { name: `Add ${name} to watchlist` });
+      await t.page.waitForSelector('button.watch-star[data-state="off"]');
+      assert.equal(await star.getAttribute("aria-pressed"), "false");
+      t.reset();
+      await star.click();
+      const starred = t.page.getByRole("button", { name: `Remove ${name} from watchlist` });
+      assert.equal(await starred.getAttribute("aria-pressed"), "true");
+      await settle(t.page);
+      assert.deepEqual(seen(t), [], "starring is local: no request");
+      assert.deepEqual(await t.page.evaluate(() => [document.cookie, JSON.parse(localStorage.getItem("pt.watchlist.v1") ?? "[]")]), ["", [id]]);
+
+      // The header tab opens /watchlist; the client puts the stored ids into the URL.
+      await clickTo(t, tab(t.page, "Watchlist"), (u) => u.pathname === "/watchlist" && u.searchParams.get("ids") === id);
+      const main = () => t.page.locator("main").textContent();
+      const rows = () => t.page.locator("main table.data-table tbody a.player-name").allTextContents();
+      assert.deepEqual((await rows()).map((n) => n.trim()), [name]);
+      assert.match((await main()) ?? "", /Double-A|AA/);
+
+      // Unstar from the watchlist itself: the URL and the table follow.
+      await t.page.getByRole("button", { name: `Remove ${name} from watchlist` }).click();
+      await t.page.waitForURL((u) => u.pathname === "/watchlist" && !u.searchParams.has("ids"));
+      await t.page.waitForLoadState("networkidle");
+      await t.page.getByText("No players on your watchlist yet.").waitFor();
+      assert.deepEqual(await rows(), []);
+      assert.equal(await t.page.evaluate(() => localStorage.getItem("pt.watchlist.v1")), null);
+
+      // Profile star (labelled) persists across a reload of the cached page.
+      await t.page.goto(`${base}/players/${id}`, { waitUntil: "networkidle" });
+      await t.page.getByRole("button", { name: `Add ${name} to watchlist` }).click();
+      await t.page.reload({ waitUntil: "networkidle" });
+      await t.page.waitForSelector('button.watch-star.labelled[data-state="on"]');
+      assert.equal(await t.page.getByRole("button", { name: `Remove ${name} from watchlist` }).getAttribute("aria-pressed"), "true");
+      assert.deepEqual([...t.errors], [], "no hydration or runtime errors");
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("storage blocked: stars are disabled with an explanation, /watchlist explains, nothing crashes", async () => {
+    const t = await open();
+    try {
+      await t.ctx.addInitScript(() => {
+        Object.defineProperty(window, "localStorage", {
+          configurable: true,
+          get() {
+            throw new DOMException("The operation is insecure.", "SecurityError");
+          },
+        });
+      });
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      await t.page.waitForSelector('button.watch-star[data-state="unavailable"]');
+      const star = t.page.locator("button.watch-star").first();
+      assert.equal(await star.getAttribute("aria-disabled"), "true");
+      assert.match((await star.textContent()) ?? "", /Watchlist unavailable for .+: this browser is blocking site storage/);
+      // aria-disabled (not disabled): it stays focusable and says why when activated.
+      await star.focus();
+      await t.page.keyboard.press("Enter");
+      assert.match((await t.page.locator(".watch-message").first().textContent()) ?? "", /blocking site storage/);
+
+      const r = await t.page.goto(`${base}/watchlist`, { waitUntil: "networkidle" });
+      assert.equal(r?.status(), 200);
+      await t.page.getByText("This browser is blocking site storage", { exact: false }).waitFor();
+      assert.equal(new URL(t.page.url()).search, "", "no redirect loop");
+      assert.deepEqual([...t.errors], []);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("bad or unknown ids are a notice on a 200 page, never a 404", async () => {
+    const r = await fetch(`${base}/watchlist?ids=not-a-uuid,00000000-0000-4000-8000-00000000dead`, { headers: { "x-vercel-forwarded-for": "198.51.100.251" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("set-cookie"), null, "no cookies");
+    const html = await r.text();
+    assert.match(html, /1 invalid player id was ignored\./);
+    assert.match(html, /is not in the loaded 2026 data/);
+  });
+});
+
 describe("new deployment", () => {
   test("cached pages stay boundedly stale; the next server navigation loads the new build", { timeout: 600_000 }, async () => {
     const t = await open();

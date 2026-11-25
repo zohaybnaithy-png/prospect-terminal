@@ -48,6 +48,7 @@ import {
 import { DataTable, type Column } from "@/components/ui/data-table";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
+import { WatchlistStar } from "@/components/watchlist/star-button";
 
 export type { DirectoryState } from "@/services/players/directory-query";
 
@@ -86,7 +87,12 @@ function contextColumns(role: Role, short: string): Column<Row>[] {
     {
       key: "player",
       label: "Player",
-      render: (r) => <PlayerLink player={r} level={r.level} />,
+      render: (r) => (
+        <span className="player-cell">
+          <WatchlistStar playerId={r.id} name={r.name} />
+          <PlayerLink player={r} level={r.level} />
+        </span>
+      ),
     },
     momentumColumn(role, short),
     { key: "pos", label: "Pos", render: (r) => r.position },

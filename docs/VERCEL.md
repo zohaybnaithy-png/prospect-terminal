@@ -334,7 +334,7 @@ and a redeploy.
 **Rules.**
 
 - **Pages.** `Vercel-CDN-Cache-Control: max-age=300, stale-while-revalidate=86400` on `/`,
-  `/players`, `/players/:id`, `/trends`, `/data`, `/robots.txt` and `/sitemap.xml`, set through
+  `/players`, `/players/:id`, `/compare`, `/watchlist`, `/trends`, `/data`, `/robots.txt` and `/sitemap.xml`, set through
   next.config `headers()`. Only plain requests get it: **no** `RSC`, `Next-Router-Prefetch`,
   `Next-Router-Segment-Prefetch`, `Next-Router-State-Tree`, `Next-Url` or `Next-Action` header, and
   **no** `_rsc` parameter. Browsers keep Next.js's `Cache-Control: private, no-store`.

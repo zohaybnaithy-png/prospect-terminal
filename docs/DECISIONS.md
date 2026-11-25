@@ -21,6 +21,7 @@ that supersedes it. Proposals awaiting the owner are at the end. Details live in
 | D-014 | **Deployment Protection stays on for all deployments**; agents use one Protection Bypass for Automation secret, header-only, scoped to the deployment's own host. | Private previews without disabling protection. | AUTONOMOUS-WORKFLOW.md §3 |
 | D-015 | **The Momentum golden test is bit-exact and Linux is the canonical platform.** It fails on macOS arm64 (1 of 2638 outputs, `Math.tanh` last bit). Never regenerate or loosen it; verify on CI. | Exactness catches real regressions; libm differences are not regressions. | TASKS.md T-305 |
 | D-016 | **Staging merges are human until the owner approves the guarded path** (`npm run gate:staging` is check-only). Sensitive paths (CI, agent rules, config, schema, ingestion writes, gates, lockfile) always need a human. | Least privilege; the gate is reviewed before it gains merge power. | `scripts/staging-gate-support.ts` |
+| D-017 | **Per-visitor state never reaches the server render.** The watchlist lives only in the browser's localStorage (guarded, re-validated); `/watchlist?ids=` is rendered from the URL alone, and star buttons render a neutral state on the server, so CDN-cached HTML is identical for everyone. No cookies, no accounts, no tracking. | Snapshot-only, CDN-cached site; privacy. | `src/lib/watchlist-storage.ts`, T-202 |
 
 ## Proposals awaiting the owner
 

@@ -7,14 +7,13 @@
  */
 import type { Role } from "@/analytics/config";
 import { isLevelId, type LevelId } from "@/services/players/levels";
+import { PLAYER_UUID_IN_TEXT, ignoredIdsNotice, parseIdTokens, splitIdList } from "@/services/players/id-list";
 
 export const COMPARE_MIN = 2;
 export const COMPARE_MAX = 4;
 
 type Params = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const UUID_IN_TEXT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 /** Caps the work done on a hostile `ids` value before validation. */
 const MAX_TOKENS = 32;
 
@@ -41,33 +40,16 @@ export function parseCompareQuery(params: Params): CompareQuery {
   if (levelProblem === "unknown") notices.push("That level is not recognised — choose a level below.");
   const role: Role = one(params.role) === "pitchers" ? "pitcher" : "hitter";
 
-  const tokens = one(params.ids)
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .slice(0, MAX_TOKENS);
+  const tokens = splitIdList(one(params.ids), MAX_TOKENS);
   const addText = one(params.add).trim();
   if (addText) {
-    const found = addText.match(UUID_IN_TEXT)?.[0];
+    const found = addText.match(PLAYER_UUID_IN_TEXT)?.[0];
     if (found) tokens.push(found);
     else notices.push("Couldn't find a player id in what was entered — paste a player profile link.");
   }
-  const ids: string[] = [];
-  let invalid = 0,
-    duplicate = 0,
-    extra = 0;
-  for (const t of tokens) {
-    if (!UUID.test(t)) {
-      invalid++;
-      continue;
-    }
-    const id = t.toLowerCase();
-    if (ids.includes(id)) duplicate++;
-    else if (ids.length >= COMPARE_MAX) extra++;
-    else ids.push(id);
-  }
-  if (invalid) notices.push(`${invalid} invalid player ${invalid === 1 ? "id was" : "ids were"} ignored.`);
-  if (duplicate) notices.push(`${duplicate} duplicate player ${duplicate === 1 ? "id was" : "ids were"} ignored.`);
+  const { ids, invalid, duplicate, extra } = parseIdTokens(tokens, COMPARE_MAX);
+  if (invalid) notices.push(ignoredIdsNotice(invalid, "invalid"));
+  if (duplicate) notices.push(ignoredIdsNotice(duplicate, "duplicate"));
   if (extra) notices.push(`Up to ${COMPARE_MAX} players can be compared; ${extra} more ${extra === 1 ? "was" : "were"} left out.`);
   return { level, levelProblem, role, ids, notices };
 }
