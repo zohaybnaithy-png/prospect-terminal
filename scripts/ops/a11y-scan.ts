@@ -104,6 +104,7 @@ async function main() {
       "/players?level=afl",
       "/trends",
       "/data",
+      "/watchlist",
       ...(await profilePaths(discover)),
       "/this-page-does-not-exist",
       ...(process.env.A11Y_PATHS?.split(",").map((p) => p.trim()).filter(Boolean) ?? []),

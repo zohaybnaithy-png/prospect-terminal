@@ -12,6 +12,7 @@ Prospect Terminal is a player-first prospect analytics product. The core loop is
 | `/players`      | Scouting-style directory: search, level, team, organization, position, min PA/BF, stat window, sortable columns incl. Momentum, pages of 50/100/250. Filtered, sorted and paginated on the server; all state in the URL (works without JavaScript) | Real AFL + MiLB |
 | `/players/[id]` | Identity/bio, season + last-14-day stat strips, Momentum panel (value, band, confidence, persistence, 7D/14D/30D, decomposition), recent games, Momentum and recent-vs-earlier charts, What changed?, window splits, same-level percentiles, levels this season, full game log, roster observations | Real AFL + MiLB |
 | `/compare`      | Side-by-side comparison of 2–4 players at one level (`?level=&ids=`): season and window lines, within-level percentiles, Momentum with confidence, sample sizes. "Add to compare" from profiles | Real AFL + MiLB |
+| `/watchlist`   | Players starred in this browser (stars live only in localStorage: no account, cookies or server state). `/watchlist?ids=…` is rendered from the URL alone; each player shows the season line and Momentum (+ confidence, sample) from the level of their most recent game, other levels listed, never blended | Real AFL + MiLB |
 | `/trends`       | Biggest Risers & Fallers by component, Performance × Momentum map. The page embeds hitters · 14D; other role/window selections load from `/trends/data` | Real AFL + MiLB |
 | `/data`         | Coverage, level status, Momentum methodology, statistics glossary, metrics in development                                                                                                                                                                                | Real AFL + MiLB + docs |
 | `/health`       | Health check for the host: 200 once every level's data is loaded, 503 while starting (in-memory state only, no database query) | Server state |
@@ -113,7 +114,7 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 
 | Path                     | Responsibility                                                           |
 | ------------------------ | ------------------------------------------------------------------------ |
-| `src/app`                | Routes: `/`, `/players`, `/players/[id]`, `/trends`, `/data`             |
+| `src/app`                | Routes: `/`, `/players`, `/players/[id]`, `/compare`, `/watchlist`, `/trends`, `/data` |
 | `src/components/home`    | Homepage panels (Trending Prospects, Latest Results, Level Moves, coverage, not-yet-available) |
 | `src/components/players` | Player directory controls and one server-queried page of rows            |
 | `src/components/player`  | Player profile                                                           |

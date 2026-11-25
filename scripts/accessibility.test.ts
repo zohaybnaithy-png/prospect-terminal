@@ -16,6 +16,8 @@ import { ScrollRegion } from "../src/components/ui/scroll-region";
 import { LevelNav } from "../src/components/levels/level-nav";
 import { MapPointList } from "../src/components/analytics/performance-map";
 import { CompareTable } from "../src/components/compare/compare-table";
+import { WatchlistStar } from "../src/components/watchlist/star-button";
+import { WatchlistTable } from "../src/components/watchlist/watchlist-table";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const CSS = readFileSync(join(ROOT, "src/app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -187,6 +189,39 @@ describe("player comparison (/compare)", () => {
     assert.match(html, /<th scope="row">OPS<\/th>/);
     assert.match(html, /—<span class="sr-only"> no line<\/span>/, "a missing value is announced, not silent");
     assert.match(html, /Remove<span class="sr-only"> Second Fixture from the comparison<\/span>/);
+  });
+});
+
+describe("watchlist (/watchlist, star toggles)", () => {
+  const rule = (sel: string) => {
+    assert.ok(rules.find((r) => r.selector === sel), `${sel} rule exists`);
+    return CSS.slice(CSS.indexOf(`${sel} {`)).split("}")[0];
+  };
+
+  test("the icon-only star has a 24px target (WCAG 2.5.8)", () => {
+    const body = rule(".watch-star");
+    assert.match(body, /min-height:\s*24px/);
+    assert.match(body, /min-width:\s*24px/);
+  });
+
+  test("starred is not shown by colour alone: the labelled toggle changes border and background too", () => {
+    const on = rule('.watch-star.labelled[aria-pressed="true"]');
+    assert.match(on, /border-color:/);
+    assert.match(on, /background:\s*#eef5f3/);
+  });
+
+  test("the star is a real toggle button with a text name, on the server too", () => {
+    const html = renderToStaticMarkup(createElement(WatchlistStar, { playerId: "00000000-0000-4000-8000-000000000001", name: "First Fixture" }));
+    assert.match(html, /^<button type="button"[^>]* aria-pressed="false"/);
+    assert.match(html, /<svg[^>]*aria-hidden="true"/, "the star glyph is decorative");
+    assert.match(html, /<span class="sr-only">Add First Fixture to watchlist<\/span>/);
+  });
+
+  test("the watchlist table is a named, focusable region with column headers", () => {
+    const html = renderToStaticMarkup(createElement(WatchlistTable, { role: "pitcher", entries: [], momentumShort: "14D" }));
+    assert.match(html, /^<div class="table-scroll" tabindex="0" role="region" aria-label="Watchlist pitchers: /);
+    assert.match(html, /<caption class="sr-only">Watchlist pitchers: /);
+    for (const head of ["Watch", "Player", "Lvl", "BF", "ERA", "Conf."]) assert.match(html, new RegExp(`<th scope="col"[^>]*>${head}</th>`));
   });
 });
 

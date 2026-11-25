@@ -48,7 +48,7 @@ compare" from profiles and directory rows; invalid/mixed ids give a clear notice
 AC: server-rendered, works without JS, CDN-cacheable like /players, a11y test passes, unit tests for the
 query parsing and view model, nav e2e covers add → compare. No cross-level blending. Risk: low/medium.
 
-### T-202 Watchlist (per browser) — `ready`
+### T-202 Watchlist (per browser) — `in-review` (branch `claude/t-202-watchlist`; unit + a11y tests, nav e2e star → list → unstar and storage-blocked pass locally; Preview not yet verified)
 Star button on profiles/directory rows, `/watchlist` page listing starred players with latest level line and
 Momentum. localStorage only (wrapped in try/catch, empty-state works), no server state, no tracking.
 AC: works with storage blocked (graceful), a11y passes, e2e covers star → list → unstar. Risk: low. Depends: —.

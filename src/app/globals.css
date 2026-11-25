@@ -2639,3 +2639,80 @@ ul.compare-notices {
 .profile-actions .button-link {
   margin-left: 0;
 }
+
+/* ------------------------------------------------------------------------------------------
+ * Watchlist (T-202): star toggles on directory rows, profiles and /watchlist. Stars live only in
+ * this browser; the server renders the neutral (unstarred) state and the stored state appears
+ * after hydration.
+ * ---------------------------------------------------------------------------------------- */
+.player-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.watch-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 24px;
+  min-height: 24px;
+  margin: -4px 0 -4px -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--subtle);
+  vertical-align: middle;
+}
+.watch-star:hover {
+  color: var(--link-hover);
+}
+.watch-star[aria-pressed="true"] {
+  color: var(--link);
+}
+.watch-star[aria-disabled="true"] {
+  color: var(--disabled);
+  cursor: not-allowed;
+}
+.watch-star.labelled {
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid #b7c5c4;
+  background: #fff;
+  color: #3f5859;
+  font-size: 11px;
+}
+.watch-star.labelled[aria-pressed="true"] {
+  border-color: var(--link);
+  background: #eef5f3;
+  color: var(--link);
+}
+.watch-star.labelled[aria-disabled="true"] {
+  color: var(--disabled);
+}
+.watch-message {
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: normal;
+}
+.watch-status {
+  margin: 0 0 12px;
+}
+.watch-empty p + p {
+  margin-top: 6px;
+}
+.watch-section {
+  margin-top: 14px;
+}
+.watch-section h2 {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+.watch-sample {
+  color: var(--subtle);
+  font-size: 10px;
+}
+.watch-missing .watch-star {
+  margin: -4px 0;
+}

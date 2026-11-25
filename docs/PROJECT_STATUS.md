@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-25: T-202 watchlist → PR #31: star toggles on directory rows and profiles (localStorage only, guarded; neutral server render), `/watchlist?ids=` server-rendered from the URL alone (latest level line + Momentum, per level), header tab, CDN-cached route. Verified on its Preview (33/33); owner merges (cdn-cache.ts).
 - 2026-11-25: T-105 guarded merge command built (check → merge with pinned sha → staging verify → halt on failure); bypass routes added to the deny list. Not enabled: needs owner merge, T-106, one allow rule.
 - 2026-11-25: owner merged PR #28 (T-103); staging `ff54c4a` verified 33/33 (`dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb`). T-104: stale deployment/demo/validation statements fixed across README, CLAUDE.md, VERCEL, DEPLOYMENT*, STAGING-*, PRODUCTION-READINESS.
 - 2026-11-25: owner merged PRs #24, #25, #26 (staging `5a3c82a`, verified 33/33 on `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`), then PR #27 (T-102 timings in `verify:preview`). T-103: demo fixtures moved from `src/` to `scripts/fixtures/demo/` with a guard test; client JS unchanged (1,071,243 bytes both builds).
