@@ -41,7 +41,7 @@ Prospect Terminal is player-first: discovery → player → performance/trajecto
 
 Server components build serializable rows; small client islands handle instant filtering/sorting (Players, URL-synced via `history.replaceState`), Momentum toggles, and charts. Client components import only client-safe modules (types, formatting, filters); the analytics engine stays on the server. Failures map to `not-configured` / `empty` / `unavailable` notices inside the normal layout; error boundaries show generic messages only.
 
-The fictional fixtures (`src/data/demo.ts`, `src/services/prospects.ts`, `src/services/discovery.ts`) remain solely for tests and the opt-in seed. Retired demo routes redirect (see `next.config.ts`).
+The fictional fixtures live in `scripts/fixtures/demo/` (`demo.ts`, `prospects.ts`, `discovery.ts`; moved out of `src/` in T-103) solely for tests and the opt-in seed; `scripts/demo-fixtures.test.ts` keeps `src/` from importing them. Retired demo routes redirect (see `next.config.ts`).
 
 ## Preserved relational foundation
 

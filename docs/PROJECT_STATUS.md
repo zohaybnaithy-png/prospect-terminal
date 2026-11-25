@@ -11,6 +11,7 @@ Last updated: 2026-11-24 (session that set up autonomous development). Read this
 - In review: PR #24 (T-101: docs, `.claude/agents/`, `npm run gate:staging`, dev-loop lock). Product work in review: T-201 player comparison (PR #25: CI 6/6, verify:preview 33/33, /compare checked on real High-A data); T-203 directory depth (PR #26: verify:preview 33/33, filters checked on real data).
 
 ## Recent work
+- 2026-11-25: owner merged PRs #24, #25, #26 (staging `5a3c82a`, verified 33/33 on `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`). T-102 → PR #27. T-103: demo fixtures moved from `src/` to `scripts/fixtures/demo/` with a guard test; client JS unchanged (1,071,243 bytes both builds).
 - 2026-11-24: T-101 finished on `claude/project-foundation` (PR #24): DECISIONS, RELEASE_CHECKLIST, ARCHITECTURE "Current system", links from CLAUDE.md/AGENTS.md, AUTONOMOUS-WORKFLOW §6 (gate) and §7 (scheduled runs). Staging gate hardened after an independent security review (forged Preview reports, >100-file PRs, renames, missed ingestion/DB/indexing paths, skipped required checks, more secret forms, fail-closed secret lookup, head re-check, trusted-code requirement). 20 gate tests.
 - 2026-11-24: nightly scheduled run created (see below).
 - 2026-11-24: PR #24 verified (CI 6/6, verify:preview 33/33 at c460ec3 and cff89ed). T-201 → PR #25, T-203 → PR #26, both built by frontend-engineer agents in isolated worktrees, reviewed and verified on their Previews. Next ready tasks: T-102, T-103, T-104, T-202, T-204.

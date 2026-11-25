@@ -11,7 +11,7 @@ e2e suites, green CI, `verify:preview` 33+/all pass, docs updated (this file + P
 
 ## Milestone 1 — Engineering foundation
 
-### T-101 Project source-of-truth docs — `in-review` (PR #24, owner merges)
+### T-101 Project source-of-truth docs — `done` (PR #24, merged 2026-11-25)
 PRODUCT, ROADMAP, TASKS, ARCHITECTURE (current system), DECISIONS, RELEASE_CHECKLIST, PROJECT_STATUS; agent
 definitions in `.claude/agents/`; staging merge gate. Risk: low (but touches agent rules → owner merges).
 
@@ -21,7 +21,7 @@ Extend `verify:preview` to record cold and warm response times (server timing + 
 AC: report contains per-path cold/warm ms; unit test for the timing summary; numbers recorded in
 docs/PROJECT_STATUS.md for staging. Risk: low. Depends: —.
 
-### T-103 Remove dead demo-era code — `ready`
+### T-103 Remove dead demo-era code — `in-review` (branch `claude/t-103-demo-fixtures`: fixtures moved to scripts/fixtures/demo, guard test added)
 `src/services/prospects.ts`, `src/services/discovery.ts`, `src/data/demo.ts` users: confirm no route imports
 them (build + grep), delete or move to test fixtures, keep the opt-in seed working or retire it explicitly.
 AC: no user-facing import of demo data; tests updated (not weakened); bundle unchanged or smaller. Risk: low.
@@ -40,7 +40,7 @@ Require PRs and the CI checks listed in `scripts/staging-gate-support.ts`; no fo
 
 ## Milestone 2 — Discovery and comparison
 
-### T-201 Player comparison page — `in-review` (PR #25, branch `claude/t-201-player-compare`; needs a human merge: touches src/lib/cdn-cache.ts)
+### T-201 Player comparison page — `done` (PR #25, merged 2026-11-25)
 `/compare?level=<id>&ids=<uuid,uuid[,…]>` (2–4 players, same role, same level). Side-by-side season line,
 selected window line, within-level percentile fingerprint, Momentum with confidence, sample sizes; "add to
 compare" from profiles and directory rows; invalid/mixed ids give a clear notice, unknown ids 404-free notice.
@@ -52,7 +52,7 @@ Star button on profiles/directory rows, `/watchlist` page listing starred player
 Momentum. localStorage only (wrapped in try/catch, empty-state works), no server state, no tracking.
 AC: works with storage blocked (graceful), a11y passes, e2e covers star → list → unstar. Risk: low. Depends: —.
 
-### T-203 Directory depth — `in-review` (PR #26, branch `claude/t-203-directory-depth`; follow-ups: notice for dropped out-of-range values, blur+sort double navigation)
+### T-203 Directory depth — `done` (PR #26, merged 2026-11-25; follow-ups: notice for dropped out-of-range values, blur+sort double navigation)
 ISO and BABIP columns (hitters), age filter (min/max), stat-threshold filter (e.g. OPS ≥, K% ≤) for the
 sortable columns, preset column groups. AC: URL state round-trips; server-side filtering; tests for parsing,
 bounds and formulas (hand-computed fixtures); BABIP = (H−HR)/(AB−SO−HR+SF). Risk: low.
@@ -108,6 +108,7 @@ Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- year
 ## Known bugs / debt (tracked here, fix through tasks above)
 
 - Momentum golden test macOS-only failure (T-305).
+- `scripts/site-data.test.ts` "watchdog: a connection that keeps trickling…" is timing-sensitive: failed once in a loaded local full `npm test` run (2026-11-25), passed 3/3 alone. Watch in CI; harden its timing margins if it recurs (never loosen what it asserts).
 - `playerLevels` full scan per profile (T-301).
 - Snapshot loaders have no ORDER BY (row order not deterministic; output equality relies on later sorting) — investigate under T-301.
 - `staleTimes` experimental, prefetch classification depends on Next internals (VERCEL.md M1) — watch on Next upgrades.

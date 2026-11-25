@@ -1,5 +1,5 @@
 /** Fictional demo fixture access for tests and the dev seed only; not used by user-facing routes. */
-import { demoDiscoveryOrder, DEMO_AS_OF } from "@/data/demo";
+import { demoDiscoveryOrder, DEMO_AS_OF } from "./demo";
 import { ageOn } from "@/lib/format";
 import type {
   Catalog,

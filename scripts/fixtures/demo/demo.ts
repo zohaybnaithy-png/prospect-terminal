@@ -1,5 +1,6 @@
 /**
- * FICTIONAL FIXTURES — not used by any user-facing route.
+ * FICTIONAL FIXTURES — not used by any user-facing route. Lives under scripts/ (moved from src/data in
+ * T-103) so it can never be bundled; scripts/demo-fixtures.test.ts fails if src/ imports it.
  *
  * Kept only for the automated tests (scripts/foundation.test.ts, scripts/discovery.test.ts) and
  * the explicit opt-in development seed (scripts/seed.ts). Every player, organization, team,
