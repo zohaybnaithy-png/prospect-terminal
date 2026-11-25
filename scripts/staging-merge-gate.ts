@@ -8,11 +8,13 @@
  * It fetches the verified sha, scans that exact diff (paths from the diff headers, both sides of renames),
  * runs verify-preview on that sha, and re-reads the PR head at the end.
  * Verdict JSON on stdout: "ready" (exit 0), "needs-human" (exit 2), "blocked" (exit 1, also on any error).
- * A merge after "ready" must pin the commit: `gh pr merge <n> --merge --match-head-commit <sha>`.
+ * The only merge route is `npm run merge:staging -- --pr <n> --sha <sha>` (scripts/staging-merge.ts), which runs
+ * this gate itself and merges only on "ready", with the sha pinned.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { diffPaths, evaluateGate, findSecrets, summarizeChecks, type CheckRollupEntry, type GateInput } from "./staging-gate-support";
+import { TRUSTED_FILES } from "./staging-merge-support";
 
 const log = (l: string) => process.stderr.write(`[staging-gate] ${l}\n`);
 const arg = (n: string) => {
@@ -23,7 +25,7 @@ const run = (cmd: string, args: string[]) =>
   execFileSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 256 * 1024 * 1024 });
 
 /** Files whose content decides what the gate itself executes. */
-const TRUSTED = ["package.json", "package-lock.json", "scripts/staging-merge-gate.ts", "scripts/staging-gate-support.ts", "scripts/verify-preview.ts", "scripts/preview-verify-support.ts"];
+const TRUSTED = TRUSTED_FILES;
 
 function assertTrustedCode() {
   run("git", ["fetch", "-q", "origin", "staging"]);

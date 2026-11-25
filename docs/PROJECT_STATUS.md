@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-25: T-105 guarded merge command built (check → merge with pinned sha → staging verify → halt on failure); bypass routes added to the deny list. Not enabled: needs owner merge, T-106, one allow rule.
 - 2026-11-25: owner merged PR #28 (T-103); staging `ff54c4a` verified 33/33 (`dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb`). T-104: stale deployment/demo/validation statements fixed across README, CLAUDE.md, VERCEL, DEPLOYMENT*, STAGING-*, PRODUCTION-READINESS.
 - 2026-11-25: owner merged PRs #24, #25, #26 (staging `5a3c82a`, verified 33/33 on `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`), then PR #27 (T-102 timings in `verify:preview`). T-103: demo fixtures moved from `src/` to `scripts/fixtures/demo/` with a guard test; client JS unchanged (1,071,243 bytes both builds).
 - 2026-11-24: T-101 finished on `claude/project-foundation` (PR #24): DECISIONS, RELEASE_CHECKLIST, ARCHITECTURE "Current system", links from CLAUDE.md/AGENTS.md, AUTONOMOUS-WORKFLOW §6 (gate) and §7 (scheduled runs). Staging gate hardened after an independent security review (forged Preview reports, >100-file PRs, renames, missed ingestion/DB/indexing paths, skipped required checks, more secret forms, fail-closed secret lookup, head re-check, trusted-code requirement). 20 gate tests.
@@ -49,8 +50,9 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 - **Unattended limits (documented, not worked around):** needs the app open and the Mac awake (lid open); app-level actions (settings, scheduled tasks, connectors) are refused while nobody watches; expired GitHub/Vercel logins need the owner; usage limits end a run early (state kept). The gate requires its code to equal `origin/staging` (true since PR #24 merged).
 
 ## Approvals needed from the owner (one consolidated list)
-1. **Guarded staging merges (T-105):** allow a single command `npm run merge:staging -- --pr N --sha S` that runs
-   `gate:staging` and merges only on `ready`; keep the deny on raw `gh pr merge`. PRs touching sensitive paths stay human-merged.
+1. **Guarded staging merges (T-105):** `npm run merge:staging` is built (PR from `claude/t-105-guarded-merge`).
+   To enable: merge that PR, turn on branch protection (item 2), then add the single allow rule
+   `Bash(npm run merge:staging -- --pr * --sha *)` (AUTONOMOUS-WORKFLOW §6a). Sensitive PRs stay human-merged.
 2. **Branch protection (T-106)** on `main` and `staging`: PR required, CI checks required, no force push.
 3. Merge the T-104 PR (touches CLAUDE.md).
 4. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

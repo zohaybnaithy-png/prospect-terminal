@@ -31,9 +31,10 @@ README "nothing is deployed", VERCEL.md header, REDESIGN/VISUAL-DESIGN (mark his
 DECISIONS), Lightsail docs labelled "dormant alternative" consistently (DECISIONS D-003). AC: no doc
 contradicts PROJECT_STATUS.md. Risk: low.
 
-### T-105 Guarded staging merges — `needs-approval`
-`npm run gate:staging` exists (check-only). Merge step + permission change proposed in PROJECT_STATUS.md
-"Approvals needed". Owner decision.
+### T-105 Guarded staging merges — `in-review` (branch `claude/t-105-guarded-merge`; owner merges; enabling needs T-106 + one allow rule, AUTONOMOUS-WORKFLOW §6a)
+`npm run merge:staging -- --pr N --sha S`: runs the gate, merges only on `ready` into `staging` with the sha pinned, verifies staging
+afterwards and halts automatic merges on failure; 5/day limit; audit log. AC: unit tests for every refusal path;
+bypass routes denied in `.claude/settings.json` (tested). Enabling: owner (see AUTONOMOUS-WORKFLOW §6a).
 
 ### T-106 Branch protection for `main` and `staging` — `needs-approval`
 Require PRs and the CI checks listed in `scripts/staging-gate-support.ts`; no force pushes. GitHub setting: owner.
