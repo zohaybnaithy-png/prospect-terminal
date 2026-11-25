@@ -1,5 +1,7 @@
 # Production deployment runbook
 
+> **Dormant alternative (decision D-003).** The single-server Lightsail + Caddy target is kept but not run; Vercel (Hobby) is the active target ([VERCEL.md](./VERCEL.md)): protected Preview deployments for `staging` and `claude/*`, and a protected Production deployment for `main` with no public domain. Public launch is blocked on data licensing. Current state: [PROJECT_STATUS.md](./PROJECT_STATUS.md).
+
 A step-by-step procedure for the first public deployment of Prospect Terminal: one AWS Lightsail
 Linux server in Oregon (`us-west-2`, next to the Neon database), Caddy for HTTPS, systemd to keep
 the app running. Why this setup: [DEPLOYMENT.md](./DEPLOYMENT.md). Files used here: `deploy/`.
