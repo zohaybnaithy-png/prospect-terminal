@@ -4,7 +4,7 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "next-env.d.ts", "drizzle/**"]),
+  globalIgnores([".next/**", "next-env.d.ts", "drizzle/**", ".claude/worktrees/**"]),
   {
     // Prefetching is off by default (src/components/ui/app-link.tsx, docs/VERCEL.md): every Link
     // must come from that wrapper.
