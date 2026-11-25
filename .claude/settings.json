@@ -49,7 +49,31 @@
       "Bash(git push origin staging *)",
       "Bash(git push origin staging)",
       "Bash(git push origin HEAD:main *)",
-      "Bash(git push origin HEAD:staging *)"
+      "Bash(git push origin HEAD:staging *)",
+      "Bash(gh api *merge*)",
+      "Bash(gh api *PUT*)",
+      "Bash(gh api *PATCH*)",
+      "Bash(gh api *POST*)",
+      "Bash(gh api *DELETE*)",
+      "Bash(gh api * -f *)",
+      "Bash(gh api * -F *)",
+      "Bash(gh api * --field *)",
+      "Bash(gh api * --raw-field *)",
+      "Bash(gh api * --input *)",
+      "Bash(gh pr review *)",
+      "Bash(git push *:main*)",
+      "Bash(git push *:staging*)",
+      "Bash(git push *:refs/heads/main*)",
+      "Bash(git push *:refs/heads/staging*)",
+      "Bash(git push * main)",
+      "Bash(git push * staging)",
+      "Bash(git push * +*)",
+      "Bash(git push --mirror *)",
+      "Bash(git push --delete *)",
+      "Bash(git push * --delete *)",
+      "Bash(git push * -d *)",
+      "Bash(rm *prospect-terminal-dev-loop/merge-halt*)",
+      "Bash(rm *prospect-terminal-dev-loop/merges.log*)"
     ]
   }
 }

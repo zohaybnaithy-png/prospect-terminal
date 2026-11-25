@@ -41,7 +41,8 @@
     "test:views:e2e": "node --import tsx --test --test-timeout=900000 --test-concurrency=1 scripts/precomputed-views.e2e.ts",
     "test:nav:e2e": "node --import tsx --test --test-timeout=900000 --test-concurrency=1 scripts/navigation.e2e.ts",
     "verify:preview": "node --import tsx scripts/verify-preview.ts",
-    "gate:staging": "node --import tsx scripts/staging-merge-gate.ts"
+    "gate:staging": "node --import tsx scripts/staging-merge-gate.ts",
+    "merge:staging": "node --import tsx scripts/staging-merge.ts"
   },
   "repository": {
     "type": "git",
