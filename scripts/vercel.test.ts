@@ -508,7 +508,7 @@ describe("3. CDN caching", () => {
   });
 
   test("only public data pages; never /health or development pages", () => {
-    assert.deepEqual([...CDN_CACHED_ROUTES], ["/", "/players", "/players/:id", "/trends", "/data", "/robots.txt", "/sitemap.xml"]);
+    assert.deepEqual([...CDN_CACHED_ROUTES], ["/", "/players", "/players/:id", "/compare", "/trends", "/data", "/robots.txt", "/sitemap.xml"]);
     // /trends/data sets its header itself (a next.config header would override its error no-store).
     assert.ok(!CDN_CACHED_ROUTES.includes("/trends/data" as never));
     const sources = new Set(cdnCacheRules(true).map((r) => r.source));
@@ -533,7 +533,7 @@ describe("3. CDN caching", () => {
   const RSC_HASH = "1a2b3c4d5e";
 
   test("plain document and data requests to public routes are cached, with any query string", () => {
-    for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?q=smith", "/players?utm_source=x", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31?level=aa", "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"])
+    for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?q=smith", "/players?utm_source=x", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31", "/players/0a3576f9-75f2-4be1-8342-a820c380ba31?level=aa", "/compare", "/compare?level=aa&ids=0a3576f9-75f2-4be1-8342-a820c380ba31,1b3576f9-75f2-4be1-8342-a820c380ba31", "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"])
       assert.equal(cdnHeaderFor(url), CDN_CACHE_VALUE, url);
     assert.equal(cdnHeaderFor("/trends/data?view=map&level=aa&role=hitter&window=14d"), null, "set by the route, not next.config");
     // Ordinary browser headers do not matter.

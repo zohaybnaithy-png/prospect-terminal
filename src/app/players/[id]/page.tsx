@@ -9,6 +9,7 @@ import { levelById } from "@/services/players/levels";
 import { playerAnalyticsView } from "@/analytics/views";
 import { AflDataNotice } from "@/components/afl/data-notice";
 import { AflPlayerProfileView } from "@/components/player/afl-profile";
+import { existingCompareIds } from "@/services/compare/query";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -67,6 +68,8 @@ export default async function PlayerPage({
 }) {
   const { id } = await params;
   const r = await resolve(id, await levelParam(searchParams));
+  // "Add to compare" appends to a comparison list the URL already carries (`?ids=`), if any.
+  const compareIds = existingCompareIds(await searchParams);
   switch (r.kind) {
     case "ok":
       return (
@@ -76,6 +79,7 @@ export default async function PlayerPage({
           level={r.level}
           presence={r.presence}
           analytics={playerAnalyticsView(r.snapshot, id)}
+          compareIds={compareIds}
         />
       );
     case "unavailable":

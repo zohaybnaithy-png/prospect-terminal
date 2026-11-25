@@ -62,6 +62,7 @@ export const CDN_CACHED_ROUTES = [
   "/",
   "/players",
   "/players/:id",
+  "/compare",
   "/trends",
   "/data",
   "/robots.txt",
