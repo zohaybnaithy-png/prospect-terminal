@@ -12,7 +12,7 @@ import {
   organizationMemberships,
   demoId,
   DEMO_AS_OF,
-} from "../src/data/demo";
+} from "./fixtures/demo/demo";
 const seasonId = (year: number) =>
   year === 2026 ? demoId(203) : demoId(700 + year - 2020);
 async function main() {

@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { players, teams, news } from "../src/data/demo";
+import { players, teams, news } from "./fixtures/demo/demo";
 import {
   prospectRepository,
   getMarketOverview,
-} from "../src/services/prospects";
+} from "./fixtures/demo/prospects";
 import { average, innings, era } from "../src/lib/format";
 import { getDatabase } from "../src/db/client";
 import { getTableConfig } from "drizzle-orm/pg-core";

@@ -10,7 +10,7 @@ Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 - Local: lint, typecheck, build pass; `npm test` all pass except the Momentum golden on macOS only (Math.tanh; CI/Linux passes; T-305).
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
 - `npm run gate:staging` is usable now that its code is on `origin/staging`.
-- In review: T-102 Preview timings (`claude/t-102-preview-timings`; owner merges: scripts/verify-preview.ts).
+- In review: T-103 demo fixtures out of `src/` (PR #28, gate `ready`).
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).
@@ -31,7 +31,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
-- 2026-11-25: owner merged PRs #24, #25, #26 into staging; staging verified 33/33. T-102 timings added to `verify:preview`.
+- 2026-11-25: owner merged PRs #24, #25, #26 (staging `5a3c82a`, verified 33/33 on `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`), then PR #27 (T-102 timings in `verify:preview`). T-103: demo fixtures moved from `src/` to `scripts/fixtures/demo/` with a guard test; client JS unchanged (1,071,243 bytes both builds).
 - 2026-11-24: T-101 finished on `claude/project-foundation` (PR #24): DECISIONS, RELEASE_CHECKLIST, ARCHITECTURE "Current system", links from CLAUDE.md/AGENTS.md, AUTONOMOUS-WORKFLOW §6 (gate) and §7 (scheduled runs). Staging gate hardened after an independent security review (forged Preview reports, >100-file PRs, renames, missed ingestion/DB/indexing paths, skipped required checks, more secret forms, fail-closed secret lookup, head re-check, trusted-code requirement). 20 gate tests.
 - 2026-11-24: nightly scheduled run created (see below).
 - 2026-11-24: PR #24 verified (CI 6/6, verify:preview 33/33 at c460ec3 and cff89ed). T-201 → PR #25, T-203 → PR #26, both built by frontend-engineer agents in isolated worktrees, reviewed and verified on their Previews. Next ready tasks: T-102, T-103, T-104, T-202, T-204.
@@ -49,5 +49,5 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 1. **Guarded staging merges (T-105):** allow a single command `npm run merge:staging -- --pr N --sha S` that runs
    `gate:staging` and merges only on `ready`; keep the deny on raw `gh pr merge`. PRs touching sensitive paths stay human-merged.
 2. **Branch protection (T-106)** on `main` and `staging`: PR required, CI checks required, no force push.
-3. Merge the T-102 PR once verified (touches scripts/verify-preview.ts).
+3. Merge PR #28 (T-103).
 4. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

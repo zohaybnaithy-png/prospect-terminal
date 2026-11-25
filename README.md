@@ -19,7 +19,7 @@ Prospect Terminal is a player-first prospect analytics product. The core loop is
 
 **Momentum:** V1 (Balanced weighting) from `src/analytics`, unchanged by Showcase V1 — see [docs/ANALYTICS.md](docs/ANALYTICS.md) and `/data#momentum`. It measures change vs. a player's own earlier games, with confidence (sample size) and persistence; it is not a talent grade or MLB projection.
 
-**Not available yet (honest empty states, no formulas implemented):** MLB-wide top-prospect rankings (`src/services/rankings.ts` returns `unavailable`), Prospect Grade, P(MLB), breakout detection, similarity, news, highlights and call-ups. The former fictional demo routes (`/news`, `/highlights`, `/screener`, `/organizations`, `/teams`, `/leagues`, `/market`) were removed and redirect to the closest real page. The fictional fixtures in `src/data/demo.ts` remain only for automated tests and the opt-in dev seed; no route imports them.
+**Not available yet (honest empty states, no formulas implemented):** MLB-wide top-prospect rankings (`src/services/rankings.ts` returns `unavailable`), Prospect Grade, P(MLB), breakout detection, similarity, news, highlights and call-ups. The former fictional demo routes (`/news`, `/highlights`, `/screener`, `/organizations`, `/teams`, `/leagues`, `/market`) were removed and redirect to the closest real page. The fictional fixtures in `scripts/fixtures/demo/` remain only for automated tests and the opt-in dev seed; no route imports them.
 
 ### Levels: MiLB + AFL integration
 
@@ -122,7 +122,7 @@ docker run --name prospect-postgres -e POSTGRES_PASSWORD=postgres \
 | `src/services/home.ts`   | Homepage view models; `rankings.ts` is the top-prospects boundary        |
 | `src/analytics`          | Momentum V1 (unchanged)                                                  |
 | `src/ingestion`          | AFL ingestion worker                                                     |
-| `src/data/demo.ts`       | Fictional fixtures for tests / dev seed only — not used by any route     |
+| `scripts/fixtures/demo/` | Fictional fixtures for tests / dev seed only — not used by any route     |
 | `scripts`                | CLIs and tests                                                           |
 
 ## Deployment

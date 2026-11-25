@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { prospectRepository } from "../src/services/prospects";
-import { defaultFilters, discoverDemoPlayers } from "../src/services/discovery";
-import { demoDiscoveryOrder, DEMO_AS_OF, players } from "../src/data/demo";
+import { prospectRepository } from "./fixtures/demo/prospects";
+import { defaultFilters, discoverDemoPlayers } from "./fixtures/demo/discovery";
+import { demoDiscoveryOrder, DEMO_AS_OF, players } from "./fixtures/demo/demo";
 import { ageOn } from "../src/lib/format";
 import type { TimeWindow, RankingMode } from "../src/types/baseball";
 

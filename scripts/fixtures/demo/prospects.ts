@@ -7,7 +7,7 @@ import {
   contexts,
   memberships,
   organizationMemberships,
-} from "@/data/demo";
+} from "./demo";
 import type {
   NewsItem,
   Player,

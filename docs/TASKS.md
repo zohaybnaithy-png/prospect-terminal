@@ -15,13 +15,13 @@ e2e suites, green CI, `verify:preview` 33+/all pass, docs updated (this file + P
 PRODUCT, ROADMAP, TASKS, ARCHITECTURE (current system), DECISIONS, RELEASE_CHECKLIST, PROJECT_STATUS; agent
 definitions in `.claude/agents/`; staging merge gate. Risk: low (but touches agent rules → owner merges).
 
-### T-102 Preview performance baseline — `in-review` (branch `claude/t-102-preview-timings`; owner merges: touches scripts/verify-preview.ts)
+### T-102 Preview performance baseline — `done` (PR #27, merged 2026-11-25; baseline in PROJECT_STATUS.md)
 Extend `verify:preview` to record cold and warm response times (server timing + total) for `/`, each level's
 `/players`, one profile per level, `/trends`, into the JSON report; add a `--timings` summary.
 AC: report contains per-path cold/warm ms; unit test for the timing summary; numbers recorded in
 docs/PROJECT_STATUS.md for staging. Risk: low. Depends: —.
 
-### T-103 Remove dead demo-era code — `ready`
+### T-103 Remove dead demo-era code — `in-review` (branch `claude/t-103-demo-fixtures`: fixtures moved to scripts/fixtures/demo, guard test added)
 `src/services/prospects.ts`, `src/services/discovery.ts`, `src/data/demo.ts` users: confirm no route imports
 them (build + grep), delete or move to test fixtures, keep the opt-in seed working or retire it explicitly.
 AC: no user-facing import of demo data; tests updated (not weakened); bundle unchanged or smaller. Risk: low.
@@ -108,6 +108,7 @@ Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- year
 ## Known bugs / debt (tracked here, fix through tasks above)
 
 - Momentum golden test macOS-only failure (T-305).
+- `scripts/site-data.test.ts` "watchdog: a connection that keeps trickling…" is timing-sensitive: failed once in a loaded local full `npm test` run (2026-11-25), passed 3/3 alone. Watch in CI; harden its timing margins if it recurs (never loosen what it asserts).
 - `playerLevels` full scan per profile (T-301).
 - Snapshot loaders have no ORDER BY (row order not deterministic; output equality relies on later sorting) — investigate under T-301.
 - `staleTimes` experimental, prefetch classification depends on Next internals (VERCEL.md M1) — watch on Next upgrades.
