@@ -1,5 +1,33 @@
 # Architecture
 
+## Current system (2026-11)
+
+```
+MLB Stats API ──(ingest:afl / ingest:milb, owner-approved applies only)──▶ Postgres (Neon)
+   SourceAdapter → normalized records → buildPlan → PostgresIngestionSink   (src/ingestion, INGESTION.md)
+
+Vercel build (vercel.json → npm run build:vercel)
+   snapshot:export  READ ONLY + REPEATABLE READ over every level → .data-snapshot/{manifest.json, <level>.json.gz}
+   snapshot:views   17 byte-verified view-model parts per level → .data-snapshot/views/
+   next build       vercel-build-guard: refuses unless PT_DATA_SOURCE=snapshot (D-004)
+
+Vercel runtime (no database connection)
+   src/services/competition/data-source.ts  → snapshot-store / source-cache (lazy per-level prepare)
+   views-store.ts  precomputed parts on memo miss; live computation on any fingerprint/V8/Math mismatch (D-005)
+   src/services/{home,players,afl} → src/app routes: /, /players, /players/[id], /trends, /trends/data, /data, /health
+   src/proxy.ts + src/lib/traffic  per-client token buckets (identity: x-vercel-forwarded-for)
+   src/lib/cdn-cache.ts  Vercel-CDN-Cache-Control on plain page requests only (D-008)
+```
+
+- **Levels:** `src/domain/levels.ts` (AAA, AA, High-A, Single-A = sportId 11–14; AFL = league 119). One snapshot per level; statistics and Momentum never cross levels (D-002).
+- **Analytics:** `src/analytics` (Momentum V1, metric registry, percentiles, explanations), `src/statistics/aggregate.ts` (rate stats from counting stats).
+- **Schema:** `src/db/schema.ts` (entities, game/season lines), `src/db/ingestion-schema.ts` (provenance, identities, quarantine), migrations `drizzle/0000–0003`.
+- **Data freshness:** new data reaches the site only through a new deployment (the build exports the snapshot). No automatic refresh yet (TASKS.md T-502).
+- **Environments:** `claude/*` branches and `staging` → Vercel Previews behind Deployment Protection; `main` → Production (owner only). Verification: `npm run verify:preview` (AUTONOMOUS-WORKFLOW.md).
+- **Decisions:** DECISIONS.md. **Dormant alternative:** single-server Lightsail target in `deploy/` (DEPLOYMENT.md), not run.
+
+The sections below are the earlier design notes. Where they describe the fictional demo/editorial UI they are historical; the relational, identity and ingestion notes still apply.
+
 ## Product and read-model boundaries (Showcase V1)
 
 Prospect Terminal is player-first: discovery → player → performance/trajectory → context. All user-facing routes read real data through the server-only `src/services/afl` layer (one cached, read-only snapshot per level, kept until a new ingestion run is applied — see `src/services/competition/cache.ts`) and pure view-model functions:

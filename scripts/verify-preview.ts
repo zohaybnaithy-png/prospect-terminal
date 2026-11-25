@@ -139,7 +139,14 @@ async function main() {
   check("Deployment Protection enabled", isProtectionResponse(anon.status, anon.headers.get("location"), await anon.text()), `anonymous /health → ${anon.status}`);
 
   // 2. Build log facts.
-  const build = parseBuildLog(buildLog(dep.id, project.orgId));
+  // Vercel can report READY a few seconds before the stored build log has its final lines, so a log
+  // read right at READY may lack "Deployment completed". Bounded retry; a genuinely incomplete log still fails.
+  let build = parseBuildLog(buildLog(dep.id, project.orgId));
+  for (let attempt = 1; attempt < 4 && !(build.buildCompleted && build.snapshotId); attempt++) {
+    log(`build log incomplete (attempt ${attempt}); re-reading in 10 s`);
+    await sleep(10_000);
+    build = parseBuildLog(buildLog(dep.id, project.orgId));
+  }
   check("build guard passed", !build.guardRefused);
   check("build completed", build.buildCompleted);
   check("snapshot exported and verified", !!build.snapshotId && build.verifiedLevels === build.exportedLevels.length && build.exportedLevels.length > 0,

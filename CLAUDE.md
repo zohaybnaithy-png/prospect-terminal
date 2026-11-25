@@ -74,6 +74,10 @@ MLB Stats API use is for development; licensing must be checked before public/co
 
 Inspect before editing; targeted changes; no unrelated refactors while debugging. Run relevant tests, `npm run typecheck`, `npm run lint`, and `npm run build` when appropriate. Never weaken or delete tests, or replace validation with permissive behavior, to get green. For significant fixes report: root cause, files changed, before/after behavior, safeguards preserved, tests run, open uncertainty.
 
+## Project state (read first in every session)
+
+`docs/PROJECT_STATUS.md` (current state, approvals needed) → `docs/TASKS.md` (backlog: pick the first `ready` task) → `docs/ROADMAP.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/RELEASE_CHECKLIST.md`. Update TASKS.md and PROJECT_STATUS.md in the same PR as the work. Specialized agents: `.claude/agents/` (frontend-engineer, backend-engineer, baseball-analyst, performance-engineer, qa-engineer, security-reviewer).
+
 ## Autonomous workflow (standing authorization)
 
 Full procedure, tooling recovery and Preview checks: `docs/AUTONOMOUS-WORKFLOW.md`. Shared agent rules: AGENTS.md.

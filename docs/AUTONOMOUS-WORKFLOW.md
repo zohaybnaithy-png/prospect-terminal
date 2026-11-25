@@ -115,3 +115,39 @@ grep " gh_${V}_macOS_arm64.zip$" "gh_${V}_checksums.txt" | shasum -a 256 -c - &&
 - Anything touching MLB data licensing or new data sources (CLAUDE.md "Data licensing").
 
 `.claude/settings.json` denies the most dangerous of these commands outright so a mistake cannot run them.
+
+## 6. Staging merge readiness gate (`npm run gate:staging`)
+
+`scripts/staging-merge-gate.ts` (rules in `scripts/staging-gate-support.ts`, tests in `scripts/staging-gate.test.ts`).
+**Check only: it never merges.** Usage: `npm run gate:staging -- --pr <n> --sha <full head sha>` (runs
+`verify:preview` on that sha unless `--preview-report <file>` is given). Verdicts:
+
+- `ready` (exit 0): base `staging`, agent head branch, PR head equals the verified sha, mergeable and clean,
+  every check on the head passed (the five required CI/Vercel checks must be present), Preview verification
+  passed on the same sha, no credential-shaped content added, no branch-protection bypass.
+- `needs-human` (exit 2): all of the above hold but the PR touches a sensitive path (CI, agent settings or
+  rules, deployment/headers config, traffic/health, schema/migrations, ingestion writers, the gates, lockfile, env files).
+- `blocked` (exit 1): anything else, including gate errors (fails closed).
+
+Merging remains a human step until the owner approves proposal P-001 (docs/DECISIONS.md).
+
+## 7. Scheduled development runs
+
+- **Mechanism:** a local Claude desktop scheduled task ("Prospect Terminal nightly dev run"). It runs only
+  while the Claude app is open and this Mac is awake (lid open; "keep awake while working" holds idle sleep
+  off during a run). A run missed while the app was closed starts at the next launch.
+- **Single runner:** `scripts/ops/dev-loop-lock.sh acquire|release|status` (atomic mkdir lock in
+  `~/.claude/prospect-terminal-dev-loop/`, stale after 8 h). A run that cannot take the lock exits at once.
+- **State:** in-flight work in `~/.claude/prospect-terminal-dev-loop/state.json` (task, branch, worktree, PR,
+  phase); durable state in the repo (TASKS.md / PROJECT_STATUS.md updated in each PR); a report per run in
+  `~/.claude/prospect-terminal-dev-loop/reports/<date>.md`.
+- **Isolation:** each run works in its own git worktree under `.claude/worktrees/` cut from `origin/staging`, never in
+  the main checkout. It copies `.vercel/project.json` (git-ignored) into the worktree so `verify:preview` works.
+- **Order of work per run:** (1) finish the run's own open PRs (CI failures, Preview failures) before new work;
+  (2) take the first `ready` task in TASKS.md not already in a PR; at most two tasks per run.
+- **Never:** merge, push to `main`/`staging`, touch Production, change settings/env vars/protection, run ingestion
+  or live `--apply`, buy anything, weaken tests, or bypass a permission denial. A denied action is recorded as a
+  blocker and the run moves on.
+- **Unattended limits:** permission prompts that the run's mode does not cover stop the run until someone answers;
+  GitHub/Vercel logins that expire need the owner's browser approval; usage limits end a run early (state is kept,
+  the next run resumes). These are reported, not worked around.

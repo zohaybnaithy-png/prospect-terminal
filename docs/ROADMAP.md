@@ -1,37 +1,55 @@
 # Roadmap
 
-## Phase 1 — MiLB-first product foundation and UI
+Prioritized path from today's state (see docs/PROJECT_STATUS.md) to launch readiness. Tasks with ids,
+acceptance criteria and status live in docs/TASKS.md; this file is the order and the reasoning.
+Replaces the 2025 phase list (demo era), which no longer matched the product.
 
-Implemented: player-first discovery, Prospect Priority/Pure Performance demo modes, timeframe/context/type controls, compact statistical tables, player pages, organization/affiliate context, league pages, Data, Screener, chronological news, and fictional development trajectories. Preserve the Next.js/Drizzle core, stable identities, historical memberships, and database-independent demo mode. No real discovery/scoring methodology exists yet.
+Context that shapes the order (2026-11-24): the 2026 MiLB regular season is complete and the AFL is in
+its last weeks, so data freshness matters little until spring 2027; MLB data licensing (docs/DATA-LICENSING.md)
+blocks any public launch and is a human/legal decision; advanced models need owner-approved methodology.
 
-## Phase 2 — Research legitimate MiLB/AFL data sources
+## Milestone 1 — Engineering foundation (now)
 
-Determine permitted APIs, public datasets, licensed feeds, and external-link options. Verify licensing, coverage, field definitions, historical availability, rate limits, and redistribution rights. Evaluate organization/affiliate/AFL identifiers and player identity coverage. Do not assume access to FanGraphs or Baseball Savant proprietary data.
+Goal: agents can ship safely and quickly. Mostly done.
 
-The project owner verified local Stats API access and AFL identifiers (league 119, sport 17, season 2026). A local live-source-capable adapter is implemented and tested using synthetic native-shaped responses. Actual source verification runs locally; this cloud task intentionally makes no connectivity probe.
+- Autonomous loop, Preview verification, staging merge gate (done: docs/AUTONOMOUS-WORKFLOW.md).
+- Project source-of-truth docs (this set) and stale-doc cleanup (ROADMAP, ARCHITECTURE, README deployment status).
+- Real-deployment performance baseline captured by `verify:preview` (cold/warm timings per page).
+- Remove dead demo-era code paths that no route uses.
+- Guarded staging merges and branch protection (needs owner approval: docs/PROJECT_STATUS.md).
 
-## Phase 3 — Real game/season ingestion and identity resolution
+## Milestone 2 — Discovery and comparison (high user value, fully unblocked)
 
-Infrastructure implemented with fictional fixtures: adapter contracts, Zod validation, separate external-ID mappings, provenance, atomic idempotent game writes, quarantine, and correction/ownership checks. The local MLB adapter now supports discovery, rosters, schedule and completed boxscores. Synthetic contract and database tests pass; real local dry-run validation, additional response variants, provider season comparisons, and production reconciliation remain. Preserve assignments, parent-organization history, two-way roles, and separate regular/fall-team statistics. Quarantine ambiguous identities and test incremental updates. Select an explicit database repository only after validation.
+- **Player comparison** (`/compare`): 2–4 players, same level, side-by-side lines, within-level percentiles, Momentum, sample sizes.
+- **Watchlist** (per-browser, no accounts): star players, a watchlist page with their latest lines and Momentum.
+- **Directory depth:** ISO and BABIP columns, age and stat-threshold filters, column presets for hitters/pitchers.
+- **Organization and team pages** as context hubs (players by affiliate and level), linked from profiles.
+- Typeahead player search.
 
-Stored-game rolling aggregation is implemented for 7D/14D/30D/season and custom inclusive dates, scoped by league and season. It remains disconnected from the UI.
+## Milestone 3 — Performance and reliability
 
-## Phase 4 — Real recent-performance discovery
+- Per-snapshot player index (removes the `playerLevels` full scan; profile capacity, docs/PRODUCTION-READINESS.md M2).
+- Precomputed profile view models if measurements show profiles dominate cold cost.
+- DB integration suites in CI with a disposable Postgres service (sensitive: touches .github; owner merges).
+- Verify Vercel CDN/identity behavior on a real deployment (VERCEL.md Preview checks 3, 7, 8).
+- Mobile and accessibility pass with `scripts/ops/a11y-scan.ts` against the Preview.
 
-Implement verified game-window aggregation for 7D/14D/30D/season, date bounds, sample sizes, context eligibility, and data freshness. Establish trustworthy raw-stat leaderboards before interpreting developmental importance. Never mix missing data with fabricated fallback records.
+## Milestone 4 — Analytics depth (methodology first)
 
-## Phase 5 — Prospect Priority / Pure Performance methodology
+- Standard contextual stats that need no constants: ISO, BABIP, K-BB% (HR/FB and other batted-ball metrics are impossible: no batted-ball data; wOBA/FIP need season constants we cannot derive honestly yet).
+- Age relative to level (level median age from the snapshot): proposal → approval → build.
+- Methodology proposals (docs/DECISIONS.md, owner decides): Breakout detection, Prospect Grade, Similarity.
+  Nothing ships until approved; each needs validation against held-out data.
 
-Design, document, and evaluate the two methods using real data. Establish developmental context, age/level treatment, sample reliability, and transparency. Independently define Prospect Grade and Momentum; version and backtest models, preserve history, and expose uncertainty. The current hand-authored demo arrays are not a starting mathematical formula.
+## Milestone 5 — Data breadth (needs approvals)
 
-## Phase 6 — Development trajectories, promotions, news, highlights
+- Prior seasons (2024–2025) for history and baselines: ingestion run approval + Neon capacity check.
+- Automatic snapshot refresh in-season: scheduled `refresh:data` + Vercel deploy hook (needs a deploy hook and a scheduler secret: owner).
+- Transactions / injuries only with a licensed source.
 
-Connect sourced events and memberships to timelines and historical context. Add licensed news/highlights, transaction provenance, evidence-backed explanations, and more complete historical statistical views. Preserve organization identity during AFL assignments and support trades without replacing player IDs.
+## Milestone 6 — Launch readiness (owner gates)
 
-## Phase 7 — Advanced analytics / scouting / ML
-
-Explore permitted tracking data, traditional scouting information, richer splits, comparisons, and evaluated modeling only when reliable coverage and appropriate rights exist. Do not fabricate unavailable measurements. Authentication, monitoring, and operational security need separately scoped work before personalized/public production features.
-
-## Phase 8 — Potential NCAA/amateur expansion
-
-Evaluate NCAA, JUCO, and high school sources and identity continuity with professional baseball. Reuse existing League/Level/Conference, memberships, stable players, and stat models. MiLB/AFL remain the immediate product focus.
+- Data licensing resolved (permission or licensed provider) — **hard blocker**.
+- Vercel plan suitable for the intended use (Hobby is non-commercial).
+- Privacy notice, log retention, error monitoring, production verification run (docs/RELEASE_CHECKLIST.md).
+- Accounts (only if watchlists/sharing need them).

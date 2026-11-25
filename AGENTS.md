@@ -12,6 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Kept outside the managed block above, so `next dev` leaves it alone. Claude Code reads it through CLAUDE.md (`@AGENTS.md`), which holds the full project context.
 
+- Start from `docs/PROJECT_STATUS.md` and `docs/TASKS.md` (backlog with acceptance criteria); decisions in `docs/DECISIONS.md`; release gates in `docs/RELEASE_CHECKLIST.md`.
 - Work on `claude/<topic>` (or `<agent>/<topic>`) branches cut from `origin/staging`; PRs target `staging`. Committing, pushing such branches, opening PRs, watching CI and running `npm run verify:preview -- --pr <n>` need no further approval (docs/AUTONOMOUS-WORKFLOW.md).
 - Before calling a change done: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, the relevant e2e suites, green CI, and a passing `verify:preview` on the PR's Preview.
 - Human approval required: merges, pushes to `main`/`staging`, Production, settings/environment variables/Deployment Protection, secrets, ingestion or live `--apply`, paid services, destructive operations.
