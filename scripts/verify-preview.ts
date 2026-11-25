@@ -3,10 +3,12 @@
  *
  *   npm run verify:preview -- --pr 22
  *   npm run verify:preview -- --sha <commit> | --deployment dpl_… [--polls 10] [--skip-browser] [--wait-minutes 15]
+ *     [--timings] [--timing-samples 3]
  *
  * Steps: resolve the newest READY Preview for the PR/commit (refuses Production) → confirm Deployment
  * Protection still blocks anonymous requests → build log facts (guard passed, snapshot exported and
- * verified, views built) → /health with a bounded cold-start allowance → page checks over HTTP →
+ * verified, views built) → /health with a bounded cold-start allowance → response timings (first and
+ * warm, informational; `--timings` prints a table) → page checks over HTTP →
  * browser smoke test (Playwright) → runtime logs for the test window (startup snapshot id must match
  * the build's) → one JSON report on stdout, progress on stderr. Exit 0 only when every check passes.
  *
@@ -22,6 +24,7 @@ import {
   BYPASS_HEADER,
   LEVEL_LABELS,
   classifyRuntimeLogs,
+  formatTimingTable,
   createHealthEvaluator,
   DEFAULT_HEALTH_POLICY,
   isBenignConsoleError,
@@ -30,7 +33,11 @@ import {
   mayReceiveBypass,
   parseBuildLog,
   sameSnapshot,
+  summarizeTimings,
+  type PathTiming,
   type RuntimeLogRecord,
+  type TimingSample,
+  type TimingSummaryRow,
 } from "./preview-verify-support";
 
 type Check = { name: string; ok: boolean; detail?: string; warning?: boolean };
@@ -41,6 +48,7 @@ const check = (name: string, ok: boolean, detail?: string, warning = false) => {
   log(`${ok ? "PASS" : warning ? "WARN" : "FAIL"} ${name}${detail ? ` (${detail})` : ""}`);
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+let timings: TimingSummaryRow[] | null = null;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -180,6 +188,11 @@ async function main() {
     check("levels known from the build log", false, "no level lines found; page checks cannot run");
     return finish(dep, base, started, build.snapshotId);
   }
+
+  // 4a. Response timings (T-102), before the page checks so each path's first request is this run's first.
+  // Informational: recorded in the report, never a failed check (Preview latency varies run to run).
+  timings = await measureTimings(base, pfetch, levels, Number(arg("timing-samples") ?? 3));
+  if (flag("timings") && timings.length) log(`response timings (ms)\n${formatTimingTable(timings)}`);
   const pages: { path: string; expect: number }[] = [
     { path: "/", expect: 200 },
     ...levels.map((l) => ({ path: `/players?level=${l}`, expect: 200 })),
@@ -245,6 +258,44 @@ async function main() {
   check("Deployment Protection still enabled", isProtectionResponse(anon2.status, anon2.headers.get("location"), await anon2.text()), `anonymous / → ${anon2.status}`);
 
   return finish(dep, base, started, build.snapshotId);
+}
+
+async function timedFetch(url: string, pfetch: (url: string) => Promise<Response>): Promise<{ sample: TimingSample; body: string }> {
+  const t0 = performance.now();
+  const r = await pfetch(url);
+  const ttfbMs = performance.now() - t0;
+  const body = await r.text();
+  return {
+    sample: { status: r.status, ttfbMs, totalMs: performance.now() - t0, cache: r.headers.get("x-vercel-cache"), serverTiming: r.headers.get("server-timing") },
+    body,
+  };
+}
+
+/** `/`, each level's players page, one profile per level (first player linked there), each level's trends page. */
+async function measureTimings(base: string, pfetch: (url: string) => Promise<Response>, levels: string[], samples: number): Promise<TimingSummaryRow[]> {
+  const warmCount = Math.max(1, Math.min(10, Number.isFinite(samples) ? Math.floor(samples) : 3));
+  const raw: PathTiming[] = [];
+  const time = async (p: string): Promise<string | null> => {
+    try {
+      const first = await timedFetch(base + p, pfetch);
+      const warm: TimingSample[] = [];
+      for (let i = 0; i < warmCount; i++) warm.push((await timedFetch(base + p, pfetch)).sample);
+      raw.push({ path: p, first: first.sample, warm });
+      return first.body;
+    } catch (e) {
+      log(`timing ${p} failed: ${e instanceof Error ? e.message.slice(0, 120) : "unknown"}`);
+      return null;
+    }
+  };
+  await time("/");
+  for (const l of levels) {
+    const html = await time(`/players?level=${l}`);
+    const id = html?.match(/href="\/players\/([0-9a-f-]{36})/)?.[1];
+    if (id) await time(`/players/${id}?level=${l}`);
+    else log(`timing: no player link on /players?level=${l}; profile not timed`);
+    await time(`/trends?level=${l}`);
+  }
+  return summarizeTimings(raw);
 }
 
 async function browserSmoke(base: string, host: string, secret: string, levels: string[]) {
@@ -315,6 +366,7 @@ function finish(dep: Deployment, base: string, started: Date, snapshotId?: strin
     ok: failedChecks.length === 0,
     deployment: { id: dep.id, url: base, branch: dep.meta?.githubCommitRef, sha: dep.meta?.githubCommitSha, pr: dep.meta?.githubPrId },
     snapshotId: snapshotId ?? null,
+    timings,
     startedAt: started.toISOString(),
     finishedAt: new Date().toISOString(),
     passed: checks.filter((c) => c.ok && !c.warning).length,

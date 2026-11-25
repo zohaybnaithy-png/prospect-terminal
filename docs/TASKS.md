@@ -15,7 +15,7 @@ e2e suites, green CI, `verify:preview` 33+/all pass, docs updated (this file + P
 PRODUCT, ROADMAP, TASKS, ARCHITECTURE (current system), DECISIONS, RELEASE_CHECKLIST, PROJECT_STATUS; agent
 definitions in `.claude/agents/`; staging merge gate. Risk: low (but touches agent rules → owner merges).
 
-### T-102 Preview performance baseline — `ready`
+### T-102 Preview performance baseline — `done` (PR #27, merged 2026-11-25; baseline in PROJECT_STATUS.md)
 Extend `verify:preview` to record cold and warm response times (server timing + total) for `/`, each level's
 `/players`, one profile per level, `/trends`, into the JSON report; add a `--timings` summary.
 AC: report contains per-path cold/warm ms; unit test for the timing summary; numbers recorded in
@@ -61,11 +61,11 @@ bounds and formulas (hand-computed fixtures); BABIP = (H−HR)/(AB−SO−HR+SF)
 `/orgs/[slug]` (players by affiliate and level) and team context; replace the filtered-directory links.
 AC: data from the snapshot only; 404 for unknown; cacheable; tests. Risk: medium. Depends: —.
 
-### T-205 Typeahead search — `ready` (after T-201)
+### T-205 Typeahead search — `ready`
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
 
-### T-206 Compare entry point from the directory — `ready` (after T-201)
+### T-206 Compare entry point from the directory — `ready`
 A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
 
 ## Milestone 3 — Performance and reliability

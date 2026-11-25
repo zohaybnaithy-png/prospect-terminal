@@ -4,12 +4,15 @@ import {
   classifyHealth,
   classifyRuntimeLogs,
   createHealthEvaluator,
+  formatTimingTable,
   isBenignConsoleError,
   isPreviewHost,
   isProtectionResponse,
   mayReceiveBypass,
   parseBuildLog,
   sameSnapshot,
+  summarizeTimings,
+  type TimingSample,
 } from "./preview-verify-support";
 
 const HOST = "prospect-terminal-8aw340b8c-zo-s.vercel.app";
@@ -162,4 +165,50 @@ describe("runtime log classification", () => {
 test("only the Vercel toolbar CSP error is benign", () => {
   assert.equal(isBenignConsoleError("Loading the script 'https://vercel.live/_next-live/feedback/feedback.js' violates the following Content Security Policy directive"), true);
   assert.equal(isBenignConsoleError("Uncaught TypeError: Cannot read properties of undefined"), false);
+});
+
+describe("response timing summary (T-102)", () => {
+  const t = (totalMs: number, extra: Partial<TimingSample> = {}): TimingSample => ({
+    status: 200, ttfbMs: totalMs * 0.8, totalMs, cache: null, serverTiming: null, ...extra,
+  });
+
+  test("first request kept separate; warm median, max and cache values", () => {
+    const [row] = summarizeTimings([
+      { path: "/", first: t(1234.4, { cache: "MISS" }), warm: [t(90.2, { cache: "HIT" }), t(110.6, { cache: "HIT" }), t(70.1, { cache: "HIT" })] },
+    ]);
+    assert.deepEqual(row, {
+      path: "/", status: 200,
+      firstTtfbMs: 988, firstTotalMs: 1234, firstCache: "MISS",
+      warmTtfbMedianMs: 72, warmTotalMedianMs: 90, warmTotalMaxMs: 111, warmCache: ["HIT"],
+    });
+  });
+
+  test("even sample count: median is the rounded mean of the middle two", () => {
+    const [row] = summarizeTimings([{ path: "/trends?level=aa", first: t(500), warm: [t(100), t(201), t(300), t(400)] }]);
+    assert.equal(row.warmTotalMedianMs, 251);
+  });
+
+  test("warm samples with a different status are excluded; none left gives nulls", () => {
+    const [mixed] = summarizeTimings([{ path: "/x", first: t(300), warm: [t(50, { status: 503 }), t(80)] }]);
+    assert.equal(mixed.warmTotalMedianMs, 80);
+    assert.deepEqual(mixed.warmCache, ["-"]);
+    const [none] = summarizeTimings([{ path: "/y", first: t(300), warm: [t(50, { status: 500 })] }]);
+    assert.equal(none.warmTotalMedianMs, null);
+    assert.equal(none.warmTotalMaxMs, null);
+    assert.deepEqual(none.warmCache, []);
+  });
+
+  test("table has a header, a rule and one aligned line per path", () => {
+    const rows = summarizeTimings([
+      { path: "/", first: t(1000), warm: [t(100)] },
+      { path: "/players?level=high-a", first: t(2000, { cache: "MISS" }), warm: [] },
+    ]);
+    const lines = formatTimingTable(rows).split("\n");
+    assert.equal(lines.length, 4);
+    assert.match(lines[0], /^path\s+status\s+first ttfb/);
+    assert.match(lines[1], /^-+\s+-+/);
+    assert.ok(lines[3].startsWith("/players?level=high-a"));
+    assert.match(lines[3], /MISS/);
+    assert.ok(lines.every((l) => l.length === lines[0].length), "columns align");
+  });
 });
