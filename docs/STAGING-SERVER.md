@@ -1,5 +1,7 @@
 # Staging server: rehearsal setup and teardown
 
+> **Dormant alternative (decision D-003).** The single-server Lightsail + Caddy target is kept but not run; Vercel (Hobby) is the active target ([VERCEL.md](./VERCEL.md)): protected Preview deployments for `staging` and `claude/*`, and a protected Production deployment for `main` with no public domain. Public launch is blocked on data licensing. Current state: [PROJECT_STATUS.md](./PROJECT_STATUS.md).
+
 A full rehearsal of the production deployment on one disposable server, against the Neon **staging**
 branch (docs/NEON-STAGING.md). It follows docs/DEPLOYMENT-RUNBOOK.md, and lists only the
 differences and the extra checks. Nothing here touches production data.

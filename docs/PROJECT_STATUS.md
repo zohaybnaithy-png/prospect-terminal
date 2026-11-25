@@ -3,14 +3,16 @@
 Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 
 ## Current state
-- `staging` = `5a3c82a` (PRs #22–#26 merged; #24 T-101 foundation, #25 T-201 /compare, #26 T-203 directory depth). `main` = `edc0084`, untouched.
-- `staging` Preview `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww` passes `verify:preview` 33/33: snapshot mode, views on,
+- `staging` = `ff54c4a` (PRs #22–#28 merged: T-101 foundation, T-201 /compare, T-203 directory depth, T-102 timings, T-103 demo fixtures). `main` = `edc0084`, untouched.
+- `staging` Preview `dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb` passes `verify:preview` 33/33: snapshot mode, views on,
   5 levels, snapshot `7efabf4a38dd`, Deployment Protection on. (Earlier staging builds used snapshot `3aa112749316`;
   the snapshot id follows the data the build exports.)
 - Local: lint, typecheck, build pass; `npm test` all pass except the Momentum golden on macOS only (Math.tanh; CI/Linux passes; T-305).
+- Production: Vercel Production deployment of `main` (`edc0084`, 2026-11-12), behind Deployment Protection, no public domain. Not a public launch (licensing, T-601).
+- Data: 2026 regular season, all four MiLB levels + AFL, backfilled to the Neon test branch on 2026-11-07 (owner-approved); each Vercel build exports a read-only snapshot from the database configured for its environment (not changed by agents). Ingestion is otherwise off.
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
 - `npm run gate:staging` is usable now that its code is on `origin/staging`.
-- In review: T-103 demo fixtures out of `src/` (PR #28, gate `ready`).
+- In review: T-104 stale docs (owner merges: touches CLAUDE.md).
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).
@@ -31,7 +33,9 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
-- 2026-11-25: T-202 watchlist on `claude/t-202-watchlist` (local commit, not pushed): star toggles on directory rows and profiles (localStorage only, guarded; neutral server render), `/watchlist?ids=` server-rendered from the URL alone (latest level line + Momentum, per level), header tab, CDN-cached route. Awaiting push, CI and `verify:preview`.
+- 2026-11-25: T-202 watchlist → PR #31: star toggles on directory rows and profiles (localStorage only, guarded; neutral server render), `/watchlist?ids=` server-rendered from the URL alone (latest level line + Momentum, per level), header tab, CDN-cached route. Verified on its Preview (33/33); owner merges (cdn-cache.ts).
+- 2026-11-25: T-105 guarded merge command built (check → merge with pinned sha → staging verify → halt on failure); bypass routes added to the deny list. Not enabled: needs owner merge, T-106, one allow rule.
+- 2026-11-25: owner merged PR #28 (T-103); staging `ff54c4a` verified 33/33 (`dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb`). T-104: stale deployment/demo/validation statements fixed across README, CLAUDE.md, VERCEL, DEPLOYMENT*, STAGING-*, PRODUCTION-READINESS.
 - 2026-11-25: owner merged PRs #24, #25, #26 (staging `5a3c82a`, verified 33/33 on `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`), then PR #27 (T-102 timings in `verify:preview`). T-103: demo fixtures moved from `src/` to `scripts/fixtures/demo/` with a guard test; client JS unchanged (1,071,243 bytes both builds).
 - 2026-11-24: T-101 finished on `claude/project-foundation` (PR #24): DECISIONS, RELEASE_CHECKLIST, ARCHITECTURE "Current system", links from CLAUDE.md/AGENTS.md, AUTONOMOUS-WORKFLOW §6 (gate) and §7 (scheduled runs). Staging gate hardened after an independent security review (forged Preview reports, >100-file PRs, renames, missed ingestion/DB/indexing paths, skipped required checks, more secret forms, fail-closed secret lookup, head re-check, trusted-code requirement). 20 gate tests.
 - 2026-11-24: nightly scheduled run created (see below).
@@ -47,8 +51,9 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 - **Unattended limits (documented, not worked around):** needs the app open and the Mac awake (lid open); app-level actions (settings, scheduled tasks, connectors) are refused while nobody watches; expired GitHub/Vercel logins need the owner; usage limits end a run early (state kept). The gate requires its code to equal `origin/staging` (true since PR #24 merged).
 
 ## Approvals needed from the owner (one consolidated list)
-1. **Guarded staging merges (T-105):** allow a single command `npm run merge:staging -- --pr N --sha S` that runs
-   `gate:staging` and merges only on `ready`; keep the deny on raw `gh pr merge`. PRs touching sensitive paths stay human-merged.
+1. **Guarded staging merges (T-105):** `npm run merge:staging` is built (PR from `claude/t-105-guarded-merge`).
+   To enable: merge that PR, turn on branch protection (item 2), then add the single allow rule
+   `Bash(npm run merge:staging -- --pr * --sha *)` (AUTONOMOUS-WORKFLOW §6a). Sensitive PRs stay human-merged.
 2. **Branch protection (T-106)** on `main` and `staging`: PR required, CI checks required, no force push.
-3. Merge PR #28 (T-103).
+3. Merge the T-104 PR (touches CLAUDE.md).
 4. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

@@ -119,8 +119,8 @@ grep " gh_${V}_macOS_arm64.zip$" "gh_${V}_checksums.txt" | shasum -a 256 -c - &&
 ## 6. Staging merge readiness gate (`npm run gate:staging`)
 
 `scripts/staging-merge-gate.ts` (rules in `scripts/staging-gate-support.ts`, tests in `scripts/staging-gate.test.ts`).
-**Check only: it never merges.** Usage: `npm run gate:staging -- --pr <n> --sha <full head sha>` (runs
-`verify:preview` on that sha unless `--preview-report <file>` is given). Verdicts:
+**Check only: it never merges.** Usage: `npm run gate:staging -- --pr <n> --sha <full head sha>` (always runs
+`verify:preview` on that sha itself; `--preview-report` is rejected). Verdicts:
 
 - `ready` (exit 0): base `staging`, agent head branch, PR head equals the verified sha, mergeable and clean,
   every check on the head passed (the five required CI/Vercel checks must be present), Preview verification
@@ -129,7 +129,36 @@ grep " gh_${V}_macOS_arm64.zip$" "gh_${V}_checksums.txt" | shasum -a 256 -c - &&
   rules, deployment/headers config, traffic/health, schema/migrations, ingestion writers, the gates, lockfile, env files).
 - `blocked` (exit 1): anything else, including gate errors (fails closed).
 
-Merging remains a human step until the owner approves proposal P-001 (docs/DECISIONS.md).
+### 6a. Guarded merge (`npm run merge:staging`, T-105)
+
+`scripts/staging-merge.ts` (decision logic in `scripts/staging-merge-support.ts`, tests in
+`scripts/staging-merge.test.ts`). The **only** route by which an agent merges anything:
+`npm run merge:staging -- --pr <n> --sha <full head sha> [--dry-run]`.
+
+1. Refuses unless it, the gate and verify-preview (`TRUSTED_FILES`) equal `origin/staging`, so a PR cannot loosen
+   the rules it is judged by. All of those files are sensitive paths, so a PR changing them is always `needs-human`.
+2. Refuses while `~/.claude/prospect-terminal-dev-loop/merge-halt` exists, and after 5 automatic merges in 24 h.
+3. Runs `gate:staging` itself and requires exit 0 + `ready` for exactly this PR and sha. `needs-human` is never merged.
+4. Re-reads the PR: open, not draft, base `staging` (never `main`), agent branch, head still equal to the sha.
+5. Merges with the sha pinned (`PUT /pulls/<n>/merge` with `sha`; GitHub answers 409 if the head moved), merge commit.
+6. Verifies the resulting `staging` Preview; on failure it writes the halt file, so no further automatic merge runs
+   until the owner has looked and deleted it.
+
+Every attempt is appended to `~/.claude/prospect-terminal-dev-loop/merges.log`. Production is unaffected: `main` is
+never a merge target, and `staging` only builds protected Previews.
+
+**Enabling it (owner, in this order):**
+1. Merge the PR that adds this script (it touches sensitive paths: the gate, `package.json`, `.claude/settings.json`).
+2. Turn on branch protection (T-106): `staging` and `main` require a PR and the five checks in
+   `REQUIRED_CHECKS`; no force pushes or deletion; on `main` also "Do not allow bypassing the above settings", so the
+   agent's admin login cannot push to Production directly.
+3. Add one allow rule to `.claude/settings.json`: `"Bash(npm run merge:staging -- --pr * --sha *)"`. Every other
+   merge route stays denied (`gh pr merge`, any write via `gh api`, pushes to `main`/`staging`, force pushes); the
+   test in `scripts/staging-merge.test.ts` fails if any other merge allow rule appears or a deny rule goes missing.
+   Then run one supervised merge to confirm Auto mode accepts the allowed command.
+
+To stop automatic merges at any time: create the halt file (`touch ~/.claude/prospect-terminal-dev-loop/merge-halt`)
+or remove the allow rule. Until step 3, merging stays a human step.
 
 ## 7. Scheduled development runs
 

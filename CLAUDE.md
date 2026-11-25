@@ -20,7 +20,7 @@ Scripts are in `package.json`; check it rather than assuming. There is no `db:ch
 - MiLB (ingestion + site integration): Triple-A/Double-A/High-A/Single-A = sportId 11/12/13/14, verified against `sports/{id}` names at runtime; leagues, affiliates and parent orgs (`parentOrgId` → sportId 1) are discovered per season, never hardcoded. Adapter `src/ingestion/sources/milb-stats-api.ts`, orchestrator `src/ingestion/milb-runner.ts`, CLI `npm run ingest:milb`, levels `src/domain/levels.ts`. Details: `docs/MILB-INGESTION.md`. Site: `src/services/competition` loads every level; pages take `?level=`; statistics/Momentum are always per level (no cross-level blending or normalization). Neon load procedure: `docs/MILB-NEON-RUNBOOK.md`.
 - Same provider namespace as the AFL: one internal UUID per player/org/game across AFL and MiLB. Season identity `milb-{year}`; level identity `milb:{sportId}:{leagueId}` (one `levels` row per league). No per-level tables.
 - MiLB backfill = structure pass + date-chunked game captures (one transaction per chunk, resumable via the summary's `resumeFrom`). `--incremental` starts a lookback before the latest stored complete game and skips boxscores of games already complete (except a short refetch window). The fixture source is a synthetic offline dry run only.
-- Not yet validated against the live API or a real database; follow the validation steps in `docs/MILB-INGESTION.md` before any shared-database apply.
+- Validated against the live API: the full 2026 regular-season backfill (all four levels) was applied to the Neon test branch on 2026-11-07 with owner approval. Any further shared-database apply still needs explicit approval and the validation steps in `docs/MILB-INGESTION.md`.
 - Boundary: `SourceAdapter → normalized records → planner (buildPlan) → PostgresIngestionSink`. Provider-specific acquisition stays separate from normalized/internal data so providers can be swapped or licensed later.
 
 ### Ingestion guarantees — never weaken for performance
@@ -64,7 +64,7 @@ Momentum V1 lives in `src/analytics` (see `docs/ANALYTICS.md`). Balanced is the 
 
 ## UI / design (preserve)
 
-Light, information-dense, Baseball Savant / FanGraphs-like: white background, charcoal text, thin gray borders, restrained teal accent, compact data typography, desktop-first. Avoid dark AI dashboards, gradients, neon/glow, glassmorphism, oversized cards, excess whitespace. Don't revert to dark mode or redesign unless asked. Logo is a stitched baseball circle, no tagline (`prospect-terminal-logo.png` at repo root, imported by `src/components/layout/header.tsx`). Homepage demo data is intentional until AFL data is wired in.
+Light, information-dense, Baseball Savant / FanGraphs-like: white background, charcoal text, thin gray borders, restrained teal accent, compact data typography, desktop-first. Avoid dark AI dashboards, gradients, neon/glow, glassmorphism, oversized cards, excess whitespace. Don't revert to dark mode or redesign unless asked. Logo is a stitched baseball circle, no tagline (`prospect-terminal-logo.png` at repo root, imported by `src/components/layout/header.tsx`). Every page shows real data or an honest "not available" state; the fictional fixtures live in `scripts/fixtures/demo/` for tests and the opt-in seed only (T-103).
 
 ## Data licensing
 

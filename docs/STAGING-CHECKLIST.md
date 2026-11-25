@@ -1,5 +1,7 @@
 # Phase 6: staging-readiness checklist
 
+> **Historical.** This records the Phase 5–6A state and the single-server plan, before Vercel became the active target (decision D-003). For the current state see [PROJECT_STATUS.md](./PROJECT_STATUS.md) and the release gates in [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md).
+
 `[x]` done and verified in the repository (Phase 6A, local disposable infrastructure only).
 `[ ]` needs you: approval, a purchase, credentials or a console action. Nothing below has been
 verified against Neon or a real server yet.

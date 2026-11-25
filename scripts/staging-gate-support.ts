@@ -32,7 +32,7 @@ export const SENSITIVE_PATHS: { pattern: RegExp; reason: string }[] = [
   { pattern: /^src\/lib\/(indexing|crawl-policy|cdn-cache)\.ts$|^src\/app\/(robots|sitemap)\.ts$/, reason: "indexing / crawl / CDN caching policy" },
   { pattern: /^src\/db\/|^drizzle\/|^drizzle\.config\.ts$/, reason: "database schema, migrations or DB config" },
   { pattern: /^src\/ingestion\/(postgres-sink|plan|db-target|runner|milb-runner|milb-backfill)\.ts$|^src\/ingestion\/refresh\/|^scripts\/(ingest-|refresh-data|ops\/milb-backfill)/, reason: "ingestion / refresh write path" },
-  { pattern: /^scripts\/(staging-merge-gate|staging-gate-support|verify-preview|preview-verify-support)\.ts$|^scripts\/ops\/dev-loop-lock\.sh$/, reason: "the verification gates themselves" },
+  { pattern: /^scripts\/(staging-merge|staging-merge-support|staging-merge-gate|staging-gate-support|verify-preview|preview-verify-support)\.ts$|^scripts\/ops\/dev-loop-lock\.sh$/, reason: "the verification gates themselves" },
   { pattern: /(^|\/)\.env/, reason: "environment file" },
   // package.json scripts decide what CI and the gates run ("test", "verify:preview", install hooks).
   { pattern: /^package(-lock)?\.json$|^\.npmrc$/, reason: "dependencies or npm scripts (supply chain / what CI runs)" },
