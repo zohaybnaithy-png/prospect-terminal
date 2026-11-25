@@ -52,7 +52,7 @@ Star button on profiles/directory rows, `/watchlist` page listing starred player
 Momentum. localStorage only (wrapped in try/catch, empty-state works), no server state, no tracking.
 AC: works with storage blocked (graceful), a11y passes, e2e covers star → list → unstar. Risk: low. Depends: —.
 
-### T-203 Directory depth — `ready`
+### T-203 Directory depth — `in-review` (PR #26, branch `claude/t-203-directory-depth`; follow-ups: notice for dropped out-of-range values, blur+sort double navigation)
 ISO and BABIP columns (hitters), age filter (min/max), stat-threshold filter (e.g. OPS ≥, K% ≤) for the
 sortable columns, preset column groups. AC: URL state round-trips; server-side filtering; tests for parsing,
 bounds and formulas (hand-computed fixtures); BABIP = (H−HR)/(AB−SO−HR+SF). Risk: low.
