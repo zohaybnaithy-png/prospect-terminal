@@ -99,9 +99,14 @@ before/after (T-102 method), identical output (tests), memory not worse. Risk: m
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
 AC: suites run green in CI; no secrets needed. Risk: medium.
 
-### T-303 Verify Vercel CDN and identity behavior — `ready`
+### T-303 Verify Vercel CDN and identity behavior — `in-review` (branch `claude/t-303-vercel-checks`; check 7 inconclusive)
 VERCEL.md Preview checks 3, 7, 8 via `vercel curl`/bypass: CDN cache headers honored, forged
 `x-vercel-forwarded-for` overwritten, limiter on cache hits. AC: results recorded in VERCEL.md. Risk: low.
+Done 2026-11-26 (VERCEL.md "Results of checks 3, 7 and 8"): CDN HIT on second request for pages, profiles and 404s; never
+for RSC/`_rsc`; per-deployment scope; Deployment Protection before the cache. Check 7: 400 honest, 400 forged and 800 faster
+(64 concurrent) requests all 200 with no 429 — spread over many instances, so identity overwrite and limiter-on-cache-hits
+stay unanswered. **Owner decision:** accept the per-instance limiter on Vercel as documented, or add a diagnostic (limiter key /
+instance id header on a debug route) to answer it.
 
 ### T-304 Mobile + accessibility pass on the Preview — `ready`
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.

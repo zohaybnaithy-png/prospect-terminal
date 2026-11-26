@@ -508,6 +508,37 @@ explicit `PT_SITE_URL` is not silently replaced.
    - Signed out, request a cached preview page: Vercel's login, not the page (question 5).
    - After a redeploy, the first request is a `MISS` (per-deployment scoping, question 3).
 
+### Results of checks 3, 7 and 8 (T-303, 2026-11-26)
+
+Run from one Mac against the staging Preview `dpl_DT6rgPWs3bKJkw912WX3a99iybni` (`9190f09`) with the automation
+bypass header (sent only to that `*.vercel.app` host), plus the PR #37 Preview `dpl_FTWbWPDpLQZxtYDwE9iZbwve1zwN` for
+per-deployment scoping. Every URL carried a fresh query parameter so the first request was a cold key.
+
+| Check | Request | Result | Answers (section 3) |
+|---|---|---|---|
+| 3 | `/players?level=aa` twice | `MISS` → `HIT`; both `x-robots-tag: noindex, nofollow`; browser `Cache-Control: private, no-cache, no-store` | Q1 + Q2: the CDN honours `Vercel-CDN-Cache-Control` set by next.config on a `private` function response |
+| 3 | `/robots.txt` | 200, `noindex, nofollow` | — |
+| 8 | profile (`/players/<id>?level=aaa`) twice | `MISS` → `HIT` | Q2 |
+| 8 | `/players?_rsc=x` + `RSC: 1` twice | `MISS`, `MISS` | RSC requests never cached |
+| 8 | `/players?_rsc=` twice | `MISS`, `MISS` | `_rsc` URLs never cached |
+| 8 | unknown profile twice | 404 `MISS` → 404 `HIT` | Q3: 404s are stored (deterministic per deployment, intended) |
+| 8 | `/trends/data?view=nope` twice | 400 `MISS`, `MISS` | handler header on 200 only. The "empty level" 404 variant could not run: all 5 levels have data |
+| 8 | signed-out `/players?level=aa` (a key that was a `HIT`) | 302 to Vercel login, no `x-vercel-cache` | Q5: Deployment Protection runs before the cache |
+| 8 | same new URL: `HIT` on staging, then first request on the PR #37 deployment | `MISS` | Q3: cache scoped per deployment |
+| 7 | **honest** 400 distinct `/players?n=…` (CDN misses), 16 concurrent | 400 × 200, 0 × 429 | inconclusive (see below) |
+| 7 | **forged** same, a different forged `x-vercel-forwarded-for` per request | 400 × 200, 0 × 429 | inconclusive |
+| 7 | **faster honest** 800 distinct, 64 concurrent (10.2 s, ~80 req/s) | 800 × 200, 0 × 429 | inconclusive |
+| 7 | 400 requests to one cached URL, 16 concurrent | 400 × `HIT`, 0 × 429 | Q4 not answered (no refusal either way) |
+
+**Check 7 reading.** The page bucket allows 240 at once plus 8/s per client **per instance**. 800 requests in 10.2 s would
+exceed one instance's allowance (~320) by far, so the traffic was spread over several instances: the deployment's runtime
+logs show many instance starts (`precomputed views on …`) in that window. So no 429 was produced and neither the
+spoofing question (does Vercel overwrite a forged `x-vercel-forwarded-for`?) nor "does the proxy run on cache hits?" could
+be answered from outside. What this does show: on Vercel the in-app limiter does **not** bound a concurrent burst from one
+address; the bounds that held are the CDN (cache hits never reach a function) and the Hobby caps, as section 4 says.
+Getting a definitive answer needs either a single-instance setting or a diagnostic that reports the limiter key, which are
+code/config changes for the owner to decide (not done). `PT_RATE_LIMIT` was not changed.
+
 ## Free-tier budget (estimates from local measurements; check 6 gives real numbers)
 
 At ~10k page views a month plus a full crawl of ~3.3k profiles:
@@ -561,7 +592,9 @@ for this change.
 | Router cache, pending hint, filters/levels across history, 404s, headers, redeploy (`npm run test:nav:e2e`) | `next build` + `next start` + Chromium | 8/8 |
 | Precomputed views: byte-identical pages, RSC payloads and 404s, views off vs on (`npm run test:views:e2e`) | `next build` + two `next start` | 5/5 |
 | Lint, typecheck, default build | local; CI on every PR | clean |
-| Vercel CDN behaviour, edge headers, minimal mode, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks 1–8 |
+| Vercel CDN behaviour: HIT on pages/profiles/404s, never on RSC/`_rsc`, per-deployment scope, protection before cache (checks 3, 8) | staging Preview, T-303 | verified 2026-11-26 |
+| Identity overwrite and limiter on cache hits (check 7) | staging Preview, T-303 | inconclusive: bursts spread over instances, no 429 |
+| Edge headers beyond the above, minimal mode, Analytics collection, real capacity, Hobby usage | **not verified** | preview checks 1, 2, 4–6 |
 
 ## Public launch (not part of this phase)
 
