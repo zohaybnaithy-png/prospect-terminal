@@ -70,9 +70,14 @@ accessible combobox, no request per keystroke beyond the index. Risk: medium.
 A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
 Built: "Cmp" checkbox column (single level only; "All levels" shows a pointer instead) and a GET form to `/compare`
 (`/compare` now reads repeated `ids` fields as one list, still capped). With JS: client navigation, picks survive
-paging and filters, clear on level/role change, 5th box disabled. Without JS the form itself is a plain GET, but
-`/players` cannot be used without JS at all (see debt below), so "works without JS" is limited to the form semantics
-(tested from the server HTML) and `/compare` answering that submission.
+paging and filters, clear on level/role change, 5th box disabled. Without JS: plain GET form, fully usable since T-207.
+
+### T-207 Pages work without JavaScript — `in-review` (branch `claude/t-207-no-js-directory`; owner-approved 2026-11-26)
+`/`, `/players`, `/trends`, `/data` and the header score strip rendered behind streamed `<Suspense>` boundaries, so with
+JavaScript off their content stayed in `<div hidden id="S:…">` and only "Loading…" showed. Found in T-206. Fix: render in
+place (no boundary; client navigations keep the old page and show the navigation hint). AC: e2e with JavaScript disabled
+(content visible, no hidden streamed blocks; directory Apply search and compare picks by real clicks). Risk: low–medium
+(first-byte now waits for data; pages are CDN-cached). `/analytics/models` (development only) keeps its boundary.
 
 ## Milestone 3 — Performance and reliability
 
@@ -114,9 +119,6 @@ Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- year
 ## Known bugs / debt (tracked here, fix through tasks above)
 
 - Momentum golden test macOS-only failure (CI/Linux canonical, documented: T-305).
-- `/players` needs JavaScript: the directory is inside a streamed `<Suspense>` boundary, so without JS its HTML stays in
-  `<div hidden id="S:0">` and only "Loading players…" shows (the `<noscript>` Apply button can never be reached). Found in
-  T-206. Fix needs a decision: drop the boundary (loses the instant fallback on navigation) or render the table outside it.
 - `verify:preview --sha <short sha>` waits until `--wait-minutes` runs out (deployment lookup matches the full sha only);
   pass the full 40-character sha. `merge:staging` already does. Fix: resolve or refuse short shas (trusted file: owner merges).
 - `scripts/site-data.test.ts` "watchdog: a connection that keeps trickling…" is timing-sensitive: failed once in a loaded local full `npm test` run (2026-11-25), passed 3/3 alone. Watch in CI; harden its timing margins if it recurs (never loosen what it asserts).

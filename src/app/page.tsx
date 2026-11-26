@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { getCompetitionData } from "@/services/competition";
 import {
   defaultLevel,
@@ -40,15 +39,8 @@ export default function HomePage({
       <h1 className="sr-only">
         Prospect Terminal — trending prospects, recent performance and scores
       </h1>
-      <Suspense
-        fallback={
-          <p className="empty-state" aria-busy="true">
-            Loading prospect data…
-          </p>
-        }
-      >
-        <HomeDashboard searchParams={searchParams} />
-      </Suspense>
+      {/* No <Suspense>: streamed content stays hidden without JavaScript (see src/app/players/page.tsx). */}
+      <HomeDashboard searchParams={searchParams} />
     </>
   );
 }

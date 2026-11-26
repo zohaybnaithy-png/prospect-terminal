@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "@/components/ui/app-link";
-import { Suspense } from "react";
 import {
   COMPONENTS_BY_ROLE,
   DEFAULT_MOMENTUM_MODEL,
@@ -60,15 +59,8 @@ export default function DataPage() {
         <div className="method-main">
           <section id="coverage" className="page-section method-section">
             <h2>Data coverage</h2>
-            <Suspense
-              fallback={
-                <p className="empty-state" aria-busy="true">
-                  Loading coverage…
-                </p>
-              }
-            >
-              <Coverage />
-            </Suspense>
+            {/* No <Suspense>: streamed content stays hidden without JavaScript (see src/app/players/page.tsx). */}
+            <Coverage />
             <p className="table-note">
               Source: MLB Stats API schedules, rosters and box scores (used
               under development terms; licensing is reviewed before any public

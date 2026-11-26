@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { MOMENTUM_WINDOWS } from "@/analytics/config";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";
@@ -38,15 +37,12 @@ export default function PlayersPage({
         title="Players"
         description="Every prospect with recorded 2026 game lines at Triple-A, Double-A, High-A, Single-A and the Arizona Fall League. Search, filter and sort any column — including Momentum, which compares a player's recent games with their own earlier games at the same level."
       />
-      <Suspense
-        fallback={
-          <div className="explorer directory" aria-busy="true">
-            <p className="empty-state">Loading players…</p>
-          </div>
-        }
-      >
-        <Directory searchParams={searchParams} />
-      </Suspense>
+      {/*
+        No <Suspense> here on purpose: a streamed boundary leaves the table in a hidden <div> until a
+        script swaps it in, so the directory (and its GET forms) would not work without JavaScript.
+        Client navigations keep the previous page up and show the navigation hint while this renders.
+      */}
+      <Directory searchParams={searchParams} />
     </>
   );
 }
