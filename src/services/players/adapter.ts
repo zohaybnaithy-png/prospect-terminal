@@ -20,7 +20,7 @@ import {
 import { levelOrder, type LevelId } from "./levels";
 import { processWeakMap } from "@/lib/process-memo";
 import { precomputedPart } from "@/services/competition/views-store";
-import { ageVsLevel, levelAgeContext } from "./level-age";
+import { levelAgesVsMedian } from "./level-age";
 
 const memo = processWeakMap<AflSnapshot, Map<string, PlayerDirectoryRow[]>>("directory-rows");
 
@@ -45,8 +45,6 @@ export function levelDirectoryRows(
   const mWindow = momentumWindowFor(window);
   const asOf = aflAsOf(snapshot);
   const primary = new Map(snapshot.players.map((p) => [p.id, p.primaryPosition]));
-  const born = new Map(snapshot.players.map((p) => [p.id, p.birthDate]));
-  const ageCtx = levelAgeContext(snapshot);
   const lastDate = (id: string) => {
     const b = ctx.ds.batting.get(id)?.at(-1)?.date ?? null;
     const p = ctx.ds.pitching.get(id)?.at(-1)?.date ?? null;
@@ -70,7 +68,6 @@ export function levelDirectoryRows(
       position: r.position,
       positionGroup: positionGroup(primary.get(r.id) ?? ""),
       age: r.age,
-      ageVsLevel: ageVsLevel(born.get(r.id) ?? null, ageCtx),
       level,
       levels: [level],
       asOf,
@@ -105,6 +102,9 @@ export function directoryRows(
   { level, window, role }: { level?: LevelId | ""; window: StatWindow; role: Role },
 ): PlayerDirectoryRow[] {
   const scoped = level ? levels.filter((l) => l.level === level) : levels;
+  // Age relative to level (T-401) is added here, not in levelDirectoryRows, so those memoized and
+  // precomputed rows (and the Momentum golden file that records them) stay exactly as they were.
+  const ages = new Map(scoped.map((ls) => [ls.level, levelAgesVsMedian(ls.snapshot)]));
   const byPlayer = new Map<string, PlayerDirectoryRow[]>();
   for (const ls of scoped)
     for (const row of levelDirectoryRows(ls.snapshot, ls.level, window)) {
@@ -123,6 +123,7 @@ export function directoryRows(
     );
     out.push({
       ...best,
+      ageVsLevel: ages.get(best.level)?.get(best.id) ?? null,
       levels: rows.map((r) => r.level).sort((a, b) => levelOrder(a) - levelOrder(b)),
       batting: role === "hitter" ? best.batting : null,
       pitching: role === "pitcher" ? best.pitching : null,

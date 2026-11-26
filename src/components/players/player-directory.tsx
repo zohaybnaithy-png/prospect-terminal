@@ -108,7 +108,7 @@ function contextColumns(role: Role, short: string): Column<Row>[] {
       label: "±Lvl",
       title: "Age relative to the level: years older (+) or younger (−) than the median age of players with a 2026 line at the row's level",
       numeric: true,
-      render: (r) => formatAgeVsLevel(r.ageVsLevel),
+      render: (r) => formatAgeVsLevel(r.ageVsLevel ?? null),
     },
     {
       key: "lvl",

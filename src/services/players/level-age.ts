@@ -77,4 +77,16 @@ export function ageVsLevel(birthDate: string | null, ctx: LevelAgeContext): numb
   return Object.is(d, -0) ? 0 : d;
 }
 
+const byPlayer = processWeakMap<AflSnapshot, Map<string, number | null>>("level-age-players");
+
+/** Every player's age vs the level median at this level (memoized per loaded snapshot object). */
+export function levelAgesVsMedian(s: AflSnapshot): Map<string, number | null> {
+  const hit = byPlayer.get(s);
+  if (hit) return hit;
+  const ctx = levelAgeContext(s);
+  const out = new Map(s.players.map((p) => [p.id, ageVsLevel(p.birthDate, ctx)]));
+  byPlayer.set(s, out);
+  return out;
+}
+
 export { formatAgeVsLevel } from "./level-age-format";

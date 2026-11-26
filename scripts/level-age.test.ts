@@ -12,9 +12,10 @@ import {
   decimalAge,
   formatAgeVsLevel,
   levelAgeContext,
+  levelAgesVsMedian,
   median,
 } from "../src/services/players/level-age";
-import { levelDirectoryRows } from "../src/services/players/adapter";
+import { directoryRows, levelDirectoryRows } from "../src/services/players/adapter";
 import { DIRECTORY_SORTS } from "../src/services/players/directory-query";
 import { scaleSnapshot } from "./milb-scale-support";
 
@@ -90,13 +91,19 @@ describe("levelAgeContext", () => {
 });
 
 describe("directory column", () => {
-  test("rows carry ageVsLevel from their own level; agerel sorts on it", () => {
+  test("directoryRows carry ageVsLevel from the row's own level; agerel sorts on it; levelDirectoryRows unchanged", () => {
     const s = scaleSnapshot({ ns: 3, level: "aa", teams: 2, days: 10, seed: 3 });
     const ctx = levelAgeContext(s);
     const born = new Map(s.players.map((p) => [p.id, p.birthDate]));
-    const rows = levelDirectoryRows(s, "aa");
-    for (const r of rows) assert.equal(r.ageVsLevel, ageVsLevel(born.get(r.id) ?? null, ctx), r.name);
-    assert.ok(rows.some((r) => r.ageVsLevel! > 0) && rows.some((r) => r.ageVsLevel! < 0), "both signs present");
-    for (const role of ["hitter", "pitcher"] as const) assert.equal(DIRECTORY_SORTS[role].agerel(rows[0]), rows[0].ageVsLevel);
+    for (const role of ["hitter", "pitcher"] as const) {
+      const rows = directoryRows([{ level: "aa", snapshot: s }], { level: "aa", window: "season", role });
+      assert.ok(rows.length > 0);
+      for (const r of rows) assert.equal(r.ageVsLevel, ageVsLevel(born.get(r.id) ?? null, ctx), r.name);
+      assert.ok(rows.some((r) => r.ageVsLevel! > 0) && rows.some((r) => r.ageVsLevel! < 0), "both signs present");
+      assert.equal(DIRECTORY_SORTS[role].agerel(rows[0]), rows[0].ageVsLevel);
+    }
+    // The memoized/precomputed per-level rows (recorded by the Momentum golden file) do not carry it.
+    for (const r of levelDirectoryRows(s, "aa")) assert.equal("ageVsLevel" in r, false);
+    assert.deepEqual(levelAgesVsMedian(s).get(s.players[0].id), ageVsLevel(s.players[0].birthDate, ctx));
   });
 });

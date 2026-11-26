@@ -144,6 +144,8 @@ Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- year
 Built: `src/services/players/level-age.ts` (definition in D-020). Directory column "±Lvl" (sortable, key `agerel`) and a
 "vs <level> median" item on the profile; /data glossary entry. Tests: hand-computed decimal ages, median odd/even, the
 population rule (lines + birth date), the 20-player minimum, sign/rounding/formatting, directory rows and sort.
+The value is added in `directoryRows`, not `levelDirectoryRows`, so the memoized/precomputed rows and the Momentum
+golden file (which records them) are unchanged — the golden file was not regenerated (D-015).
 ### T-402 Breakout detection methodology — `needs-approval` (proposal only)
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
 ### T-404 Similarity methodology — `needs-approval` (proposal only)
