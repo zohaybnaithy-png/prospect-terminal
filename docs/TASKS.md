@@ -72,9 +72,19 @@ directory Org column) open it; team links still open the team-filtered directory
 Add `/orgs` and `/orgs/:slug` to `CDN_CACHED_ROUTES` (+ the vercel.test.ts list and the cdn-cache e2e), and point the
 retired `/organizations/:path*` redirect (next.config.ts) at `/orgs`. Risk: low. Depends: T-204.
 
-### T-205 Typeahead search — `ready`
+### T-205 Typeahead search — `done` (PR #38, guarded merge 2026-11-26, staging 04c446b verified 33/33)
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
+Built: `/search/names?level=` (route handler, CDN header on 200 only) serves `{v, level, teams, players: [key, name, pos, team]}`
+for every player with a line at the level; `key` is the shortest unique UUID hex prefix (≥ 10) because full UUIDs alone
+would put the largest level (~2,000 players) over 50 kB gzipped. Test budget: 2,400 players → 44.6 kB gzipped (92.5 kB raw).
+Picking opens `/search/player?level=&id=&q=`, which resolves the key against the same level and redirects to the profile; a key
+that does not resolve (older deployment's index) falls back to `/players?level=&q=`. Header input is an ARIA 1.2 combobox
+(listbox, aria-activedescendant, ArrowUp/Down, Enter, Escape, live count); index fetched on first focus (URL `?level=` or every
+level), cached per page session; matching is local (accent/case-insensitive: name prefix > word prefix > substring, max 8).
+Without JavaScript the form is unchanged (GET /players?q=). Tests: scripts/typeahead.test.ts, navigation e2e (one index request,
+none per keystroke, keyboard pick → profile, Escape, plain submit; index JSON + redirect fallbacks).
+Follow-up: the fallback directory search opens the hitters list, so a pitcher's stale key lands on an empty hitter search.
 
 ### T-206 Compare entry point from the directory — `done` (PR #33, guarded merge 2026-11-26, staging 65d655e verified 33/33)
 A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
