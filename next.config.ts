@@ -9,13 +9,15 @@ import { vercelBuildConfigError } from "./src/lib/vercel-build-guard";
 /**
  * Former demo-only routes (fictional news, highlights, organizations, leagues, teams, screener)
  * were removed for Showcase V1; old links land on the closest real-data page instead of a 404.
+ * `/organizations/*` goes to the real-data organization index (`/orgs`, T-204): the demo slugs
+ * never matched real organizations, so every old organization link lands on the index.
  */
 const retired: [string, string][] = [
   ["/market", "/"],
   ["/news", "/"],
   ["/highlights", "/"],
   ["/screener", "/players"],
-  ["/organizations/:path*", "/players"],
+  ["/organizations/:path*", "/orgs"],
   ["/teams/:path*", "/players"],
   ["/leagues/:path*", "/players"],
 ];
