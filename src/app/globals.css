@@ -1722,6 +1722,32 @@ a.reset-button {
 .pagination > [aria-disabled="true"] {
   color: var(--disabled);
 }
+/* T-206: pick players in the directory and open /compare (works as a plain GET form). */
+.directory-compare {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.directory-compare .apply-button {
+  height: 26px;
+  font-size: 12px;
+}
+.directory-compare .apply-button:disabled {
+  border-color: var(--border);
+  background: #f2f4f4;
+  color: var(--disabled);
+}
+.directory-compare-hint {
+  color: var(--muted);
+}
+.compare-pick {
+  margin: 0;
+  accent-color: #226c6e;
+}
 .directory-count {
   padding: 7px 12px;
   border-bottom: 1px solid var(--border);
@@ -1746,7 +1772,8 @@ a.reset-button {
   color: var(--subtle);
   font-size: 10px;
 }
-.directory .data-table td:nth-child(2) {
+/* The player column stays visible while scrolling sideways (second column, or third after "Cmp"). */
+.directory .data-table td:has(> .player-cell) {
   position: sticky;
   left: 0;
   z-index: 1;

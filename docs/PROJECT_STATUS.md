@@ -3,7 +3,7 @@
 Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 
 ## Current state
-- `staging` = `ff54c4a` (PRs #22–#28 merged: T-101 foundation, T-201 /compare, T-203 directory depth, T-102 timings, T-103 demo fixtures). `main` = `edc0084`, untouched.
+- `staging` = `33dfc88` (PRs #22–#32 merged: through T-104 docs, T-105 guarded merge, T-202 watchlist, T-305 golden note). `main` = `edc0084`, untouched.
 - `staging` Preview `dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb` passes `verify:preview` 33/33: snapshot mode, views on,
   5 levels, snapshot `7efabf4a38dd`, Deployment Protection on. (Earlier staging builds used snapshot `3aa112749316`;
   the snapshot id follows the data the build exports.)
@@ -11,8 +11,8 @@ Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 - Production: Vercel Production deployment of `main` (`edc0084`, 2026-11-12), behind Deployment Protection, no public domain. Not a public launch (licensing, T-601).
 - Data: 2026 regular season, all four MiLB levels + AFL, backfilled to the Neon test branch on 2026-11-07 (owner-approved); each Vercel build exports a read-only snapshot from the database configured for its environment (not changed by agents). Ingestion is otherwise off.
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
-- `npm run gate:staging` is usable now that its code is on `origin/staging`.
-- In review: T-104 stale docs (owner merges: touches CLAUDE.md).
+- `npm run gate:staging` and `npm run merge:staging` are on `origin/staging`. Branch rulesets `staging` and `main` are in effect (PR required, 5 required checks, no force push or deletion, no bypass).
+- In review: T-206 compare entry from the directory.
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).
@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-25: owner added the ruleset targets (T-106 done) and merged #32 (T-305); staging `33dfc88` verified 33/33 (`dpl_FfWMh46fHxLfufSPtK1iE2zZ5f1q`, snapshot `7efabf4a38dd`). T-206: "Cmp" pick column on `/players` (one level only) with a GET form to `/compare`; works without JavaScript; picks survive paging, clear on level/role change, max 4.
 - 2026-11-25: owner merged #29 (T-104) and #30 (T-105 guarded merge); staging `140e5ea` verified 33/33. Rulesets for `staging`/`main` created (active, 5 checks, no bypass) but with no target branches yet. T-305 platform note.
 - 2026-11-25: T-202 watchlist → PR #31: star toggles on directory rows and profiles (localStorage only, guarded; neutral server render), `/watchlist?ids=` server-rendered from the URL alone (latest level line + Momentum, per level), header tab, CDN-cached route. Verified on its Preview (33/33); owner merged #31 (staging `1ebb4d6`).
 - 2026-11-25: T-105 guarded merge command built (check → merge with pinned sha → staging verify → halt on failure); bypass routes added to the deny list. Not enabled: needs owner merge, T-106, one allow rule.
@@ -48,13 +49,9 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
   permission mode that does not stop on prompts.
 - Cloud routines: available but cannot use the local Vercel login/bypass secret, so they cannot run Preview verification.
 - PR monitoring: Auto-fix in the desktop app (wakes the session on CI failure/comments).
-- **Configured:** scheduled task `prospect-terminal-nightly-dev` ("Prospect Terminal nightly dev run"), daily ~01:30–01:45 local, **Auto mode**, lock `scripts/ops/dev-loop-lock.sh`, state + reports in `~/.claude/prospect-terminal-dev-loop/`. Procedure: AUTONOMOUS-WORKFLOW.md §7. It never merges.
+- **Configured:** scheduled task `prospect-terminal-nightly-dev` ("Prospect Terminal nightly dev run"), daily ~01:30–01:45 local, **Auto mode**, lock `scripts/ops/dev-loop-lock.sh`, state + reports in `~/.claude/prospect-terminal-dev-loop/`. Procedure: AUTONOMOUS-WORKFLOW.md §7. It merges only through `npm run merge:staging` (gate `ready` only; sensitive PRs stay owner-merged).
 - **Unattended limits (documented, not worked around):** needs the app open and the Mac awake (lid open); app-level actions (settings, scheduled tasks, connectors) are refused while nobody watches; expired GitHub/Vercel logins need the owner; usage limits end a run early (state kept). The gate requires its code to equal `origin/staging` (true since PR #24 merged).
 
 ## Approvals needed from the owner (one consolidated list)
-1. **Guarded staging merges (T-105):** `npm run merge:staging` is built (PR from `claude/t-105-guarded-merge`).
-   To enable: merge that PR, turn on branch protection (item 2), then add the single allow rule
-   `Bash(npm run merge:staging -- --pr * --sha *)` (AUTONOMOUS-WORKFLOW §6a). Sensitive PRs stay human-merged.
-2. **Branch protection (T-106)** on `main` and `staging`: PR required, CI checks required, no force push.
-3. Merge the T-104 PR (touches CLAUDE.md).
-4. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).
+1. Merge PRs the gate marks `needs-human` (sensitive paths); routine `ready` PRs merge via `npm run merge:staging`.
+2. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

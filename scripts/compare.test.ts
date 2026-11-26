@@ -51,6 +51,17 @@ describe("parseCompareQuery", () => {
     assert.deepEqual(q.notices, [`Up to ${COMPARE_MAX} players can be compared; 1 more was left out.`]);
   });
 
+  test("repeated ids parameters (the directory's no-JavaScript form) are one list, still capped", () => {
+    assert.deepEqual(parseCompareQuery({ level: "aa", ids: [A, `${B},${C}`] }).ids, [A, B, C]);
+    const q = parseCompareQuery({ level: "aa", ids: [A, B, C, D, E, A] });
+    assert.deepEqual(q.ids, [A, B, C, D]);
+    assert.equal(q.notices.length, 2, q.notices.join(" | "));
+    assert.equal(parseCompareQuery({ level: "aa", ids: Array.from({ length: 500 }, () => A) }).ids.length, 1);
+    assert.deepEqual(existingCompareIds({ ids: [A, B] }), [A, B]);
+    // Other parameters still take one value: a repeated level is not guessed at.
+    assert.equal(parseCompareQuery({ level: ["aa", "afl"], ids: A }).level, null);
+  });
+
   test("malformed ids are dropped, never fatal", () => {
     const q = parseCompareQuery({ level: "afl", ids: `${A},not-a-uuid,${B.slice(0, -1)},'; drop table` });
     assert.deepEqual(q.ids, [A]);
@@ -68,9 +79,9 @@ describe("parseCompareQuery", () => {
     assert.deepEqual(missing.notices, [], "no level is an instruction, not an error");
   });
 
-  test("repeated (array) parameters are ignored rather than guessed", () => {
+  test("repeated level and role parameters are ignored rather than guessed (repeated ids are a list: T-206)", () => {
     const q = parseCompareQuery({ level: ["aa", "aaa"], ids: [A, B], role: ["pitchers"] });
-    assert.deepEqual([q.level, q.ids, q.role], [null, [], "hitter"]);
+    assert.deepEqual([q.level, q.ids, q.role], [null, [A, B], "hitter"]);
   });
 
   test("the add field accepts a pasted profile link or a bare id", () => {

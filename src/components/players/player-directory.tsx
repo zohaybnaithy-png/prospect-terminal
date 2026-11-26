@@ -49,8 +49,12 @@ import { DataTable, type Column } from "@/components/ui/data-table";
 import { PlayerLink } from "@/components/ui/entity-links";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { WatchlistStar } from "@/components/watchlist/star-button";
+import { COMPARE_MAX, COMPARE_MIN, compareHref } from "@/services/compare/query";
 
 export type { DirectoryState } from "@/services/players/directory-query";
+
+/** The compare form's id: row checkboxes sit in the table and join it through their `form` attribute. */
+const COMPARE_FORM = "directory-compare";
 
 type Row = PlayerDirectoryRow;
 
@@ -424,6 +428,19 @@ export function PlayerDirectory({
     }
   }
 
+  // Players picked for /compare. They survive paging and filtering (the form submits this list, not
+  // only the boxes on screen) and are cleared when the level or role changes: a comparison is
+  // always one level and one role.
+  const scopeKey = `${state.level ?? ""}|${state.role}`;
+  const [picked, setPicked] = useState<string[]>([]);
+  const [pickedScope, setPickedScope] = useState(scopeKey);
+  if (pickedScope !== scopeKey) {
+    setPickedScope(scopeKey);
+    setPicked([]);
+  }
+  const togglePick = (id: string, on: boolean) =>
+    setPicked((p) => (on ? (p.includes(id) || p.length >= COMPARE_MAX ? p : [...p, id]) : p.filter((x) => x !== id)));
+
   const href = (patch: Partial<DirectoryState>) =>
     `/players${directorySearch({ ...state, page: 1, ...patch })}`;
   const navigate = (patch: Partial<DirectoryState>, replace = false) => {
@@ -456,7 +473,29 @@ export function PlayerDirectory({
     return cols.map((c) => ({ ...c, sortable: c.key in DIRECTORY_SORTS[state.role] }));
   }, [state.role, momentumShort]);
   const column = columns.find((c) => c.key === sort.key);
+  const pickColumn: Column<Row> = {
+    key: "pick",
+    label: "Cmp",
+    title: `Pick ${COMPARE_MIN}–${COMPARE_MAX} players at this level, then "Compare selected"`,
+    render: (r) => {
+      const checked = picked.includes(r.id);
+      return (
+        <input
+          type="checkbox"
+          className="compare-pick"
+          form={COMPARE_FORM}
+          name="ids"
+          value={r.id}
+          checked={checked}
+          disabled={!checked && picked.length >= COMPARE_MAX}
+          onChange={(e) => togglePick(r.id, e.currentTarget.checked)}
+          aria-label={`Compare ${r.name}`}
+        />
+      );
+    },
+  };
   const ranked: Column<Row>[] = [
+    ...(state.level ? [pickColumn] : []),
     {
       key: "rank",
       label: "#",
@@ -734,6 +773,31 @@ export function PlayerDirectory({
         {sort.direction === "desc" ? " ↓" : " ↑"}
         {pending && <span className="updating"> · updating…</span>}
       </p>
+      {state.level ? (
+        <form
+          id={COMPARE_FORM}
+          className="directory-compare"
+          action="/compare"
+          method="get"
+          onSubmit={(e) => {
+            e.preventDefault();
+            startTransition(() => router.push(compareHref({ level: state.level || null, ids: picked, role: state.role })));
+          }}
+        >
+          <input type="hidden" name="level" value={state.level} />
+          {state.role === "pitcher" && <input type="hidden" name="role" value="pitchers" />}
+          <button type="submit" className="apply-button" disabled={picked.length > 0 && picked.length < COMPARE_MIN}>
+            Compare selected
+          </button>
+          <span className="directory-compare-hint" aria-live="polite">
+            {picked.length
+              ? `${picked.length} of ${COMPARE_MAX} picked${picked.length < COMPARE_MIN ? ` — pick at least ${COMPARE_MIN}` : ""}`
+              : `Tick ${COMPARE_MIN}–${COMPARE_MAX} players in the Cmp column`}
+          </span>
+        </form>
+      ) : (
+        <p className="directory-compare directory-compare-hint">Choose a level to compare players side by side.</p>
+      )}
       <DataTable
         rows={rows}
         columns={ranked}

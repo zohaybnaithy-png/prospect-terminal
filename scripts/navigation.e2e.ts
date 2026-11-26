@@ -143,8 +143,9 @@ interface Tracked {
 }
 
 /** A fresh browser context with its own client address (rate limits stay per test) and a request log. */
-async function open(): Promise<Tracked> {
+async function open({ javaScriptEnabled = true } = {}): Promise<Tracked> {
   const ctx = await browser!.newContext({
+    javaScriptEnabled,
     viewport: { width: 1366, height: 900 },
     extraHTTPHeaders: { "x-vercel-forwarded-for": `198.51.100.${ip++ % 250}` },
   });
@@ -570,6 +571,72 @@ describe("player comparison", () => {
     } finally {
       await t.ctx.close();
     }
+  });
+
+  test("directory → tick two players → Compare selected: client navigation; picks survive paging; max 4", async () => {
+    const t = await open();
+    try {
+      await t.page.goto(`${base}/players?level=aa&size=50`, { waitUntil: "networkidle" });
+      const boxes = t.page.locator("input.compare-pick");
+      const ids = [await boxes.nth(0).getAttribute("value"), await boxes.nth(1).getAttribute("value")];
+      await boxes.nth(0).check();
+      const button = t.page.getByRole("button", { name: "Compare selected" });
+      assert.equal(await button.isDisabled(), true, "one pick is not a comparison");
+      // A pick on page 2 joins the pick from page 1.
+      await clickTo(t, t.page.getByRole("link", { name: "Next →" }), (u) => u.searchParams.get("page") === "2");
+      const later = await boxes.nth(0).getAttribute("value");
+      await boxes.nth(0).check();
+      await boxes.nth(1).check();
+      await boxes.nth(2).check();
+      assert.equal(await boxes.nth(3).isDisabled(), true, `no more than 4 picks`);
+      await boxes.nth(2).uncheck();
+      assert.equal(await boxes.nth(3).isDisabled(), false, "unticking frees a place");
+      const page2 = [later, await boxes.nth(1).getAttribute("value")];
+      t.reset();
+      await clickTo(t, button, pathIs("/compare"));
+      assert.deepEqual(rscRequests(t).map((r) => r.path), ["/compare"], "client navigation, one RSC request");
+      const u = new URL(t.page.url());
+      assert.deepEqual([u.searchParams.get("level"), u.searchParams.get("ids")], ["aa", [ids[0], ...page2].join(",")]);
+      assert.equal(await t.page.locator("table.compare-table thead th.compare-player").count(), 3);
+      // Changing the role clears the picks: a comparison is one level and one role.
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      await boxes.nth(0).check();
+      await clickTo(t, t.page.getByRole("link", { name: "Pitchers" }).first(), (x) => x.searchParams.get("role") === "pitchers");
+      assert.equal(await t.page.locator("input.compare-pick:checked").count(), 0);
+      assert.ok(ids[1]);
+      assert.deepEqual([...t.errors], []);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("the directory compare form is a plain GET to /compare; /compare reads one ids field per ticked row", async () => {
+    // Form semantics from the server HTML (what a browser submits without the client handler).
+    const html = await (await fetch(`${base}/players?level=aa&role=pitchers`, { headers: { "x-vercel-forwarded-for": "198.51.100.252" } })).text();
+    const form = html.match(/<form[^>]*id="directory-compare"[^>]*>[\s\S]*?<\/form>/)?.[0] ?? "";
+    assert.match(form, /action="\/compare"/);
+    assert.match(form, /method="get"/);
+    assert.match(form, /<input type="hidden" name="level" value="aa"\/>/);
+    assert.match(form, /<input type="hidden" name="role" value="pitchers"\/>/);
+    const ids = [...html.matchAll(/<input[^>]*class="compare-pick"[^>]*>/g)].map((m) => {
+      assert.match(m[0], /form="directory-compare"/);
+      assert.match(m[0], /name="ids"/);
+      return m[0].match(/value="([^"]+)"/)![1];
+    });
+    assert.ok(ids.length >= 2, "pick boxes rendered");
+    // That submission, answered without JavaScript.
+    const t = await open({ javaScriptEnabled: false });
+    try {
+      const r = await t.page.goto(`${base}/compare?level=aa&role=pitchers&ids=${ids[0]}&ids=${ids[1]}`);
+      assert.equal(r?.status(), 200);
+      assert.equal(await t.page.locator("table.compare-table thead th.compare-player").count(), 2);
+    } finally {
+      await t.ctx.close();
+    }
+    // All levels: no pick column, a pointer to choose a level instead.
+    const all = await (await fetch(`${base}/players`, { headers: { "x-vercel-forwarded-for": "198.51.100.253" } })).text();
+    assert.ok(!all.includes("compare-pick"));
+    assert.match(all, /Choose a level to compare players side by side\./);
   });
 
   test("bad comparison input is a notice on a 200 page, never a 404", async () => {
