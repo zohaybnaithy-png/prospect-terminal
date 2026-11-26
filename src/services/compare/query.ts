@@ -13,9 +13,14 @@ export const COMPARE_MIN = 2;
 export const COMPARE_MAX = 4;
 
 type Params = Record<string, string | string[] | undefined>;
-const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 /** Caps the work done on a hostile `ids` value before validation. */
 const MAX_TOKENS = 32;
+const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
+/**
+ * `ids` as one comma list, also when repeated: the directory's no-JavaScript compare form submits
+ * one `ids` field per checked row (`ids=a&ids=b`). Other parameters keep taking a single value.
+ */
+const idList = (v: string | string[] | undefined) => (Array.isArray(v) ? v.slice(0, MAX_TOKENS).join(",") : one(v));
 
 export interface CompareQuery {
   /** A level from the registry, or null when missing / unknown (`levelProblem` says which). */
@@ -40,7 +45,7 @@ export function parseCompareQuery(params: Params): CompareQuery {
   if (levelProblem === "unknown") notices.push("That level is not recognised — choose a level below.");
   const role: Role = one(params.role) === "pitchers" ? "pitcher" : "hitter";
 
-  const tokens = splitIdList(one(params.ids), MAX_TOKENS);
+  const tokens = splitIdList(idList(params.ids), MAX_TOKENS);
   const addText = one(params.add).trim();
   if (addText) {
     const found = addText.match(PLAYER_UUID_IN_TEXT)?.[0];
@@ -67,7 +72,7 @@ export function compareHref({ level, ids, role = "hitter" }: { level: LevelId | 
 
 /** Players already chosen, from a page's own `ids` parameter (e.g. a profile opened from a comparison). */
 export function existingCompareIds(params: Params): string[] {
-  return parseCompareQuery({ ids: one(params.ids) }).ids;
+  return parseCompareQuery({ ids: idList(params.ids) }).ids;
 }
 
 /**

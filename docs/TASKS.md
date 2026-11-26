@@ -26,17 +26,17 @@ docs/PROJECT_STATUS.md for staging. Risk: low. Depends: —.
 them (build + grep), delete or move to test fixtures, keep the opt-in seed working or retire it explicitly.
 AC: no user-facing import of demo data; tests updated (not weakened); bundle unchanged or smaller. Risk: low.
 
-### T-104 Stale doc cleanup — `in-review` (branch `claude/t-104-stale-docs`; owner merges: touches CLAUDE.md)
+### T-104 Stale doc cleanup — `done` (PR #29, merged 2026-11-25)
 README "nothing is deployed", VERCEL.md header, REDESIGN/VISUAL-DESIGN (mark historical or fold into
 DECISIONS), Lightsail docs labelled "dormant alternative" consistently (DECISIONS D-003). AC: no doc
 contradicts PROJECT_STATUS.md. Risk: low.
 
-### T-105 Guarded staging merges — `in-review` (branch `claude/t-105-guarded-merge`; owner merges; enabling needs T-106 + one allow rule, AUTONOMOUS-WORKFLOW §6a)
+### T-105 Guarded staging merges — `done` (PR #30, merged 2026-11-25; enabled: T-106 rulesets in effect + the owner's allow rule)
 `npm run merge:staging -- --pr N --sha S`: runs the gate, merges only on `ready` into `staging` with the sha pinned, verifies staging
 afterwards and halts automatic merges on failure; 5/day limit; audit log. AC: unit tests for every refusal path;
 bypass routes denied in `.claude/settings.json` (tested). Enabling: owner (see AUTONOMOUS-WORKFLOW §6a).
 
-### T-106 Branch protection for `main` and `staging` — `needs-approval`
+### T-106 Branch protection for `main` and `staging` — `done` (owner, 2026-11-25: rulesets `staging` and `main`, active, no bypass)
 Require PRs and the CI checks listed in `scripts/staging-gate-support.ts`; no force pushes. GitHub setting: owner.
 
 ## Milestone 2 — Discovery and comparison
@@ -66,8 +66,13 @@ AC: data from the snapshot only; 404 for unknown; cacheable; tests. Risk: medium
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
 
-### T-206 Compare entry point from the directory — `ready`
+### T-206 Compare entry point from the directory — `in-review` (branch `claude/t-206-compare-entry`)
 A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
+Built: "Cmp" checkbox column (single level only; "All levels" shows a pointer instead) and a GET form to `/compare`
+(`/compare` now reads repeated `ids` fields as one list, still capped). With JS: client navigation, picks survive
+paging and filters, clear on level/role change, 5th box disabled. Without JS the form itself is a plain GET, but
+`/players` cannot be used without JS at all (see debt below), so "works without JS" is limited to the form semantics
+(tested from the server HTML) and `/compare` answering that submission.
 
 ## Milestone 3 — Performance and reliability
 
@@ -86,7 +91,7 @@ VERCEL.md Preview checks 3, 7, 8 via `vercel curl`/bypass: CDN cache headers hon
 ### T-304 Mobile + accessibility pass on the Preview — `ready`
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.
 
-### T-305 Momentum golden test platform note — `in-review` (branch `claude/t-305-golden-platform`: note in the test header and ANALYTICS.md; no assertion changed)
+### T-305 Momentum golden test platform note — `done` (PR #32, merged 2026-11-25; no assertion changed)
 The golden test fails on macOS arm64 (1 of 2638: `Math.tanh` last-bit difference) and passes on Linux/CI.
 Document Linux as the canonical platform in the test and ANALYTICS.md; optionally add `npm run test:golden`
 guidance. Never regenerate or loosen. Risk: low.
@@ -108,7 +113,12 @@ Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- year
 
 ## Known bugs / debt (tracked here, fix through tasks above)
 
-- Momentum golden test macOS-only failure (T-305).
+- Momentum golden test macOS-only failure (CI/Linux canonical, documented: T-305).
+- `/players` needs JavaScript: the directory is inside a streamed `<Suspense>` boundary, so without JS its HTML stays in
+  `<div hidden id="S:0">` and only "Loading players…" shows (the `<noscript>` Apply button can never be reached). Found in
+  T-206. Fix needs a decision: drop the boundary (loses the instant fallback on navigation) or render the table outside it.
+- `verify:preview --sha <short sha>` waits until `--wait-minutes` runs out (deployment lookup matches the full sha only);
+  pass the full 40-character sha. `merge:staging` already does. Fix: resolve or refuse short shas (trusted file: owner merges).
 - `scripts/site-data.test.ts` "watchdog: a connection that keeps trickling…" is timing-sensitive: failed once in a loaded local full `npm test` run (2026-11-25), passed 3/3 alone. Watch in CI; harden its timing margins if it recurs (never loosen what it asserts).
 - `playerLevels` full scan per profile (T-301).
 - Snapshot loaders have no ORDER BY (row order not deterministic; output equality relies on later sorting) — investigate under T-301.
