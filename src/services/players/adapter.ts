@@ -20,6 +20,7 @@ import {
 import { levelOrder, type LevelId } from "./levels";
 import { processWeakMap } from "@/lib/process-memo";
 import { precomputedPart } from "@/services/competition/views-store";
+import { ageVsLevel, levelAgeContext } from "./level-age";
 
 const memo = processWeakMap<AflSnapshot, Map<string, PlayerDirectoryRow[]>>("directory-rows");
 
@@ -44,6 +45,8 @@ export function levelDirectoryRows(
   const mWindow = momentumWindowFor(window);
   const asOf = aflAsOf(snapshot);
   const primary = new Map(snapshot.players.map((p) => [p.id, p.primaryPosition]));
+  const born = new Map(snapshot.players.map((p) => [p.id, p.birthDate]));
+  const ageCtx = levelAgeContext(snapshot);
   const lastDate = (id: string) => {
     const b = ctx.ds.batting.get(id)?.at(-1)?.date ?? null;
     const p = ctx.ds.pitching.get(id)?.at(-1)?.date ?? null;
@@ -67,6 +70,7 @@ export function levelDirectoryRows(
       position: r.position,
       positionGroup: positionGroup(primary.get(r.id) ?? ""),
       age: r.age,
+      ageVsLevel: ageVsLevel(born.get(r.id) ?? null, ageCtx),
       level,
       levels: [level],
       asOf,

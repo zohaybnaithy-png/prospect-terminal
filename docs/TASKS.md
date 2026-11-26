@@ -134,8 +134,11 @@ guidance. Never regenerate or loosen. Risk: low.
 
 ## Milestone 4 — Analytics depth
 
-### T-401 Age relative to level — `needs-approval`
+### T-401 Age relative to level — `in-review` (branch `claude/t-401-age-vs-level`; owner-approved 2026-11-26, D-020)
 Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- years vs level median".
+Built: `src/services/players/level-age.ts` (definition in D-020). Directory column "±Lvl" (sortable, key `agerel`) and a
+"vs <level> median" item on the profile; /data glossary entry. Tests: hand-computed decimal ages, median odd/even, the
+population rule (lines + birth date), the 20-player minimum, sign/rounding/formatting, directory rows and sort.
 ### T-402 Breakout detection methodology — `needs-approval` (proposal only)
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
 ### T-404 Similarity methodology — `needs-approval` (proposal only)

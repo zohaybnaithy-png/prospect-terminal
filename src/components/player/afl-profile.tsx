@@ -39,6 +39,7 @@ import { timelineViews } from "@/analytics/trend-views";
 import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
 import { COMPARE_MAX, addToCompareLink } from "@/services/compare/query";
 import { WatchlistStar } from "@/components/watchlist/star-button";
+import { ageVsLevel, formatAgeVsLevel, levelAgeContext } from "@/services/players/level-age";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
 const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
@@ -71,6 +72,8 @@ export function AflPlayerProfileView({
   const lvl = levelById(level);
   const { player, row, asOf } = profile;
   const season = profile.windows.season;
+  const ageCtx = levelAgeContext(snapshot);
+  const ageRel = ageVsLevel(player.birthDate, ageCtx);
   const hasBatting = season.batting !== null;
   const hasPitching = season.pitching !== null;
   // Lead with the player's primary role (pitchers first for P), matching the analytics view.
@@ -172,6 +175,14 @@ export function AflPlayerProfileView({
               <div title={asOfLabel ? `Age as of ${asOfLabel}` : undefined}>
                 <dt>Age</dt>
                 <dd>{row.age}</dd>
+              </div>
+            )}
+            {ageRel !== null && ageCtx.median !== null && (
+              <div
+                title={`Years older (+) or younger (−) than the median age (${ageCtx.median.toFixed(1)}) of the ${ageCtx.sample} players with a ${lvl.label} line this season`}
+              >
+                <dt>vs {lvl.short} median</dt>
+                <dd>{formatAgeVsLevel(ageRel)} yr</dd>
               </div>
             )}
             {(player.bats || player.throws) && (

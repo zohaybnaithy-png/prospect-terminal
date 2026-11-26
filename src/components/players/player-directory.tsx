@@ -51,6 +51,7 @@ import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { WatchlistStar } from "@/components/watchlist/star-button";
 import { COMPARE_MAX, COMPARE_MIN, compareHref } from "@/services/compare/query";
 import { orgHref } from "@/services/orgs/slug";
+import { formatAgeVsLevel } from "@/services/players/level-age-format";
 
 export type { DirectoryState } from "@/services/players/directory-query";
 
@@ -102,6 +103,13 @@ function contextColumns(role: Role, short: string): Column<Row>[] {
     momentumColumn(role, short),
     { key: "pos", label: "Pos", render: (r) => r.position },
     { key: "age", label: "Age", numeric: true, render: (r) => r.age ?? "—" },
+    {
+      key: "agerel",
+      label: "±Lvl",
+      title: "Age relative to the level: years older (+) or younger (−) than the median age of players with a 2026 line at the row's level",
+      numeric: true,
+      render: (r) => formatAgeVsLevel(r.ageVsLevel),
+    },
     {
       key: "lvl",
       label: "Lvl",

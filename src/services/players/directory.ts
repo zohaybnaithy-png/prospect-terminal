@@ -50,6 +50,8 @@ export interface PlayerDirectoryRow {
   position: string;
   positionGroup: PositionGroup;
   age: number | null;
+  /** Age minus the level's median age, years (T-401, ./level-age); null when unknown. */
+  ageVsLevel: number | null;
   /** Level the row's statistics and Momentum come from. */
   level: LevelId;
   /** Every level where the player has lines in the window (ladder order); includes `level`. */
