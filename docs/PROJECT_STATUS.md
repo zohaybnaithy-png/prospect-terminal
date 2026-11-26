@@ -3,7 +3,7 @@
 Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 
 ## Current state
-- `staging` = `5361a4f` (PRs #22–#34 merged: through T-104 docs, T-105 guarded merge, T-202 watchlist, T-206 directory compare picks, T-207 pages without JavaScript, T-305 golden note). `main` = `edc0084`, untouched.
+- `staging` = `04c446b` (PRs #22–#36 and #38 merged: through T-104 docs, T-105 guarded merge, T-202 watchlist, T-204 organization pages, T-205 typeahead, T-206 directory compare picks, T-207 pages without JavaScript, T-305 golden note). `main` = `edc0084`, untouched.
 - `staging` Preview `dpl_3awSNJ1y9h8bJEDoj9bpuZSMT5Nb` passes `verify:preview` 33/33: snapshot mode, views on,
   5 levels, snapshot `7efabf4a38dd`, Deployment Protection on. (Earlier staging builds used snapshot `3aa112749316`;
   the snapshot id follows the data the build exports.)
@@ -12,7 +12,7 @@ Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 - Data: 2026 regular season, all four MiLB levels + AFL, backfilled to the Neon test branch on 2026-11-07 (owner-approved); each Vercel build exports a read-only snapshot from the database configured for its environment (not changed by agents). Ingestion is otherwise off.
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
 - `npm run gate:staging` and `npm run merge:staging` are on `origin/staging`. Branch rulesets `staging` and `main` are in effect (PR required, 5 required checks, no force push or deletion, no bypass).
-- In review: T-304 accessibility pass (one axe finding fixed). T-204b merged by the owner (staging 8d4bcd5 verified 33/33).
+- In review: the open PRs against `staging` (`gh pr list`) and the `in-review` entries in docs/TASKS.md. (Not listed here: every PR edited this line and they conflicted.)
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).
@@ -34,6 +34,8 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 
 ## Recent work
 - 2026-11-26 (nightly): T-204 merged (#36). T-204b: `/orgs` and `/orgs/:slug` CDN-cached; `/organizations/*` now redirects to `/orgs`.
+- 2026-11-26 (nightly): T-303 Preview checks — CDN behaviour verified (checks 3, 8); check 7 (identity/limiter) inconclusive: bursts spread over instances, no 429. Results in VERCEL.md.
+- 2026-11-26 (nightly): T-301 measured instead of built — `playerLevels` is ~0.5–1 ms per profile, `playerProfile` ~10 ms (rebuilds every player's season row); re-scope proposed in TASKS.md (needs-approval).
 - 2026-11-26 (nightly): PR #38 (T-205 header typeahead: per-level name index with short keys + `/search/player` resolver; keyboard combobox) merged by `npm run merge:staging`, staging `04c446b` verified 33/33 (`dpl_HZUgATtvpzhhnK5yb27ApFfb14Ji`).
 - 2026-11-26: PR #34 (T-207) merged by `npm run merge:staging`, staging `5361a4f` verified 33/33 (`dpl_5io3Xh6kvvHVLarSAZebBqCphfGE`).
 - 2026-11-26: PR #33 (T-206) merged by `npm run merge:staging` (first guarded merge), staging `65d655e` verified 33/33 (`dpl_Ak79LHop6rWLkEjc44HnGvpabJ7X`). T-207 (owner-approved): pages work without JavaScript — streamed `<Suspense>` boundaries removed from `/`, `/players`, `/trends`, `/data` and the score strip.
@@ -58,4 +60,5 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 
 ## Approvals needed from the owner (one consolidated list)
 1. Merge PRs the gate marks `needs-human` (sensitive paths); routine `ready` PRs merge via `npm run merge:staging`.
-2. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).
+2. T-301 re-scope (measure `playerProfile` instead of `playerLevels`; see TASKS.md).
+3. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

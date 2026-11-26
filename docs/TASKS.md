@@ -74,7 +74,7 @@ retired `/organizations/:path*` redirect (next.config.ts) at `/orgs`. Risk: low.
 Built: both routes in `CDN_CACHED_ROUTES` (unit list + matcher cases incl. `/orgs/x/y` not cached); cdn-cache e2e covers `/orgs`,
 an org page (+ query), an unknown org's cached 404, and `/organizations/x` → 307 to `/orgs`, uncached. VERCEL.md route list updated.
 
-### T-205 Typeahead search — `in-review` (branch `claude/t-205-typeahead`)
+### T-205 Typeahead search — `done` (PR #38, guarded merge 2026-11-26, staging 04c446b verified 33/33)
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
 Built: `/search/names?level=` (route handler, CDN header on 200 only) serves `{v, level, teams, players: [key, name, pos, team]}`
@@ -103,17 +103,31 @@ place (no boundary; client navigations keep the old page and show the navigation
 
 ## Milestone 3 — Performance and reliability
 
-### T-301 Per-snapshot player index — `ready`
+### T-301 Per-snapshot player index — `needs-approval` (measured 2026-11-26: no gain worth the memory; re-scope proposed)
 Replace `playerLevels` full scans with an index built once per snapshot. AC: profile render time measured
 before/after (T-102 method), identical output (tests), memory not worse. Risk: medium.
+Measured (nightly 2026-11-26, local, `profilePages` from src/services/competition/profile.ts over five fictional full-size
+levels from `scaleSnapshot`, 46,530 lines per MiLB level, cold/warm ms per profile): `playerLevels` 0.8–1.2 / 0.6–0.7,
+`playerProfile` 9.3–12.2 / 9.2–11.3, `playerAnalyticsView` 13.4–18.4 / 7.1–9.5. Across 468 profiles `playerLevels` averaged
+0.52 ms. A per-snapshot index would save under 1 ms of a 0.2–1.1 s first render (T-102) and add per-player arrays to every
+cached level, which breaks "memory not worse", so it was not built.
+**Proposal (owner decision):** re-scope T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
+`buildPlayerRows(s, "season")` for every player on each profile render just to `find` one row: about 9–11 ms per profile.
+Reusing the memoized/precomputed season rows (`levelDirectoryRows`) or building only that player's row should remove most
+of it; AC as before (T-102 timings, identical output, memory not worse).
 
 ### T-302 DB integration suites in CI — `ready` (owner merges: touches .github)
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
 AC: suites run green in CI; no secrets needed. Risk: medium.
 
-### T-303 Verify Vercel CDN and identity behavior — `ready`
+### T-303 Verify Vercel CDN and identity behavior — `in-review` (branch `claude/t-303-vercel-checks`; check 7 inconclusive)
 VERCEL.md Preview checks 3, 7, 8 via `vercel curl`/bypass: CDN cache headers honored, forged
 `x-vercel-forwarded-for` overwritten, limiter on cache hits. AC: results recorded in VERCEL.md. Risk: low.
+Done 2026-11-26 (VERCEL.md "Results of checks 3, 7 and 8"): CDN HIT on second request for pages, profiles and 404s; never
+for RSC/`_rsc`; per-deployment scope; Deployment Protection before the cache. Check 7: 400 honest, 400 forged and 800 faster
+(64 concurrent) requests all 200 with no 429 — spread over many instances, so identity overwrite and limiter-on-cache-hits
+stay unanswered. **Owner decision:** accept the per-instance limiter on Vercel as documented, or add a diagnostic (limiter key /
+instance id header on a debug route) to answer it.
 
 ### T-304 Mobile + accessibility pass on the Preview — `in-review` (branch `claude/t-304-a11y`)
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.
