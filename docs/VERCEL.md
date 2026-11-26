@@ -342,6 +342,8 @@ and a redeploy.
   `Next-Router-Segment-Prefetch`, `Next-Router-State-Tree`, `Next-Url` or `Next-Action` header, and
   **no** `_rsc` parameter. Browsers keep Next.js's `Cache-Control: private, no-store`.
 - **`/trends/data`.** The route handler sets the same header itself, on its successful answer only.
+- **`/search/names`** (header typeahead index, T-205) does the same: header on its 200 only; 400/404/503 are not cached.
+  `/search/player` (the typeahead's key → profile redirect) is not cached.
 - **Proxy.** It marks every non-plain request `no-store` at runtime.
 - **Never cached:** `/health`, `/analytics/*`, retired-route redirects, everything not listed.
 

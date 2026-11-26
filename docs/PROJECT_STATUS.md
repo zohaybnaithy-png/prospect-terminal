@@ -34,6 +34,7 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 
 ## Recent work
 - 2026-11-26 (nightly): T-204 merged (#36). T-204b: `/orgs` and `/orgs/:slug` CDN-cached; `/organizations/*` now redirects to `/orgs`.
+- 2026-11-26 (nightly): PR #38 (T-205 header typeahead: per-level name index with short keys + `/search/player` resolver; keyboard combobox) merged by `npm run merge:staging`, staging `04c446b` verified 33/33 (`dpl_HZUgATtvpzhhnK5yb27ApFfb14Ji`).
 - 2026-11-26: PR #34 (T-207) merged by `npm run merge:staging`, staging `5361a4f` verified 33/33 (`dpl_5io3Xh6kvvHVLarSAZebBqCphfGE`).
 - 2026-11-26: PR #33 (T-206) merged by `npm run merge:staging` (first guarded merge), staging `65d655e` verified 33/33 (`dpl_Ak79LHop6rWLkEjc44HnGvpabJ7X`). T-207 (owner-approved): pages work without JavaScript — streamed `<Suspense>` boundaries removed from `/`, `/players`, `/trends`, `/data` and the score strip.
 - 2026-11-25: owner added the ruleset targets (T-106 done) and merged #32 (T-305); staging `33dfc88` verified 33/33 (`dpl_FfWMh46fHxLfufSPtK1iE2zZ5f1q`, snapshot `7efabf4a38dd`). T-206: "Cmp" pick column on `/players` (one level only) with a GET form to `/compare`; works without JavaScript; picks survive paging, clear on level/role change, max 4.
