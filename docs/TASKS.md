@@ -68,7 +68,7 @@ directory Org column) open it; team links still open the team-filtered directory
 "Orgs" in the header. **Not yet CDN-cached:** that needs `/orgs` and `/orgs/:slug` in `CDN_CACHED_ROUTES`
 (src/lib/cdn-cache.ts, owner-merged) — follow-up T-204b.
 
-### T-204b CDN-cache the organization pages — `in-review` (branch `claude/t-204b-cdn-org-pages`; owner merges: src/lib/cdn-cache.ts, next.config.ts)
+### T-204b CDN-cache the organization pages — `done` (PR #37, owner-merged 2026-11-26; staging 8d4bcd5 verified 33/33)
 Add `/orgs` and `/orgs/:slug` to `CDN_CACHED_ROUTES` (+ the vercel.test.ts list and the cdn-cache e2e), and point the
 retired `/organizations/:path*` redirect (next.config.ts) at `/orgs`. Risk: low. Depends: T-204.
 Built: both routes in `CDN_CACHED_ROUTES` (unit list + matcher cases incl. `/orgs/x/y` not cached); cdn-cache e2e covers `/orgs`,
@@ -115,8 +115,14 @@ AC: suites run green in CI; no secrets needed. Risk: medium.
 VERCEL.md Preview checks 3, 7, 8 via `vercel curl`/bypass: CDN cache headers honored, forged
 `x-vercel-forwarded-for` overwritten, limiter on cache hits. AC: results recorded in VERCEL.md. Risk: low.
 
-### T-304 Mobile + accessibility pass on the Preview — `ready`
+### T-304 Mobile + accessibility pass on the Preview — `in-review` (branch `claude/t-304-a11y`)
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.
+Done against a local production build of a fictional snapshot (the scan script cannot send the Preview bypass header;
+structure and CSS are identical): 32 pages/states × 390 and 1366 px, incl. /orgs, /orgs/[slug], /compare, /watchlist,
+/search/player. Found one rule, axe `link-in-text-block` (serious): team links in home trending rows and the "Players"
+link in the empty /compare steps were told apart by colour only → now underlined like other in-text links (regression
+test in accessibility.test.ts). Rescan: 0 violations. No horizontal page scroll at 390 or 768 px on 12 main pages.
+Follow-up (optional): let the scan send the bypass header to the Preview's own host so it can run on real data.
 
 ### T-305 Momentum golden test platform note — `done` (PR #32, merged 2026-11-25; no assertion changed)
 The golden test fails on macOS arm64 (1 of 2638: `Math.tanh` last-bit difference) and passes on Linux/CI.
