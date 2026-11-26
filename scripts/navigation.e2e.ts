@@ -651,6 +651,55 @@ describe("player comparison", () => {
   });
 });
 
+describe("without JavaScript", () => {
+  // Streamed <Suspense> content is parked in <div hidden id="S:…"> until a script moves it, so with
+  // JavaScript off those pages showed only "Loading…". Pages render in place instead.
+  test("every main page shows its content, with no hidden streamed blocks", async () => {
+    const t = await open({ javaScriptEnabled: false });
+    try {
+      const pages: [string, string][] = [
+        ["/", "main"],
+        ["/players?level=aa", "table.data-table tbody tr"],
+        ["/trends?level=aa", "main h2"],
+        ["/data", "#coverage"],
+        ["/compare", "main"],
+      ];
+      for (const [url, selector] of pages) {
+        const r = await t.page.goto(`${base}${url}`);
+        assert.equal(r?.status(), 200, url);
+        const html = await t.page.content();
+        assert.doesNotMatch(html, /<div hidden="?"? id="S:/, `${url}: streamed block left hidden`);
+        assert.doesNotMatch(html, /Loading (players|trends|prospect data|coverage|scores)…/, `${url}: loading placeholder`);
+        assert.ok(await t.page.locator(selector).first().isVisible(), `${url}: ${selector} visible`);
+      }
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("directory search (Apply) and compare picks work with real clicks", async () => {
+    const t = await open({ javaScriptEnabled: false });
+    try {
+      await t.page.goto(`${base}/players?level=aa`);
+      const first = (await t.page.locator("a.player-name").first().textContent())!.trim();
+      await t.page.fill(".directory-search input[name=q]", first);
+      await Promise.all([t.page.waitForURL((u) => u.searchParams.get("q") === first), t.page.getByRole("button", { name: "Apply" }).click()]);
+      assert.equal((await t.page.locator("a.player-name").first().textContent())!.trim(), first);
+      await t.page.goto(`${base}/players?level=aa&role=pitchers`);
+      const boxes = t.page.locator("input.compare-pick");
+      const ids = [await boxes.nth(0).getAttribute("value"), await boxes.nth(1).getAttribute("value")];
+      await boxes.nth(0).check();
+      await boxes.nth(1).check();
+      await Promise.all([t.page.waitForURL((u) => u.pathname === "/compare"), t.page.getByRole("button", { name: "Compare selected" }).click()]);
+      const u = new URL(t.page.url());
+      assert.deepEqual([u.searchParams.get("level"), u.searchParams.get("role"), u.searchParams.getAll("ids")], ["aa", "pitchers", ids]);
+      assert.equal(await t.page.locator("table.compare-table thead th.compare-player").count(), 2);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+});
+
 describe("watchlist (per browser)", () => {
   test("star on a directory row → /watchlist lists the player → unstar → empty; profile star persists", async () => {
     const t = await open();

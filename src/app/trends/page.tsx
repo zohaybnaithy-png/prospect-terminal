@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "@/components/ui/app-link";
-import { Suspense } from "react";
 import { PageHeading } from "@/components/ui/primitives";
 import { getCompetitionData } from "@/services/competition";
 import { levelFallback, selectLevel, unavailableLevels } from "@/services/competition/model";
@@ -31,15 +30,8 @@ export default function TrendsPage({
         title="Prospect trends"
         description="Which prospects are changing, how they are changing, and whether the change is meaningful — one level at a time. Momentum compares each player's recent games with their own earlier games at the same level; it measures change, not overall quality."
       />
-      <Suspense
-        fallback={
-          <p className="empty-state" aria-busy="true">
-            Loading trends…
-          </p>
-        }
-      >
-        <Trends searchParams={searchParams} />
-      </Suspense>
+      {/* No <Suspense>: streamed content stays hidden without JavaScript (see src/app/players/page.tsx). */}
+      <Trends searchParams={searchParams} />
     </>
   );
 }

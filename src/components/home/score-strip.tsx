@@ -38,14 +38,6 @@ function StripShell({
   );
 }
 
-export function ScoreStripFallback() {
-  return (
-    <StripShell detail="Loading scores…">
-      <div className="score-games" aria-busy="true" />
-    </StripShell>
-  );
-}
-
 /**
  * Real games from the database for the level with the most recent completed game (the same
  * default level as the homepage): its latest completed date plus its next scheduled date.

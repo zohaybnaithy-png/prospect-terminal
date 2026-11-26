@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "@/components/ui/app-link";
-import { Suspense } from "react";
-import { ScoreStrip, ScoreStripFallback } from "@/components/home/score-strip";
+import { ScoreStrip } from "@/components/home/score-strip";
 import { Header } from "@/components/layout/header";
 import { metadataBase } from "@/lib/site-url";
 import { indexingEnabled } from "@/lib/indexing";
@@ -33,9 +32,9 @@ export default function RootLayout({
           Skip to content
         </a>
         <Header />
-        <Suspense fallback={<ScoreStripFallback />}>
-          <ScoreStrip />
-        </Suspense>
+        {/* Rendered in place, not behind <Suspense>: on dynamic pages a streamed strip would stay on
+            "Loading scores…" without JavaScript (see src/app/players/page.tsx). */}
+        <ScoreStrip />
         <main id="main" className="main-shell">
           {children}
         </main>
