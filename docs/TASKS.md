@@ -48,7 +48,7 @@ compare" from profiles and directory rows; invalid/mixed ids give a clear notice
 AC: server-rendered, works without JS, CDN-cacheable like /players, a11y test passes, unit tests for the
 query parsing and view model, nav e2e covers add → compare. No cross-level blending. Risk: low/medium.
 
-### T-202 Watchlist (per browser) — `in-review` (branch `claude/t-202-watchlist`; unit + a11y tests, nav e2e star → list → unstar and storage-blocked pass locally; Preview not yet verified)
+### T-202 Watchlist (per browser) — `done` (PR #31, merged 2026-11-25)
 Star button on profiles/directory rows, `/watchlist` page listing starred players with latest level line and
 Momentum. localStorage only (wrapped in try/catch, empty-state works), no server state, no tracking.
 AC: works with storage blocked (graceful), a11y passes, e2e covers star → list → unstar. Risk: low. Depends: —.
@@ -86,7 +86,7 @@ VERCEL.md Preview checks 3, 7, 8 via `vercel curl`/bypass: CDN cache headers hon
 ### T-304 Mobile + accessibility pass on the Preview — `ready`
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.
 
-### T-305 Momentum golden test platform note — `ready`
+### T-305 Momentum golden test platform note — `in-review` (branch `claude/t-305-golden-platform`: note in the test header and ANALYTICS.md; no assertion changed)
 The golden test fails on macOS arm64 (1 of 2638: `Math.tanh` last-bit difference) and passes on Linux/CI.
 Document Linux as the canonical platform in the test and ANALYTICS.md; optionally add `npm run test:golden`
 guidance. Never regenerate or loosen. Risk: low.

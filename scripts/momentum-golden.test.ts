@@ -8,6 +8,13 @@
  *   MOMENTUM_GOLDEN_UPDATE=1 node --import tsx --test scripts/momentum-golden.test.ts
  *
  * On a mismatch the test lists the first differing entries and prints their current values.
+ *
+ * Canonical platform: Linux x64 (GitHub Actions CI, Node 22), where the file was generated and where it must
+ * pass. On macOS arm64 exactly one of the 2638 outputs differs, by the last bit of a `Math.tanh` result
+ * (V8 uses the platform's libm there), so a local `npm test` on a Mac reports this one failure. That is a
+ * known platform difference (docs/DECISIONS.md D-015, docs/ANALYTICS.md), not a regression: judge this test by
+ * CI, and never regenerate the file or loosen the comparison to make a Mac pass. Any OTHER mismatch, or any
+ * mismatch on Linux, is a real change in Momentum output.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
