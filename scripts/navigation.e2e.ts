@@ -747,6 +747,75 @@ describe("organization pages", () => {
   });
 });
 
+describe("header typeahead (T-205)", () => {
+  test("keyboard: type → one index request, none per keystroke → ArrowDown + Enter opens the profile", async () => {
+    const t = await open();
+    try {
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      const name = (await t.page.locator("a.player-name").first().textContent())!.trim();
+      const input = t.page.getByRole("combobox", { name: "Search players, teams or organizations" });
+      t.reset();
+      await input.focus();
+      await t.page.waitForLoadState("networkidle");
+      await input.pressSequentially(name.slice(0, 6), { delay: 30 });
+      const list = t.page.getByRole("listbox", { name: "Player suggestions" });
+      await list.waitFor();
+      const index = t.requests.filter((r) => r.path === "/search/names");
+      assert.deepEqual(index.map((r) => r.search), ["?level=aa"], seen(t).join(", "));
+      assert.equal(t.requests.length, 1, `only the index: ${seen(t).join(", ")}`);
+      assert.equal(await input.getAttribute("aria-expanded"), "true");
+      const options = list.getByRole("option");
+      assert.ok((await options.count()) >= 1);
+      assert.ok(((await options.first().textContent()) ?? "").toLowerCase().includes(name.slice(0, 6).toLowerCase()), "first suggestion matches the typed text");
+      await input.press("ArrowDown");
+      const activeId = await input.getAttribute("aria-activedescendant");
+      assert.ok(activeId, "the first option is active");
+      assert.equal(await t.page.locator(`[id="${activeId}"]`).getAttribute("aria-selected"), "true");
+      const picked = (await t.page.locator(`[id="${activeId}"] .typeahead-name`).textContent())!.trim();
+      await input.press("Enter");
+      await t.page.waitForURL((u) => u.pathname.startsWith("/players/") && u.searchParams.get("level") === "aa");
+      await t.page.waitForLoadState("networkidle");
+      assert.match((await t.page.locator("main h1").first().textContent()) ?? "", new RegExp(picked));
+      // Escape closes the list; Enter with nothing highlighted still submits the plain search.
+      await input.fill("zz");
+      await input.press("Escape");
+      assert.equal(await input.getAttribute("aria-expanded"), "false");
+      await input.fill(name.slice(0, 4));
+      await input.press("Escape");
+      await input.press("Enter");
+      await t.page.waitForURL((u) => u.pathname === "/players" && u.searchParams.get("q") === name.slice(0, 4));
+      assert.deepEqual(t.errors, []);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("the index is CDN-cacheable JSON; a stale or unknown key falls back to the directory search", async () => {
+    const r = await fetch(`${base}/search/names?level=aa`, { headers: { "x-vercel-forwarded-for": `198.51.100.${ip++ % 250}` } });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("vercel-cdn-cache-control"), CDN_CACHE_VALUE);
+    const body = await r.text();
+    const index = JSON.parse(body);
+    assert.equal(index.v, 1);
+    assert.equal(index.level, "aa");
+    assert.ok(index.players.length > 0);
+    assert.ok(body.length < 50_000, `${body.length} bytes`);
+    const bad = await fetch(`${base}/search/names?level=nope`, { headers: { "x-vercel-forwarded-for": `198.51.100.${ip++ % 250}` } });
+    assert.equal(bad.status, 400);
+    assert.equal(bad.headers.get("vercel-cdn-cache-control"), null);
+    const go = (q: string) => fetch(`${base}/search/player?${q}`, { redirect: "manual", headers: { "x-vercel-forwarded-for": `198.51.100.${ip++ % 250}` } });
+    const [key, name] = index.players[0];
+    const hit = await go(new URLSearchParams({ level: "aa", id: key, q: name }).toString());
+    assert.equal(hit.status, 307);
+    assert.match(hit.headers.get("location") ?? "", /^\/players\/[0-9a-f-]{36}\?level=aa$/);
+    const miss = await go(new URLSearchParams({ level: "aa", id: "ffffffffffff", q: name }).toString());
+    assert.equal(miss.status, 307);
+    assert.equal(miss.headers.get("location"), `/players?${new URLSearchParams({ level: "aa", q: name })}`);
+    const junk = await go("level=nope&id=x");
+    assert.equal(junk.headers.get("location"), "/players");
+  });
+});
+
 describe("watchlist (per browser)", () => {
   test("star on a directory row → /watchlist lists the player → unstar → empty; profile star persists", async () => {
     const t = await open();
