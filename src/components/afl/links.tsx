@@ -1,11 +1,12 @@
 import Link from "@/components/ui/app-link";
 import type { AflOrganization, AflTeam } from "@/services/afl/types";
 import type { LevelId } from "@/services/players/levels";
+import { orgHref } from "@/services/orgs/slug";
 
 /**
- * Player-first: team and organization context links open the filtered player directory. A team
- * belongs to one level, so its link scopes the directory to that level when known; an
- * organization spans levels, so its link opens all levels.
+ * Player-first context links. A team belongs to one level, so its link opens the player directory
+ * filtered to that team (and level when known). An organization spans levels, so its link opens
+ * the organization page (T-204): its players at every level, by affiliate.
  */
 export const AflTeamLink = ({
   team,
@@ -32,8 +33,8 @@ export const AflOrganizationLink = ({
   full?: boolean;
 }) => (
   <Link
-    href={`/players?org=${organization.id}`}
-    title={`${organization.name} — players from this organization at every level`}
+    href={orgHref(organization)}
+    title={`${organization.name} — players at every level, by affiliate`}
   >
     {full ? organization.name : organization.abbreviation}
   </Link>

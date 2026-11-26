@@ -700,6 +700,53 @@ describe("without JavaScript", () => {
   });
 });
 
+describe("organization pages", () => {
+  test("directory Org link → organization page (one RSC request) → affiliate player → profile; /orgs lists it", async () => {
+    const t = await open();
+    try {
+      await t.page.goto(`${base}/players?level=aa`, { waitUntil: "networkidle" });
+      const orgLink = t.page.locator("table.data-table tbody a[href^='/orgs/']").first();
+      const href = (await orgLink.getAttribute("href"))!;
+      const abbr = (await orgLink.textContent())!.trim();
+      t.reset();
+      await clickTo(t, orgLink, pathIs(href));
+      assert.equal(rscRequests(t).length, 1, seen(t).join(", "));
+      assert.match((await t.page.locator("main .eyebrow").first().textContent()) ?? "", new RegExp(`Organization · ${abbr}`));
+      assert.ok(await t.page.locator("main h2#level-aa").isVisible(), "Double-A section");
+      const sections = await t.page.locator("main section.org-affiliate").count();
+      assert.ok(sections >= 1, "at least one affiliate");
+      const player = t.page.locator("section.org-affiliate a.player-name").first();
+      const name = (await player.textContent())!.trim();
+      await clickTo(t, player, (u) => u.pathname.startsWith("/players/") && u.searchParams.get("level") !== null);
+      assert.match((await t.page.locator("main h1").first().textContent()) ?? "", new RegExp(name));
+      await t.page.goto(`${base}/orgs`, { waitUntil: "networkidle" });
+      assert.ok((await t.page.locator(`main a[href='${href}']`).count()) === 1, "/orgs links the organization");
+      assert.deepEqual(t.errors, []);
+    } finally {
+      await t.ctx.close();
+    }
+  });
+
+  test("unknown organizations answer HTTP 404; pages render without JavaScript", async () => {
+    const t = await open({ javaScriptEnabled: false });
+    try {
+      for (const slug of ["zzz-not-an-org", "00000000-0000-4000-8000-000000000000"]) {
+        const r = await t.page.goto(`${base}/orgs/${slug}`);
+        assert.equal(r?.status(), 404, slug);
+      }
+      const r = await t.page.goto(`${base}/orgs`);
+      assert.equal(r?.status(), 200);
+      const href = (await t.page.locator("main table a[href^='/orgs/']").first().getAttribute("href"))!;
+      const page = await t.page.goto(`${base}${href}`);
+      assert.equal(page?.status(), 200, href);
+      assert.doesNotMatch(await t.page.content(), /<div hidden="?"? id="S:/);
+      assert.ok(await t.page.locator("section.org-affiliate table.data-table tbody tr").first().isVisible());
+    } finally {
+      await t.ctx.close();
+    }
+  });
+});
+
 describe("watchlist (per browser)", () => {
   test("star on a directory row → /watchlist lists the player → unstar → empty; profile star persists", async () => {
     const t = await open();

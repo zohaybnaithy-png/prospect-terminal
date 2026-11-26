@@ -18,6 +18,7 @@ import { MapPointList } from "../src/components/analytics/performance-map";
 import { CompareTable } from "../src/components/compare/compare-table";
 import { WatchlistStar } from "../src/components/watchlist/star-button";
 import { WatchlistTable } from "../src/components/watchlist/watchlist-table";
+import { OrgLevels } from "../src/components/orgs/org-tables";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const CSS = readFileSync(join(ROOT, "src/app/globals.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -189,6 +190,27 @@ describe("player comparison (/compare)", () => {
     assert.match(html, /<th scope="row">OPS<\/th>/);
     assert.match(html, /—<span class="sr-only"> no line<\/span>/, "a missing value is announced, not silent");
     assert.match(html, /Remove<span class="sr-only"> Second Fixture from the comparison<\/span>/);
+  });
+});
+
+describe("organization pages (/orgs/[slug])", () => {
+  test("level and affiliate jump links have a 24px target (WCAG 2.5.8)", () => {
+    const body = CSS.slice(CSS.indexOf(".org-jump a {")).split("}")[0];
+    assert.match(body, /min-height:\s*24px/);
+    assert.match(body, /min-width:\s*24px/);
+  });
+
+  test("affiliate tables are named regions under level (h2) and affiliate (h3) headings", () => {
+    const team = { id: "00000000-0000-4000-8000-000000000009", name: "Fixture Club", abbreviation: "FXC" };
+    const html = renderToStaticMarkup(
+      createElement(OrgLevels, {
+        momentumShort: "14D",
+        groups: [{ level: "aa", affiliates: [{ team, hitters: [], pitchers: [] }] }],
+      }),
+    );
+    assert.match(html, /<section class="org-level" aria-labelledby="level-aa"><h2 id="level-aa">Double-A<\/h2>/);
+    assert.match(html, /<section class="org-affiliate" id="team-[^"]+" aria-labelledby="team-[^"]+-h">/);
+    assert.match(html, /<h3 id="team-[^"]+-h">Fixture Club/);
   });
 });
 
