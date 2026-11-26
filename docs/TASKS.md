@@ -103,9 +103,18 @@ place (no boundary; client navigations keep the old page and show the navigation
 
 ## Milestone 3 — Performance and reliability
 
-### T-301 Per-snapshot player index — `ready`
+### T-301 Per-snapshot player index — `needs-approval` (measured 2026-11-26: no gain worth the memory; re-scope proposed)
 Replace `playerLevels` full scans with an index built once per snapshot. AC: profile render time measured
 before/after (T-102 method), identical output (tests), memory not worse. Risk: medium.
+Measured (nightly 2026-11-26, local, `profilePages` from src/services/competition/profile.ts over five fictional full-size
+levels from `scaleSnapshot`, 46,530 lines per MiLB level, cold/warm ms per profile): `playerLevels` 0.8–1.2 / 0.6–0.7,
+`playerProfile` 9.3–12.2 / 9.2–11.3, `playerAnalyticsView` 13.4–18.4 / 7.1–9.5. Across 468 profiles `playerLevels` averaged
+0.52 ms. A per-snapshot index would save under 1 ms of a 0.2–1.1 s first render (T-102) and add per-player arrays to every
+cached level, which breaks "memory not worse", so it was not built.
+**Proposal (owner decision):** re-scope T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
+`buildPlayerRows(s, "season")` for every player on each profile render just to `find` one row: about 9–11 ms per profile.
+Reusing the memoized/precomputed season rows (`levelDirectoryRows`) or building only that player's row should remove most
+of it; AC as before (T-102 timings, identical output, memory not worse).
 
 ### T-302 DB integration suites in CI — `ready` (owner merges: touches .github)
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
