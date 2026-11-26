@@ -353,3 +353,24 @@ test("database access stays server-side and read-only", () => {
   assert.doesNotMatch(queries, /\.(insert|update|delete)\(/);
   assert.doesNotMatch(queries, /externalIds\s*:/);
 });
+
+// T-301: playerProfile builds only the profiled player's season row instead of every player's.
+// Oracle: the row must equal buildPlayerRows(s, "season")'s row for that player, for every player,
+// including roster-less players (team from game lines), tied roster observations and incomplete games.
+test("playerProfile's row equals buildPlayerRows' season row for every player (T-301)", async () => {
+  const { scaleSnapshot } = await import("./milb-scale-support");
+  const { trajectorySnapshot } = await import("./analytics-test-support");
+  const base = snapshot();
+  const noStints: AflSnapshot = { ...base, rosterStints: [] };
+  const tiedStints: AflSnapshot = {
+    ...base,
+    rosterStints: [...base.rosterStints, ...base.rosterStints.map((r) => ({ ...r, teamId: base.teams.at(-1)!.id }))],
+  };
+  const scale = scaleSnapshot({ ns: 6, level: "aa", teams: 4, days: 20, seed: 6 });
+  const partial: AflSnapshot = { ...scale, rosterStints: scale.rosterStints.filter((_, i) => i % 3 !== 0) };
+  for (const [name, s] of Object.entries({ base, noStints, tiedStints, trajectory: trajectorySnapshot(), scale, partial })) {
+    const expected = new Map(buildPlayerRows(s, "season").map((r) => [r.id, r]));
+    assert.ok(expected.size > 0, name);
+    for (const p of s.players) assert.deepEqual(playerProfile(s, p.id)!.row, expected.get(p.id), `${name}: ${p.name}`);
+  }
+});

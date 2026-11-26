@@ -12,7 +12,7 @@ Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 - Data: 2026 regular season, all four MiLB levels + AFL, backfilled to the Neon test branch on 2026-11-07 (owner-approved); each Vercel build exports a read-only snapshot from the database configured for its environment (not changed by agents). Ingestion is otherwise off.
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
 - `npm run gate:staging` and `npm run merge:staging` are on `origin/staging`. Branch rulesets `staging` and `main` are in effect (PR required, 5 required checks, no force push or deletion, no bypass).
-- In review: T-204b CDN caching of the organization pages (owner merges: touches cdn-cache.ts/next.config.ts).
+- In review: PR #40 T-303 (check 7 accepted as is, D-019), PR #41 T-304, PR #42 T-302 (owner merges), T-301 profile row (D-018).
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).

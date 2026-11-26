@@ -103,7 +103,7 @@ place (no boundary; client navigations keep the old page and show the navigation
 
 ## Milestone 3 — Performance and reliability
 
-### T-301 Per-snapshot player index — `needs-approval` (measured 2026-11-26: no gain worth the memory; re-scope proposed)
+### T-301 Profile season row without building every row — `in-review` (branch `claude/t-301-profile-rows`; re-scope approved by the owner 2026-11-26, D-018)
 Replace `playerLevels` full scans with an index built once per snapshot. AC: profile render time measured
 before/after (T-102 method), identical output (tests), memory not worse. Risk: medium.
 Measured (nightly 2026-11-26, local, `profilePages` from src/services/competition/profile.ts over five fictional full-size
@@ -111,10 +111,14 @@ levels from `scaleSnapshot`, 46,530 lines per MiLB level, cold/warm ms per profi
 `playerProfile` 9.3–12.2 / 9.2–11.3, `playerAnalyticsView` 13.4–18.4 / 7.1–9.5. Across 468 profiles `playerLevels` averaged
 0.52 ms. A per-snapshot index would save under 1 ms of a 0.2–1.1 s first render (T-102) and add per-player arrays to every
 cached level, which breaks "memory not worse", so it was not built.
-**Proposal (owner decision):** re-scope T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
+**Approved re-scope (D-018):** T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
 `buildPlayerRows(s, "season")` for every player on each profile render just to `find` one row: about 9–11 ms per profile.
 Reusing the memoized/precomputed season rows (`levelDirectoryRows`) or building only that player's row should remove most
 of it; AC as before (T-102 timings, identical output, memory not worse).
+Built: `playerProfile` builds only that player's row (context index over the player's own stints and lines; season
+aggregates reused from the profile's window pass). Same full-size fixture level (46,530 lines, 112 profiles): **10.24 →
+1.20 ms per profile**. Identical output: new test compares the row with `buildPlayerRows(s, "season")` for every player in six
+snapshots (roster, game-lines-only and no-team players; tied roster rows). No new caches, so memory is not worse.
 
 ### T-302 DB integration suites in CI — `ready` (owner merges: touches .github)
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
