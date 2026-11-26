@@ -5,6 +5,7 @@ import Image from "next/image";
 import prospectLogo from "../../../prospect-terminal-logo.png";
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
+import { PlayerTypeahead } from "./player-typeahead";
 const links = [
   ["Home", "/"],
   ["Players", "/players"],
@@ -32,11 +33,7 @@ export function Header() {
         </Link>
         <form action="/players" className="global-search" role="search">
           <Search size={16} aria-hidden="true" />
-          <input
-            name="q"
-            aria-label="Search players, teams or organizations"
-            placeholder="Search players, teams, orgs"
-          />
+          <PlayerTypeahead />
           <button type="submit" aria-label="Submit player search">
             Search
           </button>
