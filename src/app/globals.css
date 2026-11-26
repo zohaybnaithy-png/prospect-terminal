@@ -2743,3 +2743,47 @@ ul.compare-notices {
 .watch-missing .watch-star {
   margin: -4px 0;
 }
+
+/* Organization pages (T-204) */
+.org-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+.org-jump > span {
+  display: inline-flex;
+  gap: 6px;
+}
+.org-jump a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  min-width: 24px;
+}
+.org-jump > span > a:first-child {
+  font-weight: 600;
+}
+.org-level {
+  margin-bottom: 22px;
+}
+.org-level > h2 {
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.org-affiliate {
+  margin-bottom: 16px;
+}
+.org-affiliate .section-heading {
+  margin-bottom: 6px;
+}
+.org-affiliate h3 {
+  font-size: 13px;
+  margin: 0;
+}
+.org-affiliate .data-table + .data-table,
+.org-affiliate .scroll-region + .scroll-region {
+  margin-top: 8px;
+}

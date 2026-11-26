@@ -50,6 +50,7 @@ import { PlayerLink } from "@/components/ui/entity-links";
 import { MomentumValue } from "@/components/analytics/momentum-parts";
 import { WatchlistStar } from "@/components/watchlist/star-button";
 import { COMPARE_MAX, COMPARE_MIN, compareHref } from "@/services/compare/query";
+import { orgHref } from "@/services/orgs/slug";
 
 export type { DirectoryState } from "@/services/players/directory-query";
 
@@ -137,7 +138,9 @@ function contextColumns(role: Role, short: string): Column<Row>[] {
       title: "MLB parent organization from the latest source roster observation",
       render: (r) =>
         r.organization ? (
-          <span title={r.organization.name}>{r.organization.abbreviation}</span>
+          <Link href={orgHref(r.organization)} title={`${r.organization.name}: players at every level, by affiliate`}>
+            {r.organization.abbreviation}
+          </Link>
         ) : (
           "—"
         ),
