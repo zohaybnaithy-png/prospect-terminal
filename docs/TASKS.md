@@ -66,13 +66,13 @@ AC: data from the snapshot only; 404 for unknown; cacheable; tests. Risk: medium
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard
 accessible combobox, no request per keystroke beyond the index. Risk: medium.
 
-### T-206 Compare entry point from the directory — `in-review` (branch `claude/t-206-compare-entry`)
+### T-206 Compare entry point from the directory — `done` (PR #33, guarded merge 2026-11-26, staging 65d655e verified 33/33)
 A "compare" checkbox/link per row on /players building a /compare URL for the current level. AC: works without JS (form GET), max 4, e2e. Risk: low.
 Built: "Cmp" checkbox column (single level only; "All levels" shows a pointer instead) and a GET form to `/compare`
 (`/compare` now reads repeated `ids` fields as one list, still capped). With JS: client navigation, picks survive
 paging and filters, clear on level/role change, 5th box disabled. Without JS: plain GET form, fully usable since T-207.
 
-### T-207 Pages work without JavaScript — `in-review` (branch `claude/t-207-no-js-directory`; owner-approved 2026-11-26)
+### T-207 Pages work without JavaScript — `done` (PR #34, guarded merge 2026-11-26, staging 5361a4f verified 33/33; owner-approved)
 `/`, `/players`, `/trends`, `/data` and the header score strip rendered behind streamed `<Suspense>` boundaries, so with
 JavaScript off their content stayed in `<div hidden id="S:…">` and only "Loading…" showed. Found in T-206. Fix: render in
 place (no boundary; client navigations keep the old page and show the navigation hint). AC: e2e with JavaScript disabled
