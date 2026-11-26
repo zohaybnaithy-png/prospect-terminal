@@ -12,7 +12,7 @@ Last updated: 2026-11-25. Read this first, then docs/TASKS.md.
 - Data: 2026 regular season, all four MiLB levels + AFL, backfilled to the Neon test branch on 2026-11-07 (owner-approved); each Vercel build exports a read-only snapshot from the database configured for its environment (not changed by agents). Ingestion is otherwise off.
 - Tooling: `gh` and `vercel` in `~/.local/bin`, both logged in (see docs/AUTONOMOUS-WORKFLOW.md §2 to recover).
 - `npm run gate:staging` and `npm run merge:staging` are on `origin/staging`. Branch rulesets `staging` and `main` are in effect (PR required, 5 required checks, no force push or deletion, no bypass).
-- In review: T-204 organization pages (PR pending).
+- In review: T-204b CDN caching of the organization pages (owner merges: touches cdn-cache.ts/next.config.ts).
 
 ## Performance baseline (T-102, staging `dpl_3aC7fLEKfwyF3kgo1Q27hVteADww`, 2026-11-25)
 Total ms from this Mac to the Preview, via `verify:preview --timings` (first request / warm median of 3).
@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-26 (nightly): T-204 merged (#36). T-204b: `/orgs` and `/orgs/:slug` CDN-cached; `/organizations/*` now redirects to `/orgs`.
 - 2026-11-26: PR #34 (T-207) merged by `npm run merge:staging`, staging `5361a4f` verified 33/33 (`dpl_5io3Xh6kvvHVLarSAZebBqCphfGE`).
 - 2026-11-26: PR #33 (T-206) merged by `npm run merge:staging` (first guarded merge), staging `65d655e` verified 33/33 (`dpl_Ak79LHop6rWLkEjc44HnGvpabJ7X`). T-207 (owner-approved): pages work without JavaScript — streamed `<Suspense>` boundaries removed from `/`, `/players`, `/trends`, `/data` and the score strip.
 - 2026-11-25: owner added the ruleset targets (T-106 done) and merged #32 (T-305); staging `33dfc88` verified 33/33 (`dpl_FfWMh46fHxLfufSPtK1iE2zZ5f1q`, snapshot `7efabf4a38dd`). T-206: "Cmp" pick column on `/players` (one level only) with a GET form to `/compare`; works without JavaScript; picks survive paging, clear on level/role change, max 4.

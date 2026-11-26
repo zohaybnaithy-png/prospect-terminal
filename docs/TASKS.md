@@ -58,7 +58,7 @@ ISO and BABIP columns (hitters), age filter (min/max), stat-threshold filter (e.
 sortable columns, preset column groups. AC: URL state round-trips; server-side filtering; tests for parsing,
 bounds and formulas (hand-computed fixtures); BABIP = (H−HR)/(AB−SO−HR+SF). Risk: low.
 
-### T-204 Organization and team pages — `in-review` (branch `claude/t-204-org-pages`)
+### T-204 Organization and team pages — `done` (PR #36, guarded merge 2026-11-26; CDN caching: T-204b)
 `/orgs/[slug]` (players by affiliate and level) and team context; replace the filtered-directory links.
 AC: data from the snapshot only; 404 for unknown; cacheable; tests. Risk: medium. Depends: —.
 Built: `/orgs` (index with players per level) and `/orgs/[slug]` (abbreviation slug or UUID; same-slug clash lists
@@ -68,9 +68,11 @@ directory Org column) open it; team links still open the team-filtered directory
 "Orgs" in the header. **Not yet CDN-cached:** that needs `/orgs` and `/orgs/:slug` in `CDN_CACHED_ROUTES`
 (src/lib/cdn-cache.ts, owner-merged) — follow-up T-204b.
 
-### T-204b CDN-cache the organization pages — `ready` (owner merges: src/lib/cdn-cache.ts)
+### T-204b CDN-cache the organization pages — `in-review` (branch `claude/t-204b-cdn-org-pages`; owner merges: src/lib/cdn-cache.ts, next.config.ts)
 Add `/orgs` and `/orgs/:slug` to `CDN_CACHED_ROUTES` (+ the vercel.test.ts list and the cdn-cache e2e), and point the
 retired `/organizations/:path*` redirect (next.config.ts) at `/orgs`. Risk: low. Depends: T-204.
+Built: both routes in `CDN_CACHED_ROUTES` (unit list + matcher cases incl. `/orgs/x/y` not cached); cdn-cache e2e covers `/orgs`,
+an org page (+ query), an unknown org's cached 404, and `/organizations/x` → 307 to `/orgs`, uncached. VERCEL.md route list updated.
 
 ### T-205 Typeahead search — `ready`
 Client island on the header search using a compact per-level name index. AC: <50 kB index, keyboard

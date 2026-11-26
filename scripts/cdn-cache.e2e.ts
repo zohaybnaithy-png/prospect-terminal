@@ -115,9 +115,11 @@ test("serves real pages from the snapshot with an unreachable database", async (
 });
 
 test("public pages: 200 with the CDN header; browsers get no cacheable Cache-Control", async () => {
-  const profile = /\/players\/[0-9a-f-]{36}/.exec(await (await get("/players?level=aa")).text())![0];
+  const directory = await (await get("/players?level=aa")).text();
+  const profile = /\/players\/[0-9a-f-]{36}/.exec(directory)![0];
+  const org = /\/orgs\/[a-z0-9-]+/.exec(directory)![0];
   const compare = `/compare?level=aa&ids=${profile.slice("/players/".length)},00000000-0000-4000-8000-000000000000`;
-  for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?utm_source=x", profile, `${profile}?level=aa`, "/compare", compare, "/compare?level=nope&ids=bad", "/watchlist", `/watchlist?ids=${profile.slice("/players/".length)},00000000-0000-4000-8000-000000000000`, "/watchlist?ids=bad", "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"]) {
+  for (const url of ["/", "/players", "/players?level=aa&sort=mom&dir=asc", "/players?utm_source=x", profile, `${profile}?level=aa`, "/compare", compare, "/compare?level=nope&ids=bad", "/watchlist", `/watchlist?ids=${profile.slice("/players/".length)},00000000-0000-4000-8000-000000000000`, "/watchlist?ids=bad", "/orgs", org, `${org}?utm_source=x`, "/trends", "/trends?level=aaa", "/data", "/robots.txt", "/sitemap.xml"]) {
     const r = await get(url);
     assert.equal(r.status, 200, url);
     assert.equal(cdn(r), CDN_CACHE_VALUE, url);
@@ -131,7 +133,7 @@ test("public pages: 200 with the CDN header; browsers get no cacheable Cache-Con
 });
 
 test("deterministic non-200 page answers: unknown player 404 is cached; redirects are not", async () => {
-  for (const url of ["/players/00000000-0000-4000-8000-000000000000", "/players/not-a-uuid"]) {
+  for (const url of ["/players/00000000-0000-4000-8000-000000000000", "/players/not-a-uuid", "/orgs/no-such-org"]) {
     const r = await get(url);
     assert.equal(r.status, 404, url);
     assert.equal(cdn(r), CDN_CACHE_VALUE, `${url}: same answer for every visitor of this deployment`);
@@ -168,11 +170,13 @@ test("never cached: /health, development pages, retired routes", async () => {
     ["/analytics/models", 404],
     ["/market", 307],
     ["/screener", 307],
+    ["/organizations/x", 307],
   ] as const) {
     const r = await get(url);
     assert.equal(r.status, status, url);
     assert.equal(cdn(r), null, url);
   }
+  assert.equal(new URL((await get("/organizations/x")).headers.get("location")!, base).pathname, "/orgs", "retired organization links open the real index");
 });
 
 test("RSC router requests and _rsc URLs are never cached", async () => {
