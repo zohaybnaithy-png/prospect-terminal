@@ -165,13 +165,18 @@ golden file (which records them) are unchanged — the golden file was not regen
 Method: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
 z-scores incl. age vs level; weighted Euclidean; top 5). Descriptive, not a projection.
 
-### T-406 Similarity validation — `in-progress` (branch `claude/t-404-similarity-method`)
+### T-406 Similarity validation — `done` (D-025; branch `claude/t-404-similarity-method`)
 Offline validation per SIMILARITY-METHOD.md §6–§7, nothing shown on the site. Acceptance: pure module
 `src/analytics/similarity/`, CLI `scripts/similarity-validate.ts` reading `.data-snapshot/` only, unit tests, the
 synthetic check (archetypes pass, noise fails) before the real-data run, implementation choices committed (§10) before
 the real-data run, report `docs/reports/similarity-validation-2026.md`, random-sample face-validity review by the
 baseball-analyst agent, verdict per level × role in §11. Building the profile UI is a separate task, only for level/roles
 that pass and only after the owner approves showing it.
+
+### T-407 Similarity next step — `needs-approval` (owner decisions in SIMILARITY-METHOD.md §11)
+(a) Approve or change the hitter position-group rule, then re-run `scripts/similarity-validate.ts` with it.
+(b) Approve showing pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive claim), with
+the display rules 2–4 of §11. No UI work before (b).
 
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 

@@ -490,7 +490,7 @@ export function renderFaceValidityAppendix(
     };
     L.push(`## ${r.label} ${r.role}s`, "");
     for (const list of r.face.lists) {
-      L.push(head, `|${"---|".repeat(dims.length + 9)}`);
+      L.push(head, `|${"---|".repeat(dims.length + 8)}`);
       L.push(row(list.id, "— | — | —"));
       for (const n of list.neighbors) L.push(row(n.id, `${n.score.toFixed(0)} | ${n.closest.join(", ")} | ${n.furthest.join(", ")}`));
       L.push("");

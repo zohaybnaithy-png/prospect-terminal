@@ -1,7 +1,7 @@
 # Player similarity — methodology proposal (T-404, P-004)
 
-**Status: approved as proposed 2026-11-27 (D-024); validation implemented (T-406), see §10 and §11. Nothing is shown
-on the site.** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
+**Status: approved as proposed 2026-11-27 (D-024); validated 2026-11-27 (D-025, §11): pitchers usable as a browsing aid, hitters
+need a position rule first. Nothing is shown on the site.** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
 *(calibrate)* are set by the validation in §6 before anything is shown. As with breakout detection, the owner chooses
 among options **before** the real-data run, never after.
 
@@ -141,3 +141,41 @@ left open, committed before the real-data run:
 archetypes, all 8 level × role combinations pass criteria 1, 2 and 4 (overlap 0.26–0.29 vs chance 0.04 and baseline
 0.06; holdout improvement 0.03–0.09, every 90% interval above 0). With identical true talent (noise only), all 8 fail
 criteria 1 and 2 (overlap 0.03–0.05 ≈ chance; improvement intervals include 0). The tests can pass and fail as intended.
+
+## 11. Real-data result (2026 snapshot 8b418063511b, approved defaults, D-025)
+
+Full report: docs/reports/similarity-validation-2026.md; random-sample lists: docs/reports/similarity-face-validity-2026.md.
+Criteria as fixed in §7 and §10; nothing was tuned after the run.
+
+| Level | Hitters C1 / C2 / C3 / C4 | Pitchers C1 / C2 / C3 / C4 |
+|---|---|---|
+| Triple-A | pass / fail / **fail** / pass | pass / fail / pass / pass |
+| Double-A | pass / fail / **fail** / pass | pass / pass / pass / pass |
+| High-A | pass / fail / **fail** / pass | pass / fail / pass / pass |
+| Single-A | pass / pass / **fail** / pass | pass / fail / pass / pass |
+
+- **C1 stability** passes everywhere: overlap 0.18–0.28 vs chance 0.03–0.04 (6.5–7.7×) and the single-stat baseline
+  0.02–0.06. Age vs level is fixed across halves and carries much of this; without age (information only) overlap is
+  0.09–0.17, still ≥ 3× chance and above the baseline at every level × role.
+- **C2 holdout** passes for Double-A pitchers (+0.014 z², 90% [0.004, 0.025]) and Single-A hitters (+0.011
+  [0.003, 0.018]); fails for the other six. Every gain is about 1% of the error of the player's own rate. 2 passes in 8 is
+  more than chance alone would give (about 0.4), but the gains are too small to matter in practice.
+- **C3 face validity** (baseball-analyst review of 80 random lists plus the automatic checks): **hitters fail at every
+  level, position-blind** (position is not in the profile; neighbors share a position group at the random-pair rate,
+  0.37–0.43 vs 0.36–0.38; catchers are routinely paired with first basemen and shortstops). Pitchers pass: no
+  starter/reliever pairs (0 of every list), age gaps 0.5–0.8 years vs 1.7–3.4 random, skill rates close. Handedness is
+  ignored (same-hand share equals random) and is disclosed rather than failed. Age and BF/app dominate the weights by
+  design (removing age changes 55–62% of list entries).
+- **C4** passes everywhere (508–617 qualified).
+
+**Outcome.** Pitchers (all levels): available as a **browsing aid only, "similar so far this season", with no
+predictive claim** (Double-A's C2 pass is too small to claim otherwise). Hitters: **not available** until an explicit
+rule fixes the position mismatch, which per §7 needs owner approval and a re-run of this validation.
+
+Proposed for the owner (not applied):
+1. Hitters: neighbors only from the same position group (C / IF / OF / other); stricter option, catchers only with
+   catchers. Re-run the validation with the rule before anything is shown.
+2. Show position and Bats/Throws next to every neighbor.
+3. Rank "closest / furthest" by weighted contribution w·Δz², not raw |Δz| (BABIP, weight 0.05–0.16, is named "furthest"
+   for 59% of neighbors). Display only; scores unchanged.
+4. Mark neighbors whose sample differs from the player's by 3× or more; show observed rates beside shrunk ones.
