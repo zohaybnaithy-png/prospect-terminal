@@ -165,9 +165,14 @@ permutation-calibrated false-discovery control, a level-standing bar and persist
 on the 2026 snapshot (reliability, null calibration, holdout retention vs matched controls and naive baselines, churn)
 and success criteria. No code until the owner approves §9 of the document; the first deliverable after approval is the
 validation script and report only.
-### T-405 Breakout validation (offline) — `ready` (approved method, D-021)
+### T-405 Breakout validation (offline) — `needs-approval` (code built; owner: run the snapshot export, and decide on the §10 findings)
 Implement the pure detector (`src/analytics/breakout/`) and `npm run analytics:breakout-validate` per
 docs/BREAKOUT-METHOD.md §6 on the 2026 snapshot; report against §7. No user-facing feature, no new data.
+Built: detector, validation, report, `--synthetic`, 13 tests. Synthetic data shows the approved detector is precise
+(null ≤ 0.02 flags/date, every flag a planted change) but underpowered and unstable (§10). Needs from the owner:
+(1) the local snapshot (`npm run -s snapshot:export` with the read-only `DATABASE_URL`; the agent has no database
+credential), then `npm run -s analytics:breakout-validate > report.md`; (2) run as approved, or approve a revision
+first (§10), decided before the real-data run.
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
 ### T-404 Similarity methodology — `needs-approval` (proposal only)
 

@@ -224,3 +224,38 @@ method in plain language, the validation summary, and the limits in §2.
 3. Approve age as display-only (§5).
 4. Approve the validation plan (§6) and the success criteria (§7). After approval, the first deliverable is the
    validation script and its report only, still with no user-facing feature.
+
+## 10. Implementation notes and synthetic findings (T-405)
+
+Code: `src/analytics/breakout/` (pure, seeded, nothing rendered on the site), CLI
+`npm run -s analytics:breakout-validate` (reads `.data-snapshot/` only, never the database; `--synthetic` for fictional
+data), tests `scripts/breakout.test.ts`. Implementation choices within the approved text:
+
+- ISO's standard error is the linearized game-cluster ratio variance instead of a per-player bootstrap (§4.3), for
+  speed; the report prints the linearized/bootstrap ratio as a check.
+- Shrinkage constants `k` are estimated once per level from the full season (a population constant); everything
+  else at a cutoff uses only games on or before it.
+- The pooled permutation null for p-values is rebuilt every 7 days from the data available on that date.
+- Retention is a ratio of sums; it is n/a when a group's mean recent gain is below 0.1 SD (nothing to retain), and
+  criterion 3 then compares mean post-cutoff gain.
+- The pitcher "recent results" baseline uses recent-block ERA (pitchers have no OPS).
+
+**Synthetic findings (fictional data, before any real-data run).** Fictional seasons with 400–500 players per level
+and planted, real changes in 10% of them (hitters K% −10 pts, BB% +5, ISO +.100; pitchers K% +12, BB% −4):
+
+| Setting | Null flags per date | Flags at Jun 15 / Jul 15 / Aug 15 | Planted share of flags | Churn |
+|---|---|---|---|---|
+| Approved (100/100, shrunk-over-raw-se) | ≤ 0.01 | 0 / 0 / 0–1 | 100% | 100% |
+| Raw statistic, 100/100 | ≤ 0.01 | 0 / 0 / 2–3 | 100% | 87–96% |
+| Blocks 150 or 200, either statistic | ≤ 0.02 | 0 / 0 / 0–5 | 100% | 58–89% |
+
+So the approved detector is precise and its false-positive control works, but at these sample sizes it is
+**underpowered and unstable**: it would very likely fail §7 criteria 4 (churn) and 5 (≥ 10 flags per cutoff) on real
+data. Two causes, both in the approved text: (1) §4.3 divides a *shrunk* change by the *raw* standard error, which
+penalizes the change twice (still a valid test, because p-values come from the permutation null, but a weaker one);
+(2) criterion 4 requires the false-discovery test to pass again at 2 of 3 earlier checkpoints, so a flag needs
+several consecutive near-threshold passes, and it flickers at that threshold.
+
+Owner choice before the real-data run (choosing after seeing it would be data snooping, §7): run as approved (the
+likely outcome is "not available at any level"), or approve a revision first. The CLI can show the owner options on
+synthetic data: `--statistic raw`, `--block 150`.

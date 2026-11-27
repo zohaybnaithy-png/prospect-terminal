@@ -30,6 +30,7 @@
     "a11y:scan": "node --import tsx scripts/ops/a11y-scan.ts",
     "profile:site": "node --import tsx scripts/ops/site-profile.ts",
     "analytics:compare": "node --import tsx scripts/analytics-compare.ts",
+    "analytics:breakout-validate": "node --import tsx scripts/breakout-validate.ts",
     "test:ingestion:db": "node --import tsx --test scripts/ingestion-db.integration.ts",
     "test:mlb:db": "node --import tsx --test scripts/mlb-db.integration.ts",
     "test:afl:db": "node --import tsx --test scripts/afl-read.integration.ts",

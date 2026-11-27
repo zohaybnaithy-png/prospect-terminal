@@ -60,5 +60,5 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 
 ## Approvals needed from the owner (one consolidated list)
 1. Merge PRs the gate marks `needs-human` (sensitive paths); routine `ready` PRs merge via `npm run merge:staging`.
-2. Breakout validation (T-405) needs a local snapshot to run on real data: the owner runs `npm run snapshot:export` with the read-only `DATABASE_URL`.
+2. Breakout validation (T-405): decide run-as-approved vs a revision (docs/BREAKOUT-METHOD.md §10, synthetic findings), then the owner runs `npm run -s snapshot:export` with the read-only `DATABASE_URL` so the validation can read real data.
 3. Standing: data licensing (T-601), analytics methodologies (T-403, T-404), prior-season ingestion (T-501), deploy hook for refresh (T-502).
