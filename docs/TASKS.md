@@ -161,11 +161,17 @@ The value is added in `directoryRows`, not `levelDirectoryRows`, so the memoized
 golden file (which records them) are unchanged — the golden file was not regenerated (D-015).
 ### T-402 Breakout detection methodology — `needs-approval` (proposal only)
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
-### T-404 Similarity methodology — `needs-approval` (proposal written, awaiting owner)
-Proposal: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
-z-scores incl. age vs level; weighted Euclidean; top 5). Descriptive, not a projection. Validation: split-half stability,
-holdout prediction vs the player's own line, random face-validity review, a synthetic check first. No code until the owner
-approves §9.
+### T-404 Similarity methodology — `done` (owner-approved as proposed 2026-11-27, D-024)
+Method: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
+z-scores incl. age vs level; weighted Euclidean; top 5). Descriptive, not a projection.
+
+### T-406 Similarity validation — `in-progress` (branch `claude/t-404-similarity-method`)
+Offline validation per SIMILARITY-METHOD.md §6–§7, nothing shown on the site. Acceptance: pure module
+`src/analytics/similarity/`, CLI `scripts/similarity-validate.ts` reading `.data-snapshot/` only, unit tests, the
+synthetic check (archetypes pass, noise fails) before the real-data run, implementation choices committed (§10) before
+the real-data run, report `docs/reports/similarity-validation-2026.md`, random-sample face-validity review by the
+baseball-analyst agent, verdict per level × role in §11. Building the profile UI is a separate task, only for level/roles
+that pass and only after the owner approves showing it.
 
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 

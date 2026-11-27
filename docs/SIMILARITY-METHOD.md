@@ -1,9 +1,9 @@
 # Player similarity — methodology proposal (T-404, P-004)
 
-**Status: proposal, not approved, not implemented.** Nothing is built (the validation script included) until the
-owner approves §9. Parameters marked *(owner)* are decisions. Parameters marked *(calibrate)* are set by the
-validation in §6 before anything is shown. As with breakout detection (D-022), the owner chooses among options
-**before** the real-data run, never after.
+**Status: approved as proposed 2026-11-27 (D-024); validation implemented (T-406), see §10 and §11. Nothing is shown
+on the site.** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
+*(calibrate)* are set by the validation in §6 before anything is shown. As with breakout detection, the owner chooses
+among options **before** the real-data run, never after.
 
 ## 1. What "similar" means here
 
@@ -107,3 +107,37 @@ anywhere else.
 2. Approve the distance (§4): shrunk z-scores, reliability weights, weighted Euclidean, equal base weights, top 5.
 3. Approve the validation plan (§6) with the synthetic check first, and the success criteria (§7), including the
    "browsing aid only" outcome when criterion 2 fails.
+
+## 10. Implementation notes (fixed before the real-data run)
+
+Code: `src/analytics/similarity/` (config, profiles, validate), CLI `scripts/similarity-validate.ts` (reads
+`.data-snapshot/` only; `--appendix` prints the face-validity lists), fictional data `scripts/similarity-synthetic.ts`,
+tests `scripts/similarity.test.ts`. Run with `node --import tsx scripts/similarity-validate.ts`. Choices the proposal
+left open, committed before the real-data run:
+
+1. **Data.** Completed games only. Pitcher BABIP uses hit batters when the line has them (0 otherwise). BF per
+   appearance is shrunk in appearances like the rates. `k` comes from odd/even split-half reliability (Spearman–Brown,
+   `k = n̄(1 − rel)/rel`, players with ≥ 2 × minSample), the BREAKOUT-METHOD.md §6.1 estimator; a dimension with no
+   measurable reliability gets `k = ∞` (shrunk to the mean, weight 0). Age is the D-020 value, unrounded.
+2. **Stability.** Halves are alternating games in date order. A player must reach minSample in each half; the pool is
+   players qualified in both halves, so chance is `10 / (pool − 1)`. `k` is the full-season value; level means and SDs
+   are each half's own. The baseline (closest OPS / closest K−BB%) uses the same pool. Criterion 1 uses point estimates;
+   90% bootstrap intervals are reported.
+3. **Holdout.** At each cutoff, `k`, level means and SDs come from games through the cutoff only. The pool is players
+   with ≥ minSample before and ≥ 75 after, and neighbors are drawn from the pool, so every neighbor has post-cutoff rates.
+   Predicted dimensions: every rate except BF/app and age. Errors are divided by the SD of the observed pre-cutoff rates
+   among qualified players (the SD of shrunk rates can be near zero when reliability is very low). Combined
+   prediction = (1 − α) · own shrunk rate + α · neighbors' mean post-cutoff rate; α on a 0.05 grid, chosen on the other
+   cutoffs only (leave-one-cutoff-out). A cutoff with fewer than 20 players is skipped. Improvement = mean over cutoffs of
+   the per-cutoff mean of MSE(own) − MSE(combined); 90% interval by bootstrapping players within cutoffs, α fixed.
+4. **Face validity.** 10 hitters and 10 pitchers per level, seeded random sample of qualified players at season end.
+   Automatic checks over every list compared with all pairs: mean absolute age difference, starter-like (≥ 15 BF/app)
+   paired with reliever-like (< 8), position group (C / IF / OF / other) and catcher mismatch, handedness. The
+   baseball-analyst agent reviews the appendix; criterion 3 is recorded after that review.
+5. **Sensitivity** (reported only): minSample 75 and 150, without age, Mahalanobis (inverse correlation matrix of the
+   z-scores, reliability-scaled differences).
+
+**Synthetic check** (fictional seasons, 240 hitters and 240 pitchers per level, 8 Apr – 19 Sep). With planted
+archetypes, all 8 level × role combinations pass criteria 1, 2 and 4 (overlap 0.26–0.29 vs chance 0.04 and baseline
+0.06; holdout improvement 0.03–0.09, every 90% interval above 0). With identical true talent (noise only), all 8 fail
+criteria 1 and 2 (overlap 0.03–0.05 ≈ chance; improvement intervals include 0). The tests can pass and fail as intended.
