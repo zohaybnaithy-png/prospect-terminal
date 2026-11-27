@@ -161,7 +161,11 @@ The value is added in `directoryRows`, not `levelDirectoryRows`, so the memoized
 golden file (which records them) are unchanged — the golden file was not regenerated (D-015).
 ### T-402 Breakout detection methodology — `needs-approval` (proposal only)
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
-### T-404 Similarity methodology — `needs-approval` (proposal only)
+### T-404 Similarity methodology — `needs-approval` (proposal written, awaiting owner)
+Proposal: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
+z-scores incl. age vs level; weighted Euclidean; top 5). Descriptive, not a projection. Validation: split-half stability,
+holdout prediction vs the player's own line, random face-validity review, a synthetic check first. No code until the owner
+approves §9.
 
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 
