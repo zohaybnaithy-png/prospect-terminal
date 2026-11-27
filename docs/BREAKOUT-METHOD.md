@@ -1,7 +1,7 @@
 # Breakout detection — methodology proposal (T-402, P-004)
 
-**Status: approved as proposed by the owner on 2026-11-26 (D-021); not implemented.** The next deliverable is the
-validation script and report (§6); nothing is shown to users until a level passes the success criteria in §7. Every parameter marked
+**Status: approved (D-021), validated as approved (D-022) — failed at every level (D-023).** Breakout detection is
+not available and is not built. Report: docs/reports/breakout-validation-2026.md. Every parameter marked
 *(owner)* is a decision; every parameter marked *(calibrate)* is set by the validation in §6, from our own data,
 before anything is shown to users.
 
@@ -259,3 +259,15 @@ several consecutive near-threshold passes, and it flickers at that threshold.
 Owner decision (2026-11-27, D-022), made before the real-data run: **run as approved.** (Choosing after seeing it
 would be data snooping, §7.) The CLI can show the owner options on
 synthetic data: `--statistic raw`, `--block 150`.
+
+## 11. Real-data result (2026 snapshot, D-023)
+
+Run as approved (D-022) on snapshot 8b418063511b: **0 breakout flags at the Jun 15, Jul 15 and Aug 15 cutoffs at every
+level, for hitters and pitchers.** Every level × role fails §7 (criteria 2–5 cannot be met without flags). What did
+work: every metric cleared the §6.1 reliability bar (reliability at 100 PA/BF 0.30–0.71), the permutation null kept
+false flags at 0.009–0.022 per date, and ISO's linearized SE matched the bootstrap (ratio 1.01–1.03). Across the whole
+season only 4 flag spells occurred (Double-A hitters 1, Single-A hitters 3), all ending within 14 days. "Watch" states
+(significant before false-discovery control) numbered 1–18 per level and cutoff.
+
+Conclusion, as pre-registered: breakout detection is not shown at any level. A future attempt (for example with prior
+seasons, T-501, which would allow longer baselines) is a new proposal with its own validation.

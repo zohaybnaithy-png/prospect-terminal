@@ -10,6 +10,7 @@
  * Owner-option comparisons only (the approved defaults are used without them): --statistic raw, --block N
  * (recent and earlier minimums). Choosing among them after seeing real-data results is not allowed (§7).
  */
+import path from "node:path";
 import { BREAKOUT_SETTINGS, BREAKOUT_VALIDATION, type BreakoutRole, type BreakoutSettings } from "../src/analytics/breakout/config";
 import { renderValidationReport, validateRole, type RoleValidation } from "../src/analytics/breakout/validate";
 import { MILB_LEVEL_IDS, COMPETITION_LEVEL_LABELS, type MilbLevelId } from "../src/domain/levels";
@@ -55,7 +56,7 @@ async function main() {
     const dir = snapshotDir();
     const files = snapshotSource(dir, AFL.defaultSeason);
     snapshotId = await files.version();
-    source = `build-time snapshot ${dir} (season ${AFL.defaultSeason})`;
+    source = `build-time snapshot ${path.basename(dir)}/ (season ${AFL.defaultSeason})`;
     for (const id of MILB_LEVEL_IDS) {
       const s = await files.load(id);
       if (s) levels.set(id, s);

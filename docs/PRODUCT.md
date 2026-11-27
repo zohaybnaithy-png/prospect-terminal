@@ -38,7 +38,8 @@ context. Goal: the premier MiLB prospect-discovery and player-development tool.
 
 | Feature | Status |
 |---|---|
-| Prospect Grade, P(MLB), Similarity, Breakout, Prospect Priority, Pure Performance, rankings | Methodology not approved (owner decision) |
+| Prospect Grade, P(MLB), Similarity, Prospect Priority, Pure Performance, rankings | Methodology not approved (owner decision) |
+| Breakout detection | Validated as approved on 2026 data and failed at every level (D-023): not shown |
 | Multi-season history, prior-season baselines, career lines | Requires ingesting prior seasons (ingestion approval) |
 | Transactions, injuries, promotion dates, news, video | No licensed source |
 | Handedness / home-away splits, batted-ball, Statcast-style tracking | Not in the ingested data |

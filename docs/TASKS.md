@@ -165,7 +165,7 @@ permutation-calibrated false-discovery control, a level-standing bar and persist
 on the 2026 snapshot (reliability, null calibration, holdout retention vs matched controls and naive baselines, churn)
 and success criteria. No code until the owner approves §9 of the document; the first deliverable after approval is the
 validation script and report only.
-### T-405 Breakout validation (offline) — `blocked` (code built; run as approved, D-022; waiting for the owner's local snapshot export)
+### T-405 Breakout validation (offline) — `done` (run as approved; failed at every level, D-023; report docs/reports/breakout-validation-2026.md)
 Implement the pure detector (`src/analytics/breakout/`) and `npm run analytics:breakout-validate` per
 docs/BREAKOUT-METHOD.md §6 on the 2026 snapshot; report against §7. No user-facing feature, no new data.
 Built: detector, validation, report, `--synthetic`, 13 tests. Synthetic data shows the approved detector is precise
