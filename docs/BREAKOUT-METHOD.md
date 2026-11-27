@@ -256,6 +256,6 @@ penalizes the change twice (still a valid test, because p-values come from the p
 (2) criterion 4 requires the false-discovery test to pass again at 2 of 3 earlier checkpoints, so a flag needs
 several consecutive near-threshold passes, and it flickers at that threshold.
 
-Owner choice before the real-data run (choosing after seeing it would be data snooping, §7): run as approved (the
-likely outcome is "not available at any level"), or approve a revision first. The CLI can show the owner options on
+Owner decision (2026-11-27, D-022), made before the real-data run: **run as approved.** (Choosing after seeing it
+would be data snooping, §7.) The CLI can show the owner options on
 synthetic data: `--statistic raw`, `--block 150`.
