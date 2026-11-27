@@ -283,6 +283,10 @@ export default function DataPage() {
                   "Innings pitched, shown in baseball notation (5.2 = 5⅔).",
                 ],
                 [
+                  "±Lvl (age vs level)",
+                  "Years older (+) or younger (−) than the median age of every player with a 2026 game line at that level, ages taken on the level's latest game date. Shown only when at least 20 players have a known birth date. Context, not a grade: it is not adjusted for role or position.",
+                ],
+                [
                   "Percentiles",
                   "Rank among players at the same level, season and role with at least 30 PA or BF — not MLB percentiles and never across levels.",
                 ],

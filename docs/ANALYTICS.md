@@ -85,6 +85,12 @@ result (V8 uses the platform's math library), so a local `npm test` on a Mac sho
 It is not a regression and is never "fixed" by regenerating or loosening the test (decision D-015). Judge the
 test by CI; any other mismatch, or any mismatch on Linux, means Momentum output changed.
 
+## Age relative to level (T-401, D-020)
+
+Not part of Momentum. `src/services/players/level-age.ts`: player decimal age minus the median decimal age of all
+players with a completed-game line at that level (known birth date), both on the level's as-of date; 0.1-year
+rounding; hidden below 20 qualifying players. Shown as the directory "±Lvl" column and on profiles.
+
 ## Known limitations
 
 - The AFL season is ~4–6 weeks: for much of it the **30D window has no valid earlier baseline**, so 30D is shown as *unavailable* (never estimated). 14D persistence can only reach ~2–3 checkpoints.

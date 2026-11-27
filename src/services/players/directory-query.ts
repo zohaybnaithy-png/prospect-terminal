@@ -76,6 +76,7 @@ const CONTEXT_SORTS: Record<string, SortValue> = {
   player: (r) => r.name,
   pos: (r) => r.position,
   age: (r) => r.age,
+  agerel: (r) => r.ageVsLevel ?? null,
   lvl: (r) => levelIndex(r.level),
   team: (r) => r.team?.abbreviation ?? null,
   org: (r) => r.organization?.abbreviation ?? null,
