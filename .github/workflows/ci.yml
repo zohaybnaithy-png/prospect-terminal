@@ -1,4 +1,4 @@
-# Minimal CI for pull requests and main (docs/VERCEL.md, *CI*). No secrets, no database, no deploy:
+# Minimal CI for pull requests and main (docs/VERCEL.md, *CI*). No secrets, no external database, no deploy:
 # every step runs on fictional fixture data only.
 name: CI
 
@@ -80,3 +80,54 @@ jobs:
       # One snapshot build with precomputed views, served with views off and on: HTML, RSC
       # payloads, statuses and headers must be byte-identical.
       - run: npm run test:views:e2e
+
+  db-integration:
+    name: Database integration suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # A throwaway PostgreSQL in a service container: no secrets, no external database. Each suite
+    # gets its own fresh migrated database (the names the suites require), as in their headers.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PG: postgres://postgres@localhost:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Create and migrate one database per suite
+        run: |
+          for db in prospect_afl_read_test prospect_roles_test prospect_ingestion_test prospect_milb_test \
+                    prospect_mlb_test prospect_refresh_test prospect_freshness_test prospect_snapshot_test; do
+            psql "$PG/postgres" -v ON_ERROR_STOP=1 -c "CREATE DATABASE $db"
+            DATABASE_URL="$PG/$db" npm run -s db:migrate
+          done
+      - run: npm run test:afl:db
+        env: { AFL_READ_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_afl_read_test" }
+      - run: npm run test:roles:db
+        env: { ROLES_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_roles_test" }
+      - run: npm run test:ingestion:db
+        env: { INGESTION_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_ingestion_test" }
+      - run: npm run test:milb:db
+        env: { MILB_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_milb_test" }
+      - run: npm run test:mlb:db
+        env: { MLB_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_mlb_test" }
+      - run: npm run test:refresh:db
+        env: { REFRESH_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_refresh_test" }
+      - run: npm run test:refresh:freshness:db
+        env: { REFRESH_FRESHNESS_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_freshness_test" }
+      - run: npm run test:snapshot:db
+        env: { SNAPSHOT_TEST_DATABASE_URL: "postgres://postgres@localhost:5432/prospect_snapshot_test" }

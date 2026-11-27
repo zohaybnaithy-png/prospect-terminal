@@ -22,13 +22,15 @@ that supersedes it. Proposals awaiting the owner are at the end. Details live in
 | D-015 | **The Momentum golden test is bit-exact and Linux is the canonical platform.** It fails on macOS arm64 (1 of 2638 outputs, `Math.tanh` last bit). Never regenerate or loosen it; verify on CI. | Exactness catches real regressions; libm differences are not regressions. | TASKS.md T-305 |
 | D-016 | **Staging merges are human until the owner approves the guarded path** (`npm run gate:staging` is check-only). Sensitive paths (CI, agent rules, config, schema, ingestion writes, gates, lockfile) always need a human. | Least privilege; the gate is reviewed before it gains merge power. | `scripts/staging-gate-support.ts` |
 | D-017 | **Per-visitor state never reaches the server render.** The watchlist lives only in the browser's localStorage (guarded, re-validated); `/watchlist?ids=` is rendered from the URL alone, and star buttons render a neutral state on the server, so CDN-cached HTML is identical for everyone. No cookies, no accounts, no tracking. | Snapshot-only, CDN-cached site; privacy. | `src/lib/watchlist-storage.ts`, T-202 |
+| D-018 | **T-301 re-scoped (owner, 2026-11-26):** no per-snapshot `playerLevels` index (≈0.5 ms per profile, extra memory); instead `playerProfile` builds only the profiled player's season row. | Measured cost is in `playerProfile` (~10 ms), not `playerLevels`. | TASKS.md T-301 |
+| D-019 | **Per-instance rate limiter accepted on Vercel as documented (owner, 2026-11-26).** T-303 check 7 stayed inconclusive (requests spread over instances, no 429); no diagnostic route added. Revisit before public launch. | Site is behind Deployment Protection; a debug route adds surface for little gain now. | VERCEL.md, TASKS.md T-303 |
 | D-020 | **Age relative to level (owner-approved 2026-11-26, T-401):** a player's decimal age minus the median decimal age of all players with a completed-game line at that level this season and a known birth date, both on the level's as-of date; rounded to 0.1 years; positive = older. Not shown below 20 qualifying players. One median per level (not per role); never combined across levels. | Simple, transparent context from the snapshot alone; no model. | `src/services/players/level-age.ts` |
 
 ## Proposals awaiting the owner
 
 | Id | Proposal | Status |
 |---|---|---|
-| P-001 | Guarded staging merges: one allowed command (`npm run merge:staging`) that re-runs the gate and merges with `--match-head-commit` only on `ready`; raw `gh pr merge` stays denied. | needs-approval (T-105) |
-| P-002 | Branch protection for `main` and `staging` (PR required, CI checks required, no force push). | needs-approval (T-106) |
+| P-001 | Guarded staging merges: one allowed command (`npm run merge:staging`) that re-runs the gate and merges with `--match-head-commit` only on `ready`; raw `gh pr merge` stays denied. | approved, in effect (T-105) |
+| P-002 | Branch protection for `main` and `staging` (PR required, CI checks required, no force push). | done by the owner (T-106) |
 | P-003 | Age relative to level: level median age from the snapshot, shown as ± years. | approved 2026-11-26 → D-020 (T-401) |
 | P-004 | Breakout detection, Prospect Grade, Similarity: methodology documents first, validation plan, no implementation until approved. | needs-approval (T-402..404) |

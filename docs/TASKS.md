@@ -68,7 +68,7 @@ directory Org column) open it; team links still open the team-filtered directory
 "Orgs" in the header. **Not yet CDN-cached:** that needs `/orgs` and `/orgs/:slug` in `CDN_CACHED_ROUTES`
 (src/lib/cdn-cache.ts, owner-merged) — follow-up T-204b.
 
-### T-204b CDN-cache the organization pages — `in-review` (branch `claude/t-204b-cdn-org-pages`; owner merges: src/lib/cdn-cache.ts, next.config.ts)
+### T-204b CDN-cache the organization pages — `done` (PR #37, owner-merged 2026-11-26; staging 8d4bcd5 verified 33/33)
 Add `/orgs` and `/orgs/:slug` to `CDN_CACHED_ROUTES` (+ the vercel.test.ts list and the cdn-cache e2e), and point the
 retired `/organizations/:path*` redirect (next.config.ts) at `/orgs`. Risk: low. Depends: T-204.
 Built: both routes in `CDN_CACHED_ROUTES` (unit list + matcher cases incl. `/orgs/x/y` not cached); cdn-cache e2e covers `/orgs`,
@@ -103,7 +103,7 @@ place (no boundary; client navigations keep the old page and show the navigation
 
 ## Milestone 3 — Performance and reliability
 
-### T-301 Per-snapshot player index — `needs-approval` (measured 2026-11-26: no gain worth the memory; re-scope proposed)
+### T-301 Profile season row without building every row — `in-review` (branch `claude/t-301-profile-rows`; re-scope approved by the owner 2026-11-26, D-018)
 Replace `playerLevels` full scans with an index built once per snapshot. AC: profile render time measured
 before/after (T-102 method), identical output (tests), memory not worse. Risk: medium.
 Measured (nightly 2026-11-26, local, `profilePages` from src/services/competition/profile.ts over five fictional full-size
@@ -111,12 +111,19 @@ levels from `scaleSnapshot`, 46,530 lines per MiLB level, cold/warm ms per profi
 `playerProfile` 9.3–12.2 / 9.2–11.3, `playerAnalyticsView` 13.4–18.4 / 7.1–9.5. Across 468 profiles `playerLevels` averaged
 0.52 ms. A per-snapshot index would save under 1 ms of a 0.2–1.1 s first render (T-102) and add per-player arrays to every
 cached level, which breaks "memory not worse", so it was not built.
-**Proposal (owner decision):** re-scope T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
+**Approved re-scope (D-018):** T-301 to `playerProfile` (src/services/afl/read-model.ts), which calls
 `buildPlayerRows(s, "season")` for every player on each profile render just to `find` one row: about 9–11 ms per profile.
 Reusing the memoized/precomputed season rows (`levelDirectoryRows`) or building only that player's row should remove most
 of it; AC as before (T-102 timings, identical output, memory not worse).
+Built: `playerProfile` builds only that player's row (context index over the player's own stints and lines; season
+aggregates reused from the profile's window pass). Same full-size fixture level (46,530 lines, 112 profiles): **10.24 →
+1.20 ms per profile**. Identical output: new test compares the row with `buildPlayerRows(s, "season")` for every player in six
+snapshots (roster, game-lines-only and no-team players; tied roster rows). No new caches, so memory is not worse.
 
-### T-302 DB integration suites in CI — `ready` (owner merges: touches .github)
+### T-302 DB integration suites in CI — `in-review` (branch `claude/t-302-db-ci`; owner merges: touches .github)
+Built: CI job "Database integration suites": `postgres:17` service container (trust auth, no secrets), one fresh migrated
+database per suite under the names the suites require, then all eight `test:*:db` suites. Not yet a required check:
+after it is green, the owner can add it to the `staging`/`main` rulesets and `scripts/staging-gate-support.ts`.
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
 AC: suites run green in CI; no secrets needed. Risk: medium.
 
@@ -129,8 +136,14 @@ for RSC/`_rsc`; per-deployment scope; Deployment Protection before the cache. Ch
 stay unanswered. **Owner decision:** accept the per-instance limiter on Vercel as documented, or add a diagnostic (limiter key /
 instance id header on a debug route) to answer it.
 
-### T-304 Mobile + accessibility pass on the Preview — `ready`
+### T-304 Mobile + accessibility pass on the Preview — `in-review` (branch `claude/t-304-a11y`)
 Run `scripts/ops/a11y-scan.ts` against the Preview at 390 px and 1366 px; fix findings. Risk: low.
+Done against a local production build of a fictional snapshot (the scan script cannot send the Preview bypass header;
+structure and CSS are identical): 32 pages/states × 390 and 1366 px, incl. /orgs, /orgs/[slug], /compare, /watchlist,
+/search/player. Found one rule, axe `link-in-text-block` (serious): team links in home trending rows and the "Players"
+link in the empty /compare steps were told apart by colour only → now underlined like other in-text links (regression
+test in accessibility.test.ts). Rescan: 0 violations. No horizontal page scroll at 390 or 768 px on 12 main pages.
+Follow-up (optional): let the scan send the bypass header to the Preview's own host so it can run on real data.
 
 ### T-305 Momentum golden test platform note — `done` (PR #32, merged 2026-11-25; no assertion changed)
 The golden test fails on macOS arm64 (1 of 2638: `Math.tanh` last-bit difference) and passes on Linux/CI.
