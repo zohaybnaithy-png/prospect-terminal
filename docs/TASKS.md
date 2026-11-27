@@ -159,12 +159,15 @@ Built: `src/services/players/level-age.ts` (definition in D-020). Directory colu
 population rule (lines + birth date), the 20-player minimum, sign/rounding/formatting, directory rows and sort.
 The value is added in `directoryRows`, not `levelDirectoryRows`, so the memoized/precomputed rows and the Momentum
 golden file (which records them) are unchanged — the golden file was not regenerated (D-015).
-### T-402 Breakout detection methodology — `needs-approval` (proposal written, awaiting owner)
+### T-402 Breakout detection methodology — `done` (approved as proposed 2026-11-26, D-021); validation → T-405
 Proposal: docs/BREAKOUT-METHOD.md. Per-level, skill-rate (K%, BB%, ISO / K%, BB%) step-change flag with shrinkage,
 permutation-calibrated false-discovery control, a level-standing bar and persistence. Includes an offline validation plan
 on the 2026 snapshot (reliability, null calibration, holdout retention vs matched controls and naive baselines, churn)
 and success criteria. No code until the owner approves §9 of the document; the first deliverable after approval is the
 validation script and report only.
+### T-405 Breakout validation (offline) — `ready` (approved method, D-021)
+Implement the pure detector (`src/analytics/breakout/`) and `npm run analytics:breakout-validate` per
+docs/BREAKOUT-METHOD.md §6 on the 2026 snapshot; report against §7. No user-facing feature, no new data.
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
 ### T-404 Similarity methodology — `needs-approval` (proposal only)
 

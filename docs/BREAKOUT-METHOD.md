@@ -1,7 +1,7 @@
 # Breakout detection — methodology proposal (T-402, P-004)
 
-**Status: proposal, not approved, not implemented.** Nothing here ships, and no code is written (the validation
-script included), until the owner approves the method and the success criteria in §7. Every parameter marked
+**Status: approved as proposed by the owner on 2026-11-26 (D-021); not implemented.** The next deliverable is the
+validation script and report (§6); nothing is shown to users until a level passes the success criteria in §7. Every parameter marked
 *(owner)* is a decision; every parameter marked *(calibrate)* is set by the validation in §6, from our own data,
 before anything is shown to users.
 
