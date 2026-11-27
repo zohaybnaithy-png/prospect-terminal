@@ -33,4 +33,4 @@ that supersedes it. Proposals awaiting the owner are at the end. Details live in
 | P-001 | Guarded staging merges: one allowed command (`npm run merge:staging`) that re-runs the gate and merges with `--match-head-commit` only on `ready`; raw `gh pr merge` stays denied. | approved, in effect (T-105) |
 | P-002 | Branch protection for `main` and `staging` (PR required, CI checks required, no force push). | done by the owner (T-106) |
 | P-003 | Age relative to level: level median age from the snapshot, shown as ± years. | approved 2026-11-26 → D-020 (T-401) |
-| P-004 | Breakout detection, Prospect Grade, Similarity: methodology documents first, validation plan, no implementation until approved. | needs-approval (T-402..404) |
+| P-004 | Breakout detection, Prospect Grade, Similarity: methodology documents first, validation plan, no implementation until approved. | needs-approval (T-402..404); breakout proposal written: docs/BREAKOUT-METHOD.md |
