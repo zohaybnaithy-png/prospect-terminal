@@ -119,7 +119,10 @@ const stintOrder = (a: AflRosterStint, b: AflRosterStint) =>
  * rows stays linear at MiLB-level scale (thousands of players, tens of thousands of lines).
  * Selection rules are identical to currentStint / lastLineTeam.
  */
-function contextIndex(s: AflSnapshot, gameById: Map<string, AflGame>) {
+function contextIndex(
+  s: Pick<AflSnapshot, "rosterStints" | "batting" | "pitching">,
+  gameById: Map<string, AflGame>,
+) {
   const stints = new Map<string, AflRosterStint>();
   for (const r of s.rosterStints) {
     const best = stints.get(r.playerId);
@@ -448,9 +451,25 @@ export function playerProfile(
       ];
     }),
   ) as AflPlayerProfile["windows"];
-  const row = buildPlayerRows(s, "season").find((r) => r.id === playerId)!;
   const teams = byId(s.teams),
     organizations = byId(s.organizations);
+  // This player's season row, equal to buildPlayerRows(s, "season")'s row for them (tested), without
+  // building every player's row: the context index runs over this player's stints and lines only, in
+  // snapshot order, and the season aggregates are the ones computed above with the same rule.
+  const asOf = aflAsOf(s);
+  const ownIndex = contextIndex(
+    { rosterStints: s.rosterStints.filter((r) => r.playerId === playerId), batting: ownBatting, pitching: ownPitching },
+    byId(s.games),
+  );
+  const row: AflPlayerRow = {
+    id: player.id,
+    name: player.name,
+    position: displayPosition(player),
+    age: player.birthDate && asOf ? ageOn(player.birthDate, asOf) : null,
+    ...playerContext(player.id, { teams, organizations }, ownIndex),
+    batting: windows.season.batting,
+    pitching: windows.season.pitching,
+  };
   const complete = new Map(completedGames(s).map((g) => [g.id, g]));
   const entries = new Map<
     string,
