@@ -116,7 +116,10 @@ cached level, which breaks "memory not worse", so it was not built.
 Reusing the memoized/precomputed season rows (`levelDirectoryRows`) or building only that player's row should remove most
 of it; AC as before (T-102 timings, identical output, memory not worse).
 
-### T-302 DB integration suites in CI — `ready` (owner merges: touches .github)
+### T-302 DB integration suites in CI — `in-review` (branch `claude/t-302-db-ci`; owner merges: touches .github)
+Built: CI job "Database integration suites": `postgres:17` service container (trust auth, no secrets), one fresh migrated
+database per suite under the names the suites require, then all eight `test:*:db` suites. Not yet a required check:
+after it is green, the owner can add it to the `staging`/`main` rulesets and `scripts/staging-gate-support.ts`.
 Postgres service container in CI running the `*.integration.ts` suites against a disposable database.
 AC: suites run green in CI; no secrets needed. Risk: medium.
 
