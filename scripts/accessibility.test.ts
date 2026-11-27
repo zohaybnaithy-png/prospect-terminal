@@ -156,6 +156,18 @@ describe("links and focus (WCAG 1.4.1 / 2.4.7)", () => {
   });
 });
 
+describe("links inside running text (WCAG 1.4.1, axe link-in-text-block)", () => {
+  // Found by the T-304 axe scan: team links in home trending rows and the "Players" link in the
+  // empty compare page's steps were told apart from text by colour only.
+  test("every container that mixes links into text underlines them", () => {
+    const rule = CSS.match(/:where\(([^)]*)\)\s*a:not\(\.button-link\):not\(\.reset-button\)\s*\{([^}]*)\}/);
+    assert.ok(rule, "in-text link rule exists");
+    const containers = rule![1].split(",").map((c) => c.trim());
+    for (const c of ["p", ".afl-notice", ".table-note", ".compare-steps", ".trend-row-context"]) assert.ok(containers.includes(c), `${c} is covered`);
+    assert.match(rule![2], /text-decoration:\s*underline/);
+  });
+});
+
 describe("player comparison (/compare)", () => {
   test("Remove links in column headers have a 24px target (WCAG 2.5.8)", () => {
     const sel = ".compare-table .compare-remove";
