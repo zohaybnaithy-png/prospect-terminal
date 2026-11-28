@@ -172,7 +172,11 @@ Built: detector, validation, report, `--synthetic`, 13 tests. Synthetic data sho
 (null ≤ 0.02 flags/date, every flag a planted change) but underpowered and unstable (§10). Needs from the owner:
 (1) the local snapshot (`npm run -s snapshot:export` with the read-only `DATABASE_URL`; the agent has no database
 credential), then `npm run -s analytics:breakout-validate > report.md`; (2) decided 2026-11-27: run as approved (D-022).
-### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
+### T-403 Prospect Grade methodology — `done` (approved as proposed 2026-11-28, D-029)
+Proposal: docs/GRADE-METHOD.md. A statistical Grade (expected MLB value over six seasons, 20–80 scale) can only be
+validated against past cohorts' outcomes, so it depends on ingesting past MiLB seasons and MLB careers (T-501) and on
+licensing for public display (T-601). Two-stage regularized regression (P(MLB) × value given MLB), forward-in-time
+validation against level/age/OPS baselines. No code or ingestion until the owner approves §9. Next: T-501 sizing estimate.
 ### T-404 Similarity methodology — `done` (owner-approved as proposed 2026-11-27, D-024)
 Method: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
 z-scores incl. age vs level; weighted Euclidean; top 5). Descriptive, not a projection.
