@@ -208,11 +208,15 @@ Sizing estimate for the Prospect Grade (D-029): docs/HISTORICAL-INGESTION-SIZING
 (MiLB 2012–2019, 2021; MLB 2013–2026) as one new record type, ≈ 100k rows, stays on Neon Free; per-game history
 (≈ 2M lines) likely needs paid storage. Owner chose season totals (D-030), four full-season levels. Nothing ingested.
 
-### T-503 Season-totals ingestion (code) — `in-progress` (D-030)
+### T-503 Season-totals ingestion (code) — `in-review` (D-030; branch `claude/t-503-season-totals`)
 New normalized record "player season totals" (MiLB levels and MLB), adapter for the provider's season-stats endpoint,
 planner and sink support, one table and migration, with every ingestion guarantee (stable source ids, provenance,
 strict validation, one transaction per apply, idempotent replay, quarantine, freshness). Fixture tests only; no live
 apply. Then: completeness check vs box scores (read-only), read-only preview, apply only with explicit approval.
+
+### T-504 Season-totals completeness check — `ready` (after T-503)
+Read-only tool: for two level-seasons, fetch box scores (not stored) and compare per-player sums of PA/BF, K, BB, HR
+with the season totals; report any disagreement. Any mismatch stops the historical load (D-030).
 ### T-502 In-season automatic refresh — `needs-approval` (Vercel deploy hook + scheduler secret)
 ### T-601 Data licensing — `blocked` (legal decision; hard launch blocker)
 ### T-602 Privacy notice + retention, error monitoring, production verification — `blocked` on T-601

@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-28: Season-totals ingestion code (T-503, D-030): new record kinds, two additive tables (migration 0004), adapter and CLI; offline live check 0 issues. Nothing applied.
 - 2026-11-28: Prospect Grade approved (D-029). Historical data sizing estimate written (T-501, docs/HISTORICAL-INGESTION-SIZING.md): season totals recommended; awaiting owner decisions.
 - 2026-11-28: Prospect Grade proposal written (T-403, docs/GRADE-METHOD.md): needs historical seasons (T-501) before any Grade can be validated; awaiting owner decisions §9.
 - 2026-11-27: Similar players on profiles (T-408, D-028): browsing aid, score floor 70, position groups for hitters; method on `/data#similarity`.

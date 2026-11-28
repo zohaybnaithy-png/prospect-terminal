@@ -86,12 +86,12 @@ describe("write target guard", () => {
 });
 
 describe("schema expectations", () => {
-  test("derive the 4 migrations and 26 tables from the checked-in files", () => {
+  test("derive the 5 migrations and 28 tables from the checked-in files", () => {
     const migrations = expectedMigrations(DRIZZLE);
-    assert.equal(migrations.length, 4);
+    assert.equal(migrations.length, 5);
     const first = migrations[0];
     assert.equal(first.hash, createHash("sha256").update(readFileSync(join(DRIZZLE, `${first.tag}.sql`), "utf8")).digest("hex"));
-    assert.equal(expectedTables(DRIZZLE).length, 26);
+    assert.equal(expectedTables(DRIZZLE).length, 28);
   });
 
   test("schemaProblems reports database, migration and table mismatches", () => {
@@ -101,7 +101,7 @@ describe("schema expectations", () => {
     const facts = { database: "neondb", schema: "public", migrations: migrations.map((m) => ({ hash: m.hash, createdAt: m.createdAt })), tables };
     assert.deepEqual(schemaProblems(facts, expected), []);
     assert.match(schemaProblems({ ...facts, database: "prod" }, expected).join(), /prod/);
-    assert.match(schemaProblems({ ...facts, migrations: facts.migrations.slice(0, 3) }, expected).join(), /expected 4 migrations, found 3/);
+    assert.match(schemaProblems({ ...facts, migrations: facts.migrations.slice(0, 4) }, expected).join(), /expected 5 migrations, found 4/);
     const tampered = facts.migrations.map((m, i) => (i === 2 ? { ...m, hash: "0".repeat(64) } : m));
     assert.match(schemaProblems({ ...facts, migrations: tampered }, expected).join(), /does not match/);
     assert.match(schemaProblems({ ...facts, tables: [...tables, "scratch"] }, expected).join(), /unexpected tables: scratch/);
@@ -371,7 +371,7 @@ describe("backfill orchestration", () => {
 
   for (const [name, patch, pattern] of [
     ["other database", { database: "postgres" }, /connected database is postgres/],
-    ["missing migration", { migrations: migrations.slice(0, 3).map((m) => ({ hash: m.hash, createdAt: m.createdAt })) }, /expected 4 migrations/],
+    ["missing migration", { migrations: migrations.slice(0, 4).map((m) => ({ hash: m.hash, createdAt: m.createdAt })) }, /expected 5 migrations/],
     ["missing branch evidence", { evidenceRuns: 0 }, /not the expected test branch/],
     ["missing AFL data", { aflLeague: 0 }, /AFL league identity/],
   ] as const)

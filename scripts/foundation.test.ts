@@ -54,9 +54,9 @@ test("baseball formats handle fractional innings and empty samples", () => {
   assert.equal(average(0, 0), "—");
   assert.equal(average(38, 100), ".380");
 });
-test("schema has all 20 relational models with primary keys", () => {
+test("schema has all 22 relational models with primary keys", () => {
   const tables = Object.values(schema).map((table) => getTableConfig(table));
-  assert.equal(tables.length, 20);
+  assert.equal(tables.length, 22);
   for (const table of tables)
     assert.ok(table.columns.some((column) => column.primary));
   const current = getTableConfig(schema.prospectScores);
