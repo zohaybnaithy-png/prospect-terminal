@@ -81,3 +81,22 @@ read -rs "DATABASE_URL?Neon test branch URL (read-only role is fine): " && expor
 3. Scope: the four full-season levels only (proposed), or also short-season A and Rookie for 2012–2019 (more young
    players, smaller samples).
 4. Draft round as a Grade input (open in D-029): yes or no, before the validation run.
+
+## 6. Implementation (T-503)
+
+- Record kinds `battingSeason` / `pitchingSeason` (`src/ingestion/contracts.ts`): player, season, level code
+  (`mlb`, `aaa`, `aa`, `high-a`, `single-a`), games, teams, and the same validated counts as game lines. Canonical key
+  player + season + level code; the usual record-state ownership, freshness, correction and quarantine rules apply.
+- Tables `player_batting_level_seasons` / `player_pitching_level_seasons` (migration `drizzle/0004_*`, additive only).
+  No team or league columns: historical rows never rewrite current team or league attributes.
+- Adapter `src/ingestion/sources/season-totals-stats-api.ts`: one capture per season and scope; sport names verified;
+  a page shorter than its `totalSplits` fails the capture; players are emitted only when not already stored. Seasons
+  are `milb-{year}` (shared with the game-level MiLB data) and `mlb-{year}`.
+- CLI `scripts/ingest-season-totals.ts` (run with `node --import tsx`): no database → offline normalize only; database
+  → read-only preview; `--apply` → preview first, refuses a season with issues unless `--accept-quarantine`, job lock,
+  one transaction per season.
+- Offline check against the live API (no database): MiLB 2014 → 4,058 batting and 3,720 pitching rows, 5,149 players,
+  0 issues; MLB 2018 → 1,270 and 799 rows, 0 issues; repeat captures hash identically.
+
+Next, each reported before the next: the completeness check (T-504), the migration on the Neon test branch, a
+read-only preview of every season, and the apply only with explicit owner approval.
