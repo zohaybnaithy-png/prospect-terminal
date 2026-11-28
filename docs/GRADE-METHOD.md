@@ -1,6 +1,8 @@
 # Prospect Grade — methodology proposal (T-403, P-004)
 
-**Status: proposal, not approved, not implemented.** Nothing is built until the owner approves §9. Parameters marked
+**Status: approved as proposed 2026-11-28 (D-029); not implemented.** Next: the T-501 sizing estimate (§2), then
+historical ingestion only after the owner approves that estimate. Still open *(owner)*: draft round as an input, decided
+before the validation run. Parameters marked
 *(owner)* are decisions; *(calibrate)* are set by the validation in §6 before anything is shown. As with breakout
 detection and similarity, the owner chooses among options **before** the real-data run, never after.
 
