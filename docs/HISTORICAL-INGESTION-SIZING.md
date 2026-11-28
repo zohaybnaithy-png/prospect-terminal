@@ -1,6 +1,7 @@
 # Historical data for the Prospect Grade — sizing estimate (T-501, D-029)
 
-**Status: estimate for the owner. Nothing has been ingested and no database was touched.** The Prospect Grade
+**Status: owner chose Option B, season totals (2026-11-28, D-030). Nothing has been ingested and no database was
+touched.** The Prospect Grade
 (docs/GRADE-METHOD.md, D-029) needs MiLB seasons 2012–2019 and 2021 and the MLB careers that followed. D-029 says this
 estimate comes first and that historical ingestion starts only after the owner approves it.
 
