@@ -6,93 +6,93 @@ Random sample (seed 20261127), not hand-picked. Source: build-time snapshot .dat
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Roc Riggio | 2B | L | 103 | 0.270 | 0.102 | 0.185 | 0.318 | 0.064 | -2.4 | — | — | — |
-| Brayan Buelvas | CF | R | 403 | 0.253 | 0.098 | 0.205 | 0.320 | 0.063 | -2.4 | 95 | Age vs level, SB rate | ISO, K% |
-| Yohendrick Piñango | LF | L | 308 | 0.245 | 0.113 | 0.177 | 0.317 | 0.071 | -2.3 | 95 | Age vs level, SB rate | K%, BB% |
-| Kala'i Rosario | OF | R | 163 | 0.282 | 0.090 | 0.207 | 0.322 | 0.068 | -2.4 | 93 | Age vs level, SB rate | ISO, BB% |
-| Gabriel Rincones Jr. | RF | L | 179 | 0.244 | 0.100 | 0.173 | 0.312 | 0.065 | -1.1 | 93 | SB rate, BB% | BABIP, K% |
-| Yohandy Morales | 1B | R | 455 | 0.241 | 0.099 | 0.210 | 0.321 | 0.057 | -1.7 | 91 | SB rate, BB% | ISO, K% |
+| JJ Bleday | LF | L | 104 | 0.222 | 0.136 | 0.210 | 0.322 | 0.057 | +2.2 | — | — | — |
+| Jack Suwinski | RF | L | 545 | 0.232 | 0.115 | 0.200 | 0.318 | 0.081 | +1.5 | 89 | K%, Age vs level | BB%, BABIP |
+| Bligh Madris | OF | L | 378 | 0.218 | 0.135 | 0.193 | 0.304 | 0.058 | +3.9 | 87 | BB%, SB rate | BABIP, ISO |
+| Brennen Davis | CF | R | 205 | 0.224 | 0.115 | 0.202 | 0.311 | 0.041 | +0.2 | 85 | K%, SB rate | BABIP, BB% |
+| Nolan Jones | RF | L | 521 | 0.248 | 0.130 | 0.181 | 0.312 | 0.106 | +1.7 | 85 | Age vs level, BB% | BABIP, ISO |
+| Akil Baddoo | LF | L | 262 | 0.231 | 0.118 | 0.192 | 0.309 | 0.108 | +1.4 | 84 | K%, Age vs level | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jake Holton | 1B | R | 308 | 0.194 | 0.141 | 0.145 | 0.298 | 0.027 | +1.9 | — | — | — |
-| Carson Taylor | 1B | L | 228 | 0.207 | 0.131 | 0.135 | 0.305 | 0.036 | +0.6 | 93 | SB rate, K% | BABIP, BB% |
-| Will Wagner | DH | L | 303 | 0.181 | 0.129 | 0.141 | 0.309 | 0.054 | +1.5 | 91 | ISO, Age vs level | BABIP, BB% |
-| Jose Herrera | C | S | 155 | 0.207 | 0.127 | 0.135 | 0.309 | 0.047 | +2.9 | 90 | K%, SB rate | BABIP, BB% |
-| Spencer Packard | OF | L | 196 | 0.163 | 0.132 | 0.145 | 0.309 | 0.047 | +2.3 | 90 | ISO, Age vs level | BABIP, K% |
-| Carlos Mendoza | 2B | L | 410 | 0.176 | 0.150 | 0.130 | 0.302 | 0.060 | +0.1 | 89 | K%, SB rate | Age vs level, ISO |
+| CJ Alexander | 1B | L | 373 | 0.286 | 0.114 | 0.225 | 0.312 | 0.039 | +3.5 | — | — | — |
+| Michael Toglia | 1B | S | 402 | 0.251 | 0.131 | 0.233 | 0.316 | 0.050 | +1.4 | 84 | SB rate, ISO | BB%, K% |
+| Tyler Fitzgerald | 2B | R | 134 | 0.278 | 0.112 | 0.187 | 0.312 | 0.122 | +2.4 | 78 | BABIP, BB% | ISO, SB rate |
+| Aaron Sabato | 1B | R | 470 | 0.249 | 0.094 | 0.225 | 0.316 | 0.055 | +0.6 | 78 | ISO, SB rate | BB%, Age vs level |
+| Jeimer Candelario | 3B | S | 387 | 0.282 | 0.120 | 0.204 | 0.332 | 0.040 | +6.2 | 77 | SB rate, K% | BABIP, Age vs level |
+| Matt Lloyd | 3B | L | 111 | 0.264 | 0.114 | 0.168 | 0.306 | 0.044 | +3.9 | 77 | BB%, SB rate | ISO, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Je'Von Ward | RF | L | 199 | 0.312 | 0.103 | 0.196 | 0.316 | 0.063 | +0.2 | — | — | — |
-| Nick Schnell | RF | L | 244 | 0.292 | 0.106 | 0.203 | 0.312 | 0.099 | -0.2 | 95 | Age vs level, BB% | SB rate, BABIP |
-| Tim Elko | 1B | R | 128 | 0.338 | 0.107 | 0.174 | 0.317 | 0.060 | +1.1 | 93 | SB rate, BABIP | ISO, K% |
-| Colin Davis | OF | R | 212 | 0.276 | 0.097 | 0.194 | 0.313 | 0.086 | +1.0 | 92 | ISO, Age vs level | K%, BABIP |
-| Maxwell Romero Jr. | C | L | 165 | 0.327 | 0.114 | 0.201 | 0.322 | 0.032 | -1.3 | 91 | ISO, K% | BABIP, BB% |
-| Josh Rivera | SS | R | 365 | 0.315 | 0.095 | 0.164 | 0.308 | 0.056 | -0.7 | 88 | K%, SB rate | ISO, BABIP |
+| Yohandy Morales | 1B | R | 455 | 0.241 | 0.099 | 0.210 | 0.321 | 0.057 | -1.7 | — | — | — |
+| Nic Kent | 3B | R | 371 | 0.251 | 0.109 | 0.206 | 0.322 | 0.072 | -0.2 | 95 | ISO, BABIP | BB%, Age vs level |
+| Roc Riggio | 2B | L | 103 | 0.270 | 0.102 | 0.185 | 0.318 | 0.064 | -2.4 | 91 | SB rate, BB% | ISO, K% |
+| Aaron Sabato | 1B | R | 470 | 0.249 | 0.094 | 0.225 | 0.316 | 0.055 | +0.6 | 90 | SB rate, K% | Age vs level, ISO |
+| Brock Rodden | SS | S | 410 | 0.226 | 0.107 | 0.211 | 0.308 | 0.087 | -0.3 | 89 | ISO, K% | BABIP, Age vs level |
+| Seaver King | SS | R | 356 | 0.227 | 0.089 | 0.191 | 0.321 | 0.105 | -3.2 | 88 | BABIP, K% | SB rate, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Rodolfo Durán | C | R | 192 | 0.243 | 0.102 | 0.161 | 0.312 | 0.090 | +1.9 | — | — | — |
-| Ben Rortvedt | C | L | 189 | 0.234 | 0.097 | 0.160 | 0.308 | 0.079 | +2.3 | 98 | ISO, Age vs level | BABIP, BB% |
-| Eric Wagaman | 1B | R | 222 | 0.235 | 0.115 | 0.155 | 0.311 | 0.079 | +2.4 | 96 | BABIP, SB rate | BB%, ISO |
-| Jordan Nwogu | OF | R | 115 | 0.225 | 0.102 | 0.165 | 0.316 | 0.106 | +0.9 | 96 | BB%, ISO | BABIP, K% |
-| Tyler Gentry | OF | R | 278 | 0.214 | 0.107 | 0.165 | 0.308 | 0.095 | +1.0 | 94 | SB rate, ISO | K%, BABIP |
-| Willie MacIver | C | R | 385 | 0.250 | 0.112 | 0.166 | 0.317 | 0.058 | +3.2 | 93 | K%, ISO | BABIP, BB% |
+| Eric Yang | C | R | 120 | 0.294 | 0.117 | 0.133 | 0.315 | 0.035 | +1.8 | — | — | — |
+| Anthony Vilar | C | L | 210 | 0.274 | 0.119 | 0.143 | 0.320 | 0.040 | +0.8 | 96 | BB%, SB rate | BABIP, K% |
+| William Simoneit | C | R | 189 | 0.285 | 0.109 | 0.152 | 0.319 | 0.030 | +3.3 | 93 | SB rate, K% | ISO, Age vs level |
+| Andy Yerzy | C | L | 134 | 0.268 | 0.112 | 0.131 | 0.298 | 0.043 | +1.6 | 91 | ISO, Age vs level | BABIP, K% |
+| Dayne Leonard | C | R | 114 | 0.293 | 0.109 | 0.115 | 0.318 | 0.053 | -0.3 | 90 | K%, SB rate | Age vs level, ISO |
+| Kyle McCann | C | L | 127 | 0.319 | 0.094 | 0.140 | 0.310 | 0.040 | +2.1 | 88 | SB rate, Age vs level | BB%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Dom Nuñez | C | L | 153 | 0.291 | 0.137 | 0.142 | 0.307 | 0.099 | +5.0 | — | — | — |
-| Ryan Noda | 1B | L | 352 | 0.293 | 0.138 | 0.165 | 0.313 | 0.074 | +3.8 | 93 | K%, BB% | ISO, BABIP |
-| Ben Gamel | RF | L | 225 | 0.294 | 0.132 | 0.142 | 0.313 | 0.050 | +7.7 | 85 | ISO, K% | Age vs level, SB rate |
-| Riley Unroe | 2B | S | 339 | 0.283 | 0.138 | 0.189 | 0.304 | 0.102 | +4.5 | 85 | SB rate, BB% | ISO, BABIP |
-| Clay Dungan | 2B | L | 348 | 0.253 | 0.116 | 0.147 | 0.307 | 0.102 | +3.6 | 84 | SB rate, BABIP | BB%, K% |
-| Jason Matthews | SS | R | 174 | 0.286 | 0.116 | 0.136 | 0.314 | 0.058 | +2.8 | 83 | K%, ISO | BB%, Age vs level |
+| Ethan Murray | 2B | R | 405 | 0.229 | 0.104 | 0.117 | 0.307 | 0.087 | -0.3 | — | — | — |
+| Max Ferguson | 2B | L | 136 | 0.246 | 0.101 | 0.140 | 0.306 | 0.101 | +0.4 | 94 | BABIP, BB% | ISO, K% |
+| Bryan Ramos | 3B | R | 370 | 0.222 | 0.119 | 0.128 | 0.301 | 0.095 | -2.1 | 90 | SB rate, K% | BB%, Age vs level |
+| Rafael Lantigua | 2B | R | 223 | 0.231 | 0.115 | 0.128 | 0.298 | 0.086 | +1.7 | 90 | SB rate, K% | BABIP, Age vs level |
+| Tanner Schobel | 2B | R | 367 | 0.203 | 0.114 | 0.140 | 0.302 | 0.106 | -1.4 | 89 | SB rate, Age vs level | ISO, K% |
+| Arol Vera | 2B | S | 147 | 0.252 | 0.094 | 0.125 | 0.311 | 0.058 | -2.6 | 87 | ISO, SB rate | Age vs level, K% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Victor Labrada | CF | L | 501 | 0.201 | 0.107 | 0.150 | 0.315 | 0.141 | +0.0 | — | — | — |
-| Nick Lorusso | 3B | R | 105 | 0.226 | 0.109 | 0.150 | 0.307 | 0.152 | -0.6 | 95 | ISO, BB% | BABIP, K% |
-| Blake Dunn | CF | R | 138 | 0.195 | 0.097 | 0.131 | 0.317 | 0.147 | +1.4 | 93 | SB rate, K% | ISO, BB% |
-| Jordan Nwogu | OF | R | 115 | 0.225 | 0.102 | 0.165 | 0.316 | 0.106 | +0.9 | 92 | BABIP, Age vs level | K%, SB rate |
-| Gilberto Celestino | CF | R | 205 | 0.209 | 0.115 | 0.142 | 0.319 | 0.192 | +0.9 | 92 | K%, ISO | SB rate, BABIP |
-| Tyler Gentry | OF | R | 278 | 0.214 | 0.107 | 0.165 | 0.308 | 0.095 | +1.0 | 91 | BB%, K% | BABIP, SB rate |
+| P.J. Higgins | C | R | 256 | 0.161 | 0.103 | 0.105 | 0.299 | 0.033 | +6.7 | — | — | — |
+| Matt Thaiss | C | L | 217 | 0.179 | 0.111 | 0.136 | 0.296 | 0.041 | +4.7 | 86 | SB rate, BABIP | ISO, Age vs level |
+| Jakson Reetz | C | R | 175 | 0.177 | 0.104 | 0.136 | 0.308 | 0.028 | +4.1 | 82 | BB%, SB rate | ISO, BABIP |
+| Logan Porter | C | R | 211 | 0.216 | 0.110 | 0.144 | 0.300 | 0.026 | +4.5 | 73 | BABIP, SB rate | ISO, K% |
+| Jason Delay | C | R | 281 | 0.227 | 0.113 | 0.146 | 0.308 | 0.033 | +4.9 | 67 | SB rate, BB% | K%, ISO |
+| Tomás Nido | C | R | 207 | 0.241 | 0.095 | 0.138 | 0.308 | 0.031 | +5.8 | 67 | SB rate, Age vs level | K%, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ben Rortvedt | C | L | 189 | 0.234 | 0.097 | 0.160 | 0.308 | 0.079 | +2.3 | — | — | — |
-| Rodolfo Durán | C | R | 192 | 0.243 | 0.102 | 0.161 | 0.312 | 0.090 | +1.9 | 98 | ISO, Age vs level | BABIP, BB% |
-| Aaron Schunk | SS | R | 354 | 0.228 | 0.089 | 0.143 | 0.307 | 0.112 | +2.5 | 95 | Age vs level, BABIP | ISO, SB rate |
-| Eric Wagaman | 1B | R | 222 | 0.235 | 0.115 | 0.155 | 0.311 | 0.079 | +2.4 | 94 | SB rate, K% | BB%, BABIP |
-| Jake Meyers | CF | R | 143 | 0.219 | 0.099 | 0.142 | 0.309 | 0.057 | +3.6 | 94 | BABIP, BB% | ISO, Age vs level |
-| Tyler Gentry | OF | R | 278 | 0.214 | 0.107 | 0.165 | 0.308 | 0.095 | +1.0 | 94 | BABIP, ISO | BB%, Age vs level |
+| Paul McIntosh | C | R | 292 | 0.214 | 0.104 | 0.169 | 0.306 | 0.021 | +2.2 | — | — | — |
+| Ali Sánchez | C | R | 147 | 0.201 | 0.117 | 0.158 | 0.303 | 0.033 | +3.0 | 94 | SB rate, Age vs level | BB%, ISO |
+| Nick Raposo | C | R | 121 | 0.223 | 0.124 | 0.175 | 0.309 | 0.039 | +1.6 | 91 | Age vs level, K% | BB%, BABIP |
+| Ben Rortvedt | C | L | 189 | 0.234 | 0.097 | 0.160 | 0.308 | 0.079 | +2.3 | 91 | Age vs level, BABIP | SB rate, K% |
+| Matt O'Neill | C | R | 168 | 0.251 | 0.110 | 0.163 | 0.315 | 0.032 | +2.4 | 91 | Age vs level, SB rate | BABIP, K% |
+| Griffin Lockwood-Powell | C | R | 103 | 0.188 | 0.114 | 0.151 | 0.314 | 0.063 | +1.9 | 89 | Age vs level, BB% | BABIP, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Nelson Velázquez | LF | R | 163 | 0.274 | 0.123 | 0.174 | 0.311 | 0.096 | +1.1 | — | — | — |
-| Riley Tirotta | 3B | R | 198 | 0.283 | 0.117 | 0.166 | 0.302 | 0.111 | +1.4 | 96 | Age vs level, K% | BABIP, BB% |
-| Matt Gorski | 1B | R | 159 | 0.283 | 0.113 | 0.165 | 0.311 | 0.090 | +2.1 | 95 | BABIP, SB rate | BB%, Age vs level |
-| Nolan Jones | RF | L | 521 | 0.248 | 0.130 | 0.181 | 0.312 | 0.106 | +1.7 | 95 | SB rate, BABIP | K%, BB% |
-| Ryan Kreidler | SS | R | 113 | 0.272 | 0.135 | 0.186 | 0.317 | 0.099 | +2.2 | 94 | K%, SB rate | BABIP, BB% |
-| Tyler Fitzgerald | 2B | R | 134 | 0.278 | 0.112 | 0.187 | 0.312 | 0.122 | +2.4 | 93 | K%, BABIP | BB%, ISO |
+| Kyren Paris | 2B | R | 289 | 0.272 | 0.151 | 0.208 | 0.333 | 0.164 | -1.8 | — | — | — |
+| Christian Moore | 2B | R | 418 | 0.225 | 0.157 | 0.192 | 0.334 | 0.109 | -2.7 | 82 | BABIP, BB% | K%, SB rate |
+| Travis Bazzana | 2B | L | 117 | 0.217 | 0.140 | 0.183 | 0.319 | 0.192 | -2.6 | 77 | Age vs level, SB rate | BABIP, K% |
+| Brayden Taylor | 3B | L | 129 | 0.240 | 0.158 | 0.184 | 0.304 | 0.182 | -2.3 | 75 | Age vs level, SB rate | BABIP, ISO |
+| Ben Ross | SS | R | 430 | 0.263 | 0.129 | 0.190 | 0.314 | 0.108 | -1.4 | 74 | Age vs level, K% | BABIP, BB% |
+| Duce Gourson | 3B | L | 204 | 0.243 | 0.121 | 0.171 | 0.321 | 0.141 | -2.7 | 69 | Age vs level, SB rate | BB%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Brock Jones | OF | L | 183 | 0.364 | 0.113 | 0.154 | 0.320 | 0.271 | -1.2 | — | — | — |
-| Junior Perez | CF | R | 364 | 0.334 | 0.107 | 0.186 | 0.313 | 0.226 | -1.4 | 84 | Age vs level, BB% | ISO, BABIP |
-| Zach Cole | LF | L | 252 | 0.357 | 0.099 | 0.167 | 0.313 | 0.159 | -0.5 | 74 | K%, Age vs level | SB rate, BABIP |
-| Carson Williams | SS | R | 476 | 0.319 | 0.119 | 0.156 | 0.319 | 0.177 | -3.4 | 72 | BABIP, ISO | SB rate, K% |
-| Colby Halter | OF | L | 216 | 0.297 | 0.119 | 0.129 | 0.317 | 0.195 | -1.6 | 69 | Age vs level, BB% | K%, SB rate |
-| Carson Roccaforte | OF | L | 118 | 0.281 | 0.111 | 0.181 | 0.321 | 0.272 | -2.2 | 69 | SB rate, BABIP | K%, ISO |
+| Jack Suwinski | RF | L | 545 | 0.232 | 0.115 | 0.200 | 0.318 | 0.081 | +1.5 | — | — | — |
+| Akil Baddoo | LF | L | 262 | 0.231 | 0.118 | 0.192 | 0.309 | 0.108 | +1.4 | 95 | Age vs level, K% | BABIP, SB rate |
+| Brennen Davis | CF | R | 205 | 0.224 | 0.115 | 0.202 | 0.311 | 0.041 | +0.2 | 93 | BB%, ISO | BABIP, SB rate |
+| Ben Malgeri | RF | R | 297 | 0.244 | 0.122 | 0.184 | 0.330 | 0.092 | +0.0 | 89 | SB rate, K% | BABIP, ISO |
+| JJ Bleday | LF | L | 104 | 0.222 | 0.136 | 0.210 | 0.322 | 0.057 | +2.2 | 89 | K%, Age vs level | BB%, BABIP |
+| Nolan Jones | RF | L | 521 | 0.248 | 0.130 | 0.181 | 0.312 | 0.106 | +1.7 | 89 | Age vs level, K% | BB%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Raynel Delgado | 2B | L | 462 | 0.196 | 0.098 | 0.128 | 0.308 | 0.245 | -0.2 | — | — | — |
-| Ryan Bliss | 2B | R | 580 | 0.199 | 0.088 | 0.139 | 0.309 | 0.201 | +0.1 | 94 | K%, Age vs level | SB rate, BB% |
-| Victor Scott II | CF | L | 249 | 0.196 | 0.098 | 0.133 | 0.308 | 0.309 | -1.1 | 92 | BABIP, K% | SB rate, Age vs level |
-| Cal Conley | 2B | S | 223 | 0.238 | 0.084 | 0.147 | 0.312 | 0.254 | +0.5 | 86 | SB rate, Age vs level | K%, BB% |
-| Agustín Ramírez | DH | R | 241 | 0.217 | 0.102 | 0.169 | 0.310 | 0.250 | -1.6 | 84 | SB rate, BB% | ISO, Age vs level |
-| Enrique Bradfield Jr. | OF | L | 370 | 0.215 | 0.104 | 0.124 | 0.319 | 0.309 | -1.9 | 83 | ISO, BB% | BABIP, SB rate |
+| Eddys Leonard | SS | R | 408 | 0.196 | 0.100 | 0.192 | 0.304 | 0.083 | -0.8 | — | — | — |
+| Andrés Chaparro | 1B | R | 143 | 0.195 | 0.105 | 0.180 | 0.308 | 0.057 | +0.7 | 94 | K%, BB% | Age vs level, ISO |
+| Brock Rodden | SS | S | 410 | 0.226 | 0.107 | 0.211 | 0.308 | 0.087 | -0.3 | 92 | SB rate, Age vs level | K%, ISO |
+| Keyber Rodriguez | SS | R | 342 | 0.217 | 0.092 | 0.182 | 0.300 | 0.137 | -0.8 | 90 | Age vs level, ISO | SB rate, BABIP |
+| Cody Morissette | 2B | L | 320 | 0.230 | 0.110 | 0.209 | 0.310 | 0.126 | +0.0 | 87 | Age vs level, BB% | K%, SB rate |
+| Thomas Saggese | SS | R | 249 | 0.224 | 0.107 | 0.176 | 0.309 | 0.134 | -2.2 | 86 | BB%, Age vs level | SB rate, K% |
 
 ## Triple-A pitchers
 
@@ -190,93 +190,93 @@ Random sample (seed 20261127), not hand-picked. Source: build-time snapshot .dat
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Arjun Nimmala | SS | R | 264 | 0.234 | 0.123 | 0.210 | 0.310 | 0.088 | -3.5 | — | — | — |
-| Ralphy Velazquez | 1B | L | 169 | 0.201 | 0.121 | 0.207 | 0.315 | 0.050 | -3.1 | 93 | BB%, ISO | BABIP, K% |
-| Caleb Bonemer | 3B | R | 317 | 0.251 | 0.135 | 0.242 | 0.307 | 0.093 | -3.5 | 91 | Age vs level, SB rate | ISO, BB% |
-| Josh Adamczewski | OF | L | 283 | 0.204 | 0.124 | 0.179 | 0.311 | 0.106 | -3.1 | 90 | BB%, SB rate | ISO, K% |
-| Demetrio Crisantes | 2B | R | 160 | 0.200 | 0.115 | 0.196 | 0.315 | 0.037 | -2.4 | 86 | BB%, ISO | BABIP, K% |
-| Murf Gray | 3B | R | 195 | 0.227 | 0.134 | 0.197 | 0.307 | 0.057 | -1.7 | 86 | K%, SB rate | Age vs level, BABIP |
+| Duce Gourson | 3B | L | 337 | 0.246 | 0.147 | 0.143 | 0.307 | 0.260 | -0.4 | — | — | — |
+| Max Holy | SS | R | 371 | 0.288 | 0.143 | 0.123 | 0.304 | 0.215 | -0.3 | 88 | Age vs level, BB% | K%, ISO |
+| Kyle DeBarge | 2B | R | 533 | 0.257 | 0.121 | 0.140 | 0.303 | 0.284 | -1.3 | 86 | ISO, K% | BB%, BABIP |
+| Trey Paige | 1B | L | 250 | 0.238 | 0.136 | 0.145 | 0.302 | 0.207 | +1.4 | 84 | ISO, K% | Age vs level, BABIP |
+| Sam Kulasingam | 3B | S | 565 | 0.205 | 0.143 | 0.151 | 0.306 | 0.176 | +0.8 | 82 | BABIP, BB% | SB rate, K% |
+| Carson DeMartini | 3B | L | 235 | 0.240 | 0.158 | 0.198 | 0.315 | 0.220 | -0.7 | 80 | K%, Age vs level | ISO, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jacob Hurtubise | LF | L | 100 | 0.195 | 0.119 | 0.159 | 0.314 | 0.164 | +4.3 | — | — | — |
-| Taylor Young | 2B | R | 251 | 0.181 | 0.122 | 0.134 | 0.320 | 0.185 | +3.7 | 93 | BB%, SB rate | BABIP, ISO |
-| Orlando Martinez | OF | L | 273 | 0.196 | 0.099 | 0.143 | 0.315 | 0.139 | +4.1 | 93 | K%, BABIP | BB%, ISO |
-| Frainyer Chavez | 2B | S | 506 | 0.191 | 0.133 | 0.149 | 0.310 | 0.161 | +2.9 | 89 | SB rate, K% | Age vs level, BB% |
-| Jordan Nwogu | OF | R | 151 | 0.200 | 0.126 | 0.124 | 0.311 | 0.163 | +3.1 | 89 | SB rate, K% | ISO, Age vs level |
-| Connor Charping | C | R | 214 | 0.201 | 0.114 | 0.183 | 0.308 | 0.109 | +3.0 | 86 | K%, BB% | BABIP, Age vs level |
+| Dante Nori | OF | L | 306 | 0.178 | 0.096 | 0.134 | 0.304 | 0.211 | -2.5 | — | — | — |
+| Nick Mitchell | OF | L | 462 | 0.183 | 0.120 | 0.119 | 0.309 | 0.168 | -1.4 | 84 | K%, ISO | BB%, BABIP |
+| Lucas Spence | CF | L | 202 | 0.214 | 0.100 | 0.165 | 0.311 | 0.167 | -0.8 | 79 | BB%, SB rate | BABIP, Age vs level |
+| David Calabrese | OF | L | 261 | 0.206 | 0.097 | 0.144 | 0.300 | 0.128 | -0.5 | 78 | BB%, ISO | Age vs level, SB rate |
+| Trevor Cohen | OF | L | 228 | 0.131 | 0.078 | 0.123 | 0.311 | 0.274 | -1.6 | 78 | ISO, Age vs level | K%, BABIP |
+| Alexis Hernandez | OF | R | 102 | 0.192 | 0.099 | 0.145 | 0.316 | 0.130 | -0.5 | 75 | BB%, ISO | BABIP, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Cole Messina | C | R | 364 | 0.267 | 0.114 | 0.151 | 0.307 | 0.223 | -1.1 | — | — | — |
-| Will Taylor | OF | R | 453 | 0.256 | 0.105 | 0.149 | 0.312 | 0.196 | -0.8 | 96 | ISO, Age vs level | BABIP, BB% |
-| Josh Caron | C | R | 151 | 0.272 | 0.118 | 0.175 | 0.310 | 0.204 | -1.3 | 96 | K%, Age vs level | ISO, BABIP |
-| Dalton McIntyre | OF | L | 173 | 0.276 | 0.116 | 0.128 | 0.309 | 0.181 | -1.3 | 95 | Age vs level, BB% | ISO, SB rate |
-| Tyler Whitaker | OF | R | 428 | 0.277 | 0.117 | 0.145 | 0.309 | 0.175 | -0.3 | 95 | BB%, ISO | SB rate, Age vs level |
-| Eduardo Garcia | SS | R | 197 | 0.251 | 0.104 | 0.130 | 0.306 | 0.223 | -0.2 | 93 | SB rate, BABIP | ISO, Age vs level |
+| Leandro Cedeño | 1B | R | 107 | 0.232 | 0.119 | 0.184 | 0.314 | 0.066 | +3.6 | — | — | — |
+| Carson Taylor | 1B | L | 144 | 0.248 | 0.118 | 0.175 | 0.307 | 0.042 | +2.9 | 95 | BB%, ISO | BABIP, Age vs level |
+| Corey Joyce | SS | R | 342 | 0.231 | 0.100 | 0.163 | 0.305 | 0.126 | +3.6 | 86 | Age vs level, K% | BABIP, BB% |
+| Riley Tirotta | 3B | R | 108 | 0.253 | 0.119 | 0.128 | 0.306 | 0.050 | +3.6 | 85 | Age vs level, BB% | ISO, BABIP |
+| JT Schwartz | 1B | L | 296 | 0.257 | 0.104 | 0.173 | 0.302 | 0.052 | +2.3 | 84 | SB rate, ISO | BABIP, BB% |
+| Jake Rucker | 3B | R | 205 | 0.208 | 0.123 | 0.213 | 0.305 | 0.134 | +2.6 | 83 | BB%, K% | BABIP, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ian Moller | C | R | 290 | 0.300 | 0.134 | 0.150 | 0.304 | 0.070 | -0.5 | — | — | — |
-| Ivan Brethowr | RF | R | 220 | 0.300 | 0.127 | 0.132 | 0.303 | 0.116 | -0.9 | 95 | K%, BABIP | SB rate, ISO |
-| Mason White | SS | L | 129 | 0.282 | 0.133 | 0.168 | 0.306 | 0.087 | -1.4 | 94 | BB%, SB rate | ISO, Age vs level |
-| Elijah Green | OF | R | 119 | 0.333 | 0.126 | 0.155 | 0.307 | 0.082 | -1.6 | 90 | SB rate, ISO | K%, Age vs level |
-| Logan Wagner | 3B | S | 130 | 0.305 | 0.137 | 0.183 | 0.303 | 0.070 | -1.9 | 89 | SB rate, BABIP | ISO, Age vs level |
-| Kala'i Rosario | OF | R | 251 | 0.296 | 0.149 | 0.178 | 0.309 | 0.121 | -0.2 | 89 | K%, Age vs level | BABIP, ISO |
+| Blake Burke | 1B | L | 431 | 0.238 | 0.104 | 0.275 | 0.309 | 0.260 | -1.2 | — | — | — |
+| Wehiwa Aloy | SS | R | 158 | 0.272 | 0.097 | 0.209 | 0.308 | 0.200 | -1.8 | 71 | BABIP, BB% | ISO, K% |
+| Marco Luciano | SS | R | 117 | 0.262 | 0.110 | 0.255 | 0.313 | 0.119 | +0.6 | 68 | BB%, ISO | SB rate, Age vs level |
+| Will Simpson | 1B | R | 508 | 0.277 | 0.097 | 0.216 | 0.308 | 0.180 | +0.6 | 65 | BABIP, BB% | ISO, Age vs level |
+| Brandon Butterworth | SS | R | 231 | 0.233 | 0.123 | 0.201 | 0.310 | 0.180 | -0.4 | 64 | K%, BABIP | ISO, SB rate |
+| Brayden Taylor | 3B | L | 380 | 0.231 | 0.128 | 0.208 | 0.314 | 0.178 | -0.1 | 63 | K%, Age vs level | ISO, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jay Allen II | OF | R | 377 | 0.217 | 0.097 | 0.191 | 0.313 | 0.159 | -0.6 | — | — | — |
-| Fenwick Trimble | OF | R | 369 | 0.214 | 0.096 | 0.191 | 0.307 | 0.200 | -0.4 | 96 | ISO, BB% | BABIP, SB rate |
-| Lucas Spence | CF | L | 202 | 0.214 | 0.100 | 0.165 | 0.311 | 0.167 | -0.8 | 96 | K%, Age vs level | ISO, BABIP |
-| Angel Ortiz | OF | L | 335 | 0.245 | 0.101 | 0.210 | 0.312 | 0.189 | -0.5 | 93 | Age vs level, BABIP | K%, ISO |
-| Bo Davidson | RF | L | 315 | 0.237 | 0.094 | 0.218 | 0.308 | 0.178 | -0.2 | 93 | BB%, Age vs level | ISO, BABIP |
-| Jace Avina | LF | R | 532 | 0.238 | 0.114 | 0.202 | 0.307 | 0.123 | -1.2 | 90 | Age vs level, ISO | BABIP, BB% |
+| Rafe Perich | 3B | S | 346 | 0.209 | 0.112 | 0.226 | 0.322 | 0.083 | -0.1 | — | — | — |
+| Cooper Kinney | 2B | L | 253 | 0.232 | 0.107 | 0.198 | 0.316 | 0.050 | -0.8 | 90 | BB%, Age vs level | BABIP, ISO |
+| Seaver King | SS | R | 165 | 0.205 | 0.123 | 0.195 | 0.318 | 0.108 | -1.0 | 90 | K%, SB rate | ISO, BABIP |
+| Parks Harber | 3B | R | 298 | 0.245 | 0.115 | 0.204 | 0.315 | 0.047 | +0.5 | 88 | BB%, Age vs level | BABIP, K% |
+| Carter Graham | 1B | R | 260 | 0.240 | 0.127 | 0.208 | 0.312 | 0.093 | +0.6 | 87 | SB rate, Age vs level | BABIP, BB% |
+| Nick Goodwin | SS | R | 312 | 0.212 | 0.123 | 0.199 | 0.308 | 0.045 | +0.6 | 83 | K%, Age vs level | BABIP, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jax Biggers | 2B | L | 122 | 0.261 | 0.141 | 0.140 | 0.304 | 0.107 | +5.0 | — | — | — |
-| Luke Ritter | 2B | R | 180 | 0.280 | 0.130 | 0.140 | 0.311 | 0.049 | +5.1 | 91 | ISO, Age vs level | BABIP, SB rate |
-| Nick Raposo | C | R | 213 | 0.244 | 0.126 | 0.142 | 0.313 | 0.078 | +3.9 | 88 | ISO, SB rate | BABIP, BB% |
-| Zavier Warren | 1B | S | 224 | 0.269 | 0.125 | 0.134 | 0.298 | 0.075 | +3.3 | 84 | ISO, K% | Age vs level, BABIP |
-| Matt Rudick | OF | L | 215 | 0.225 | 0.126 | 0.143 | 0.295 | 0.153 | +3.8 | 83 | ISO, SB rate | BABIP, K% |
-| Riley Tirotta | 3B | R | 108 | 0.253 | 0.119 | 0.128 | 0.306 | 0.050 | +3.6 | 82 | K%, ISO | BB%, Age vs level |
+| Skyler Messinger | 3B | R | 111 | 0.293 | 0.074 | 0.125 | 0.307 | 0.168 | +3.4 | — | — | — |
+| Wyatt Hoffman | 2B | R | 125 | 0.318 | 0.086 | 0.132 | 0.307 | 0.099 | +3.1 | 90 | BABIP, ISO | SB rate, K% |
+| Jose Torres | SS | R | 216 | 0.297 | 0.098 | 0.149 | 0.300 | 0.203 | +2.5 | 84 | K%, SB rate | BB%, BABIP |
+| Julio Carreras | SS | R | 147 | 0.286 | 0.105 | 0.141 | 0.303 | 0.171 | +2.2 | 81 | SB rate, K% | BB%, Age vs level |
+| TT Bowens | 1B | R | 102 | 0.320 | 0.104 | 0.133 | 0.302 | 0.102 | +3.9 | 80 | Age vs level, ISO | BB%, SB rate |
+| Devin Ortiz | 3B | R | 230 | 0.257 | 0.103 | 0.119 | 0.290 | 0.098 | +3.2 | 72 | Age vs level, ISO | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Woody Hadeen | SS | S | 118 | 0.213 | 0.114 | 0.162 | 0.312 | 0.269 | -0.3 | — | — | — |
-| Erick Brito | SS | R | 104 | 0.219 | 0.112 | 0.143 | 0.314 | 0.280 | -0.1 | 98 | Age vs level, BB% | ISO, BABIP |
-| Dakota Harris | 3B | R | 394 | 0.214 | 0.109 | 0.158 | 0.306 | 0.247 | +0.1 | 97 | K%, ISO | BABIP, SB rate |
-| Jeremy Rivas | SS | R | 143 | 0.226 | 0.111 | 0.165 | 0.306 | 0.244 | -0.9 | 96 | ISO, BB% | BABIP, Age vs level |
-| Ethan O'Donnell | CF | L | 177 | 0.239 | 0.115 | 0.163 | 0.305 | 0.273 | +0.0 | 96 | ISO, SB rate | BABIP, K% |
-| Dylan Campbell | CF | R | 539 | 0.228 | 0.108 | 0.176 | 0.302 | 0.284 | -0.2 | 93 | Age vs level, SB rate | BABIP, ISO |
+| Adam Zebrowski | C | R | 239 | 0.304 | 0.095 | 0.256 | 0.311 | 0.048 | +1.5 | — | — | — |
+| Jorge Corona | C | R | 217 | 0.296 | 0.080 | 0.192 | 0.308 | 0.051 | +1.6 | 78 | Age vs level, SB rate | ISO, BB% |
+| Maxwell Romero Jr. | C | L | 229 | 0.311 | 0.132 | 0.224 | 0.310 | 0.031 | +0.9 | 75 | BABIP, K% | BB%, ISO |
+| Derek Berg | C | R | 253 | 0.291 | 0.091 | 0.169 | 0.320 | 0.054 | +0.6 | 63 | SB rate, BB% | ISO, BABIP |
+| Pablo Aliendo | C | R | 151 | 0.317 | 0.081 | 0.166 | 0.303 | 0.056 | +0.9 | 62 | SB rate, K% | ISO, BABIP |
+| Owen Ayers | C | S | 278 | 0.247 | 0.139 | 0.240 | 0.317 | 0.054 | +0.8 | 62 | SB rate, Age vs level | BB%, K% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Fenwick Trimble | OF | R | 369 | 0.214 | 0.096 | 0.191 | 0.307 | 0.200 | -0.4 | — | — | — |
-| Jay Allen II | OF | R | 377 | 0.217 | 0.097 | 0.191 | 0.313 | 0.159 | -0.6 | 96 | ISO, BB% | BABIP, SB rate |
-| Lucas Spence | CF | L | 202 | 0.214 | 0.100 | 0.165 | 0.311 | 0.167 | -0.8 | 94 | K%, BB% | ISO, BABIP |
-| Bo Davidson | RF | L | 315 | 0.237 | 0.094 | 0.218 | 0.308 | 0.178 | -0.2 | 93 | Age vs level, BB% | ISO, K% |
-| Angel Ortiz | OF | L | 335 | 0.245 | 0.101 | 0.210 | 0.312 | 0.189 | -0.5 | 92 | Age vs level, SB rate | BABIP, K% |
-| Jeremy Rivas | SS | R | 143 | 0.226 | 0.111 | 0.165 | 0.306 | 0.244 | -0.9 | 90 | BABIP, K% | ISO, BB% |
+| Jose Torres | SS | R | 216 | 0.297 | 0.098 | 0.149 | 0.300 | 0.203 | +2.5 | — | — | — |
+| Julio Carreras | SS | R | 147 | 0.286 | 0.105 | 0.141 | 0.303 | 0.171 | +2.2 | 97 | Age vs level, ISO | BABIP, SB rate |
+| Viandel Pena | 2B | S | 116 | 0.264 | 0.106 | 0.146 | 0.306 | 0.156 | +1.4 | 87 | ISO, BB% | BABIP, K% |
+| Jorel Ortega | 2B | R | 176 | 0.333 | 0.095 | 0.126 | 0.299 | 0.192 | +1.2 | 86 | SB rate, BB% | K%, Age vs level |
+| Caleb Cali | 3B | R | 515 | 0.327 | 0.114 | 0.177 | 0.299 | 0.176 | +1.6 | 86 | BABIP, SB rate | ISO, BB% |
+| Jaylen Palmer | SS | R | 153 | 0.323 | 0.121 | 0.146 | 0.310 | 0.208 | +1.7 | 85 | SB rate, ISO | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Cooper Kinney | 2B | L | 253 | 0.232 | 0.107 | 0.198 | 0.316 | 0.050 | -0.8 | — | — | — |
-| Gavin Conticello | RF | L | 311 | 0.221 | 0.109 | 0.189 | 0.311 | 0.054 | -1.2 | 97 | SB rate, BB% | BABIP, ISO |
-| Anthony DePino | 1B | R | 392 | 0.258 | 0.115 | 0.205 | 0.310 | 0.036 | -0.9 | 94 | Age vs level, SB rate | BABIP, K% |
-| Parks Harber | 3B | R | 298 | 0.245 | 0.115 | 0.204 | 0.315 | 0.047 | +0.5 | 93 | SB rate, BABIP | Age vs level, BB% |
-| Hendry Mendez | OF | L | 102 | 0.216 | 0.099 | 0.184 | 0.309 | 0.078 | -1.6 | 93 | SB rate, BB% | BABIP, Age vs level |
-| Dylan Dreiling | OF | L | 538 | 0.209 | 0.105 | 0.195 | 0.324 | 0.097 | -1.0 | 92 | ISO, BB% | BABIP, SB rate |
+| Luke Pelzer | OF | L | 186 | 0.207 | 0.108 | 0.114 | 0.325 | 0.195 | -0.7 | — | — | — |
+| Carlos Jorge | CF | L | 259 | 0.210 | 0.100 | 0.139 | 0.325 | 0.238 | -1.4 | 92 | K%, BABIP | ISO, SB rate |
+| Alexis Hernandez | OF | R | 102 | 0.192 | 0.099 | 0.145 | 0.316 | 0.130 | -0.5 | 87 | Age vs level, K% | BABIP, ISO |
+| Jay Thomason | LF | L | 136 | 0.243 | 0.102 | 0.148 | 0.316 | 0.187 | -0.0 | 86 | SB rate, BB% | BABIP, ISO |
+| Junior Franco | OF | L | 376 | 0.222 | 0.099 | 0.150 | 0.317 | 0.138 | -0.4 | 85 | Age vs level, K% | BABIP, ISO |
+| Nick Mitchell | OF | L | 462 | 0.183 | 0.120 | 0.119 | 0.309 | 0.168 | -1.4 | 83 | ISO, SB rate | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Douglas Hodo III | OF | R | 192 | 0.290 | 0.087 | 0.190 | 0.305 | 0.289 | +1.5 | — | — | — |
-| GJ Hill | OF | S | 395 | 0.293 | 0.085 | 0.195 | 0.307 | 0.382 | +1.5 | 91 | Age vs level, BB% | SB rate, BABIP |
-| Mark Coley II | OF | R | 292 | 0.321 | 0.102 | 0.156 | 0.304 | 0.235 | +1.4 | 84 | BABIP, Age vs level | ISO, BB% |
-| Sean McLain | 2B | R | 206 | 0.290 | 0.092 | 0.177 | 0.314 | 0.180 | +1.1 | 83 | K%, BB% | BABIP, SB rate |
-| Dominic Pitelli | SS | L | 130 | 0.295 | 0.100 | 0.164 | 0.305 | 0.210 | +0.2 | 82 | K%, BABIP | SB rate, ISO |
-| Connor Hujsak | OF | R | 111 | 0.299 | 0.069 | 0.152 | 0.313 | 0.262 | +0.2 | 81 | K%, SB rate | BABIP, ISO |
+| Max Holy | SS | R | 371 | 0.288 | 0.143 | 0.123 | 0.304 | 0.215 | -0.3 | — | — | — |
+| Duce Gourson | 3B | L | 337 | 0.246 | 0.147 | 0.143 | 0.307 | 0.260 | -0.4 | 88 | Age vs level, BB% | K%, ISO |
+| Maui Ahuna | SS | L | 460 | 0.283 | 0.114 | 0.123 | 0.312 | 0.242 | +0.1 | 83 | ISO, K% | BB%, BABIP |
+| Kyle DeBarge | 2B | R | 533 | 0.257 | 0.121 | 0.140 | 0.303 | 0.284 | -1.3 | 80 | BABIP, ISO | BB%, SB rate |
+| Michael Snyder | 3B | R | 117 | 0.246 | 0.148 | 0.140 | 0.301 | 0.175 | +1.6 | 80 | BB%, BABIP | Age vs level, K% |
+| Trey Paige | 1B | L | 250 | 0.238 | 0.136 | 0.145 | 0.302 | 0.207 | +1.4 | 80 | SB rate, BABIP | K%, Age vs level |
 
 ## Double-A pitchers
 
@@ -374,93 +374,93 @@ Random sample (seed 20261127), not hand-picked. Source: build-time snapshot .dat
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Logan Poteet | C | R | 152 | 0.317 | 0.119 | 0.205 | 0.322 | 0.050 | -0.1 | — | — | — |
-| Max Belyeu | OF | L | 281 | 0.311 | 0.110 | 0.213 | 0.314 | 0.077 | -0.2 | 97 | Age vs level, K% | BABIP, BB% |
-| Jakob Christian | 1B | R | 224 | 0.307 | 0.127 | 0.202 | 0.323 | 0.046 | +1.0 | 92 | SB rate, ISO | Age vs level, BB% |
-| Tom Poole | OF | L | 118 | 0.326 | 0.119 | 0.198 | 0.312 | 0.080 | +1.0 | 91 | BB%, ISO | Age vs level, BABIP |
-| Kavares Tears | OF | L | 279 | 0.310 | 0.124 | 0.215 | 0.307 | 0.045 | +1.1 | 89 | SB rate, K% | BABIP, Age vs level |
-| Jace LaViolette | OF | L | 388 | 0.359 | 0.121 | 0.209 | 0.328 | 0.120 | -0.2 | 88 | Age vs level, BB% | K%, SB rate |
+| Anthony DePino | 1B | R | 142 | 0.202 | 0.124 | 0.186 | 0.306 | 0.113 | +0.6 | — | — | — |
+| Peyton Stovall | 2B | L | 324 | 0.205 | 0.130 | 0.179 | 0.298 | 0.152 | +0.6 | 97 | Age vs level, K% | BABIP, SB rate |
+| Henry Godbout | SS | R | 161 | 0.189 | 0.131 | 0.189 | 0.308 | 0.065 | -0.1 | 94 | ISO, BABIP | SB rate, Age vs level |
+| Luke Hanson | SS | R | 449 | 0.179 | 0.113 | 0.159 | 0.304 | 0.116 | +0.1 | 92 | SB rate, BABIP | ISO, K% |
+| Jose D. Hernandez | SS | R | 125 | 0.199 | 0.125 | 0.145 | 0.304 | 0.085 | +0.4 | 92 | BB%, K% | ISO, SB rate |
+| Gable Mitchell | SS | S | 109 | 0.206 | 0.115 | 0.148 | 0.306 | 0.111 | -0.1 | 91 | SB rate, BABIP | ISO, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Lonnie White Jr. | OF | R | 104 | 0.223 | 0.144 | 0.214 | 0.312 | 0.232 | +0.7 | — | — | — |
-| Carlos Jimenez | OF | L | 453 | 0.214 | 0.142 | 0.223 | 0.322 | 0.154 | +0.6 | 91 | BB%, Age vs level | SB rate, BABIP |
-| Ike Irish | OF | L | 343 | 0.222 | 0.124 | 0.216 | 0.319 | 0.200 | -0.2 | 91 | K%, ISO | BB%, Age vs level |
-| Connor Caskenette | C | R | 145 | 0.227 | 0.157 | 0.200 | 0.325 | 0.168 | +1.3 | 90 | K%, Age vs level | BABIP, SB rate |
-| Colin Tuft | C | R | 300 | 0.268 | 0.133 | 0.214 | 0.301 | 0.278 | +0.7 | 89 | ISO, Age vs level | K%, BABIP |
-| Won-Bin Cho | OF | L | 233 | 0.247 | 0.148 | 0.195 | 0.322 | 0.302 | +0.1 | 88 | BB%, Age vs level | SB rate, BABIP |
+| Khadim Diaw | C | R | 247 | 0.201 | 0.121 | 0.158 | 0.329 | 0.057 | +0.1 | — | — | — |
+| Ryan McCrystal | C | L | 324 | 0.208 | 0.125 | 0.137 | 0.322 | 0.022 | +1.0 | 92 | K%, BB% | Age vs level, ISO |
+| Eric Genther | C | L | 490 | 0.192 | 0.129 | 0.166 | 0.315 | 0.058 | +1.3 | 89 | SB rate, K% | BABIP, Age vs level |
+| Davis Diaz | C | R | 127 | 0.166 | 0.138 | 0.174 | 0.316 | 0.063 | +0.6 | 89 | SB rate, Age vs level | BABIP, K% |
+| Kevin Bazzell | C | R | 213 | 0.183 | 0.118 | 0.168 | 0.309 | 0.132 | +0.5 | 86 | BB%, ISO | BABIP, SB rate |
+| Malcolm Moore | C | L | 217 | 0.205 | 0.100 | 0.209 | 0.320 | 0.033 | +0.2 | 84 | Age vs level, K% | ISO, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Kade Snell | OF | L | 359 | 0.212 | 0.102 | 0.159 | 0.313 | 0.188 | +1.2 | — | — | — |
-| Quinn McDaniel | OF | R | 173 | 0.222 | 0.110 | 0.164 | 0.324 | 0.162 | +1.0 | 96 | Age vs level, ISO | BABIP, SB rate |
-| Ryan Cesarini | OF | L | 142 | 0.216 | 0.107 | 0.187 | 0.305 | 0.188 | +0.8 | 94 | SB rate, K% | ISO, BABIP |
-| Tyler Pettorini | 3B | L | 234 | 0.210 | 0.111 | 0.134 | 0.321 | 0.216 | +0.9 | 94 | K%, Age vs level | ISO, BABIP |
-| Randal Diaz | SS | R | 372 | 0.233 | 0.110 | 0.172 | 0.314 | 0.232 | +0.4 | 92 | BABIP, BB% | Age vs level, SB rate |
-| Leonel Espinoza | OF | R | 207 | 0.234 | 0.094 | 0.142 | 0.303 | 0.196 | +0.5 | 92 | SB rate, BB% | BABIP, ISO |
+| Randy De Jesus | OF | R | 392 | 0.338 | 0.095 | 0.204 | 0.322 | 0.024 | -1.4 | — | — | — |
+| Max Belyeu | OF | L | 281 | 0.311 | 0.110 | 0.213 | 0.314 | 0.077 | -0.2 | 85 | ISO, BB% | Age vs level, BABIP |
+| George Wolkow | OF | L | 557 | 0.313 | 0.094 | 0.197 | 0.316 | 0.124 | -2.3 | 84 | BB%, ISO | SB rate, Age vs level |
+| Anthony Scull | OF | L | 211 | 0.271 | 0.086 | 0.214 | 0.318 | 0.041 | -0.3 | 79 | SB rate, ISO | K%, Age vs level |
+| Jace LaViolette | OF | L | 388 | 0.359 | 0.121 | 0.209 | 0.328 | 0.120 | -0.2 | 78 | ISO, BABIP | SB rate, BB% |
+| Robert Calaz | OF | R | 420 | 0.296 | 0.094 | 0.161 | 0.317 | 0.118 | -2.1 | 75 | BB%, BABIP | ISO, SB rate |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Quinn McDaniel | OF | R | 173 | 0.222 | 0.110 | 0.164 | 0.324 | 0.162 | +1.0 | — | — | — |
-| Derek Cerda | OF | R | 108 | 0.201 | 0.110 | 0.156 | 0.326 | 0.128 | +0.6 | 96 | BB%, BABIP | K%, SB rate |
-| Kade Snell | OF | L | 359 | 0.212 | 0.102 | 0.159 | 0.313 | 0.188 | +1.2 | 96 | Age vs level, ISO | BABIP, SB rate |
-| Cesar Hernandez | OF | L | 150 | 0.236 | 0.112 | 0.137 | 0.327 | 0.181 | +0.4 | 94 | BB%, SB rate | ISO, Age vs level |
-| Tyler Pettorini | 3B | L | 234 | 0.210 | 0.111 | 0.134 | 0.321 | 0.216 | +0.9 | 93 | BB%, Age vs level | ISO, SB rate |
-| Josh Tate | OF | R | 233 | 0.247 | 0.102 | 0.159 | 0.330 | 0.200 | +0.1 | 91 | ISO, BB% | Age vs level, K% |
+| Ali Camarillo | SS | R | 389 | 0.158 | 0.089 | 0.126 | 0.317 | 0.179 | +0.4 | — | — | — |
+| Kaeden Kent | SS | L | 400 | 0.172 | 0.083 | 0.148 | 0.325 | 0.216 | +0.1 | 93 | Age vs level, BB% | BABIP, ISO |
+| Eric Snow | SS | R | 167 | 0.133 | 0.108 | 0.139 | 0.313 | 0.155 | -0.4 | 90 | BABIP, SB rate | BB%, Age vs level |
+| Justin DeCriscio | SS | R | 341 | 0.169 | 0.102 | 0.151 | 0.301 | 0.138 | +0.5 | 88 | Age vs level, K% | BABIP, ISO |
+| Carter Dorighi | 3B | L | 390 | 0.202 | 0.102 | 0.094 | 0.310 | 0.186 | +0.3 | 87 | Age vs level, SB rate | K%, ISO |
+| Dylan Palmer | 2B | L | 244 | 0.148 | 0.119 | 0.113 | 0.330 | 0.190 | -0.0 | 86 | SB rate, K% | BB%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Johnny Ascanio | LF | S | 122 | 0.218 | 0.122 | 0.117 | 0.304 | 0.047 | +0.2 | — | — | — |
-| Carlos Rodriguez | C | L | 333 | 0.233 | 0.118 | 0.138 | 0.296 | 0.035 | +0.4 | 96 | Age vs level, SB rate | BABIP, ISO |
-| Ben Hartl | C | R | 191 | 0.249 | 0.131 | 0.123 | 0.298 | 0.054 | +0.7 | 94 | SB rate, ISO | K%, BABIP |
-| Jose D. Hernandez | SS | R | 125 | 0.199 | 0.125 | 0.145 | 0.304 | 0.085 | +0.4 | 94 | BABIP, BB% | ISO, SB rate |
-| Nate Nankil | OF | R | 198 | 0.201 | 0.128 | 0.127 | 0.294 | 0.063 | +1.0 | 94 | SB rate, BB% | BABIP, Age vs level |
-| Yerlin Confidan | OF | L | 316 | 0.222 | 0.113 | 0.142 | 0.310 | 0.083 | +0.8 | 93 | K%, BB% | ISO, SB rate |
+| Trent Farquhar | 2B | L | 275 | 0.217 | 0.137 | 0.123 | 0.292 | 0.123 | +2.6 | — | — | — |
+| Gunner Gouldsmith | SS | S | 334 | 0.182 | 0.146 | 0.112 | 0.291 | 0.107 | +2.0 | 93 | BABIP, SB rate | K%, BB% |
+| Hayden Jatczak | 1B | R | 154 | 0.209 | 0.126 | 0.137 | 0.312 | 0.085 | +2.1 | 90 | K%, Age vs level | BABIP, SB rate |
+| Jared Sprague-Lott | SS | R | 302 | 0.185 | 0.142 | 0.127 | 0.305 | 0.176 | +2.0 | 89 | ISO, BB% | BABIP, K% |
+| Bryce Eblin | 2B | L | 157 | 0.247 | 0.113 | 0.148 | 0.299 | 0.095 | +1.9 | 86 | SB rate, Age vs level | BB%, ISO |
+| Wallace Clark | SS | S | 332 | 0.236 | 0.111 | 0.122 | 0.289 | 0.095 | +1.3 | 85 | ISO, BABIP | BB%, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Abrahan Ramirez | 2B | L | 165 | 0.199 | 0.113 | 0.127 | 0.301 | 0.260 | -1.0 | — | — | — |
-| Chase Jaworsky | SS | L | 268 | 0.216 | 0.120 | 0.137 | 0.304 | 0.289 | -0.8 | 97 | Age vs level, BABIP | K%, SB rate |
-| Enmanuel Tejeda | 2B | R | 347 | 0.194 | 0.121 | 0.124 | 0.288 | 0.253 | -1.2 | 96 | SB rate, ISO | BABIP, BB% |
-| Robert Phelps | 3B | R | 111 | 0.192 | 0.103 | 0.125 | 0.290 | 0.270 | -0.3 | 95 | ISO, SB rate | BABIP, Age vs level |
-| Yerald Nin | OF | L | 270 | 0.226 | 0.105 | 0.119 | 0.310 | 0.274 | -1.9 | 92 | SB rate, ISO | BABIP, Age vs level |
-| Christian Olivo | OF | R | 306 | 0.202 | 0.123 | 0.138 | 0.293 | 0.206 | -0.1 | 90 | K%, ISO | Age vs level, SB rate |
+| Breyson Guedez | OF | L | 134 | 0.210 | 0.066 | 0.122 | 0.313 | 0.047 | -4.0 | — | — | — |
+| Juneiker Caceres | OF | L | 100 | 0.235 | 0.120 | 0.139 | 0.317 | 0.049 | -3.9 | 73 | SB rate, Age vs level | BB%, K% |
+| Owen Carey | OF | L | 225 | 0.192 | 0.095 | 0.190 | 0.309 | 0.075 | -2.8 | 68 | BABIP, SB rate | ISO, BB% |
+| Luis Guanipa | OF | R | 146 | 0.179 | 0.062 | 0.151 | 0.289 | 0.194 | -2.2 | 58 | BB%, K% | BABIP, SB rate |
+| Yophery Rodriguez | CF | L | 400 | 0.234 | 0.091 | 0.201 | 0.300 | 0.045 | -2.2 | 57 | SB rate, K% | ISO, Age vs level |
+| Erick Torres | OF | R | 361 | 0.164 | 0.084 | 0.091 | 0.311 | 0.144 | -1.2 | 54 | BABIP, BB% | Age vs level, SB rate |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Javier Mogollon | 2B | R | 170 | 0.271 | 0.138 | 0.176 | 0.320 | 0.223 | -2.1 | — | — | — |
-| Sawyer Strosnider | OF | L | 103 | 0.272 | 0.118 | 0.167 | 0.325 | 0.200 | -1.7 | 94 | K%, Age vs level | BB%, BABIP |
-| Brandon Winokur | OF | R | 331 | 0.285 | 0.128 | 0.167 | 0.324 | 0.194 | -1.2 | 93 | ISO, K% | Age vs level, BB% |
-| Angel Cepeda | SS | R | 306 | 0.266 | 0.138 | 0.171 | 0.325 | 0.126 | -2.1 | 90 | Age vs level, BB% | SB rate, BABIP |
-| Jonny Farmelo | OF | L | 399 | 0.245 | 0.149 | 0.196 | 0.324 | 0.213 | -0.9 | 89 | SB rate, BABIP | Age vs level, ISO |
-| Tate Southisene | SS | R | 177 | 0.239 | 0.146 | 0.168 | 0.315 | 0.168 | -3.0 | 88 | ISO, BB% | K%, SB rate |
+| Jose Escobar | OF | L | 333 | 0.153 | 0.099 | 0.148 | 0.319 | 0.086 | -1.0 | — | — | — |
+| Yeison Morrobel | OF | L | 339 | 0.180 | 0.107 | 0.188 | 0.317 | 0.040 | -0.2 | 85 | BABIP, BB% | ISO, K% |
+| Owen Hull | OF | L | 117 | 0.180 | 0.130 | 0.176 | 0.325 | 0.064 | -0.8 | 85 | Age vs level, SB rate | BB%, ISO |
+| Hector Osorio | CF | L | 155 | 0.176 | 0.114 | 0.188 | 0.302 | 0.040 | -1.5 | 82 | Age vs level, K% | BABIP, ISO |
+| Tommy Hopfe | OF | S | 459 | 0.177 | 0.098 | 0.163 | 0.310 | 0.121 | +1.0 | 80 | BB%, SB rate | Age vs level, BABIP |
+| Jorge Ruiz | OF | L | 423 | 0.157 | 0.066 | 0.127 | 0.302 | 0.144 | -0.8 | 79 | K%, Age vs level | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Gunner Gouldsmith | SS | S | 334 | 0.182 | 0.146 | 0.112 | 0.291 | 0.107 | +2.0 | — | — | — |
-| Trent Farquhar | 2B | L | 275 | 0.217 | 0.137 | 0.123 | 0.292 | 0.123 | +2.6 | 93 | BABIP, SB rate | K%, BB% |
-| Jared Sprague-Lott | SS | R | 302 | 0.185 | 0.142 | 0.127 | 0.305 | 0.176 | +2.0 | 90 | K%, Age vs level | BABIP, SB rate |
-| Justin Stransky | C | R | 312 | 0.175 | 0.141 | 0.137 | 0.279 | 0.130 | +1.1 | 89 | BB%, K% | BABIP, ISO |
-| Nate Nankil | OF | R | 198 | 0.201 | 0.128 | 0.127 | 0.294 | 0.063 | +1.0 | 88 | BABIP, K% | Age vs level, BB% |
-| Maddox Latta | SS | R | 443 | 0.198 | 0.140 | 0.132 | 0.301 | 0.095 | +0.7 | 87 | SB rate, BB% | Age vs level, BABIP |
+| Maxton Martin | OF | L | 508 | 0.251 | 0.082 | 0.196 | 0.291 | 0.141 | -1.6 | — | — | — |
+| Esmil Valencia | CF | R | 200 | 0.237 | 0.072 | 0.171 | 0.290 | 0.212 | -2.0 | 90 | BABIP, Age vs level | SB rate, ISO |
+| Yophery Rodriguez | CF | L | 400 | 0.234 | 0.091 | 0.201 | 0.300 | 0.045 | -2.2 | 86 | ISO, K% | SB rate, BABIP |
+| Isaiah Jackson | OF | L | 444 | 0.237 | 0.112 | 0.206 | 0.296 | 0.099 | -0.6 | 84 | ISO, K% | BB%, Age vs level |
+| Angel Mateo | OF | R | 122 | 0.255 | 0.093 | 0.140 | 0.300 | 0.160 | -1.4 | 83 | K%, Age vs level | ISO, BABIP |
+| Brian Sanchez | LF | L | 412 | 0.247 | 0.111 | 0.184 | 0.314 | 0.105 | -0.8 | 76 | K%, ISO | BABIP, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Josh Kross | 1B | S | 375 | 0.249 | 0.111 | 0.179 | 0.312 | 0.022 | +0.7 | — | — | — |
-| Arxy Hernandez | 3B | R | 212 | 0.252 | 0.092 | 0.160 | 0.310 | 0.037 | +0.2 | 93 | K%, BABIP | BB%, ISO |
-| Dub Gleed | SS | R | 202 | 0.213 | 0.102 | 0.181 | 0.309 | 0.036 | +1.1 | 93 | ISO, SB rate | K%, BB% |
-| Bobby Boser | SS | R | 150 | 0.259 | 0.116 | 0.165 | 0.326 | 0.070 | +0.8 | 93 | Age vs level, BB% | BABIP, SB rate |
-| Luke Heyman | C | R | 279 | 0.241 | 0.121 | 0.200 | 0.298 | 0.029 | +0.2 | 92 | SB rate, K% | BABIP, ISO |
-| Clayton Campbell | 1B | R | 378 | 0.261 | 0.113 | 0.150 | 0.322 | 0.054 | +0.1 | 91 | BB%, K% | ISO, BABIP |
+| Daunte Stuart | 2B | R | 227 | 0.215 | 0.103 | 0.120 | 0.295 | 0.296 | +2.3 | — | — | — |
+| Stanley Tucker | 2B | R | 176 | 0.198 | 0.101 | 0.125 | 0.296 | 0.349 | +1.4 | 92 | BABIP, BB% | SB rate, Age vs level |
+| Kyle Walker | 2B | R | 429 | 0.202 | 0.106 | 0.134 | 0.310 | 0.298 | +0.7 | 84 | SB rate, BB% | BABIP, Age vs level |
+| Bryce Martin-Grudzielanek | 3B | R | 113 | 0.235 | 0.093 | 0.129 | 0.297 | 0.308 | +0.3 | 79 | BABIP, SB rate | Age vs level, K% |
+| David Mershon | 2B | S | 254 | 0.225 | 0.107 | 0.107 | 0.312 | 0.248 | +0.4 | 76 | BB%, K% | Age vs level, BABIP |
+| Tyriq Kemp | SS | L | 448 | 0.202 | 0.128 | 0.164 | 0.289 | 0.264 | +0.9 | 76 | K%, SB rate | ISO, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jared Sprague-Lott | SS | R | 302 | 0.185 | 0.142 | 0.127 | 0.305 | 0.176 | +2.0 | — | — | — |
-| Trent Youngblood | OF | L | 296 | 0.182 | 0.137 | 0.128 | 0.324 | 0.218 | +2.1 | 91 | ISO, K% | BABIP, SB rate |
-| Drew Brutcher | OF | L | 144 | 0.190 | 0.119 | 0.144 | 0.310 | 0.128 | +1.6 | 90 | K%, Age vs level | BB%, SB rate |
-| Gunner Gouldsmith | SS | S | 334 | 0.182 | 0.146 | 0.112 | 0.291 | 0.107 | +2.0 | 90 | K%, Age vs level | BABIP, SB rate |
-| Trent Farquhar | 2B | L | 275 | 0.217 | 0.137 | 0.123 | 0.292 | 0.123 | +2.6 | 89 | ISO, BB% | BABIP, K% |
-| Luke Shliger | C | L | 173 | 0.222 | 0.136 | 0.143 | 0.310 | 0.102 | +2.0 | 88 | Age vs level, BB% | SB rate, K% |
+| Caden Powell | OF | R | 474 | 0.272 | 0.120 | 0.172 | 0.336 | 0.210 | -0.1 | — | — | — |
+| Ethan Frey | OF | R | 291 | 0.283 | 0.126 | 0.172 | 0.333 | 0.220 | -0.5 | 98 | ISO, SB rate | Age vs level, K% |
+| Josh Tate | OF | R | 233 | 0.247 | 0.102 | 0.159 | 0.330 | 0.200 | +0.1 | 93 | Age vs level, SB rate | BB%, K% |
+| Nolan Sailors | OF | L | 450 | 0.250 | 0.135 | 0.150 | 0.334 | 0.254 | +0.2 | 92 | BABIP, Age vs level | ISO, BB% |
+| Aaron Walton | OF | R | 368 | 0.263 | 0.124 | 0.208 | 0.329 | 0.189 | -0.6 | 91 | BB%, K% | ISO, BABIP |
+| Brandon Winokur | OF | R | 331 | 0.285 | 0.128 | 0.167 | 0.324 | 0.194 | -1.2 | 90 | ISO, SB rate | BABIP, Age vs level |
 
 ## High-A pitchers
 
@@ -558,93 +558,93 @@ Random sample (seed 20261127), not hand-picked. Source: build-time snapshot .dat
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jemone Nuel | 2B | S | 124 | 0.248 | 0.123 | 0.104 | 0.308 | 0.199 | -2.1 | — | — | — |
-| Jhomnardo Reyes | OF | L | 150 | 0.236 | 0.138 | 0.093 | 0.308 | 0.202 | -2.8 | 94 | BABIP, SB rate | BB%, Age vs level |
-| Ty Harvey | C | R | 197 | 0.277 | 0.123 | 0.129 | 0.313 | 0.177 | -1.6 | 93 | BB%, SB rate | ISO, K% |
-| Juan Ortega | C | R | 208 | 0.225 | 0.112 | 0.126 | 0.307 | 0.210 | -1.3 | 92 | BABIP, SB rate | ISO, Age vs level |
-| Alejandro Blasco | OF | S | 105 | 0.219 | 0.119 | 0.130 | 0.320 | 0.220 | -2.3 | 92 | BB%, Age vs level | BABIP, ISO |
-| Joshua Liranzo | 3B | R | 318 | 0.273 | 0.138 | 0.100 | 0.303 | 0.256 | -1.7 | 92 | ISO, Age vs level | SB rate, BB% |
+| Harry Genth | SS | R | 141 | 0.330 | 0.148 | 0.142 | 0.314 | 0.294 | +2.3 | — | — | — |
+| Edwin Amparo | 2B | S | 235 | 0.337 | 0.154 | 0.134 | 0.308 | 0.261 | +0.2 | 77 | K%, BB% | Age vs level, BABIP |
+| Brayden Smith | 2B | L | 356 | 0.259 | 0.137 | 0.152 | 0.322 | 0.255 | +1.0 | 77 | ISO, BB% | K%, Age vs level |
+| Joe Olsavsky | 2B | R | 220 | 0.306 | 0.130 | 0.108 | 0.307 | 0.178 | +2.7 | 76 | Age vs level, K% | SB rate, ISO |
+| Dervy Ventura | 2B | S | 460 | 0.261 | 0.148 | 0.125 | 0.327 | 0.246 | +0.9 | 75 | BB%, SB rate | K%, BABIP |
+| Trevor Haskins | 2B | R | 376 | 0.297 | 0.108 | 0.178 | 0.320 | 0.246 | +1.7 | 73 | Age vs level, BABIP | BB%, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Brady Marget | 1B | L | 224 | 0.177 | 0.141 | 0.144 | 0.337 | 0.035 | +2.2 | — | — | — |
-| Luke Cantwell | 1B | L | 160 | 0.199 | 0.149 | 0.156 | 0.340 | 0.111 | +1.9 | 91 | BABIP, Age vs level | SB rate, K% |
-| JoJo Jackson | OF | S | 229 | 0.222 | 0.145 | 0.133 | 0.331 | 0.127 | +2.2 | 85 | Age vs level, BB% | SB rate, K% |
-| Logan Sauve | C | R | 141 | 0.176 | 0.139 | 0.118 | 0.314 | 0.069 | +1.4 | 84 | K%, BB% | BABIP, ISO |
-| Clayton Gray | OF | L | 188 | 0.236 | 0.148 | 0.132 | 0.343 | 0.075 | +3.2 | 84 | BB%, ISO | K%, Age vs level |
-| Emilio Barreras | 3B | L | 154 | 0.128 | 0.148 | 0.129 | 0.325 | 0.071 | +1.2 | 84 | BB%, SB rate | BABIP, K% |
+| Jonathan Mejía | SS | S | 321 | 0.271 | 0.171 | 0.181 | 0.305 | 0.105 | -0.3 | — | — | — |
+| Luke Dickerson | 2B | R | 431 | 0.269 | 0.196 | 0.185 | 0.318 | 0.141 | -0.7 | 88 | K%, ISO | BABIP, BB% |
+| JC Vanek | 1B | L | 374 | 0.275 | 0.164 | 0.175 | 0.326 | 0.162 | +0.3 | 86 | K%, ISO | BABIP, SB rate |
+| Adrian Gil | 2B | R | 178 | 0.292 | 0.161 | 0.128 | 0.296 | 0.081 | -0.9 | 80 | SB rate, BB% | ISO, BABIP |
+| Carter Johnson | SS | L | 282 | 0.275 | 0.135 | 0.168 | 0.319 | 0.092 | -1.2 | 80 | K%, SB rate | BB%, BABIP |
+| Rafael Ramirez Jr. | SS | L | 342 | 0.225 | 0.174 | 0.166 | 0.330 | 0.058 | -0.6 | 80 | BB%, Age vs level | BABIP, K% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Abdias De La Cruz | OF | R | 385 | 0.216 | 0.125 | 0.169 | 0.309 | 0.091 | +0.1 | — | — | — |
-| Ethan Conrad | OF | L | 123 | 0.213 | 0.114 | 0.164 | 0.312 | 0.052 | +0.4 | 96 | K%, ISO | SB rate, BB% |
-| Bernard Moon | SS | R | 435 | 0.225 | 0.120 | 0.156 | 0.316 | 0.093 | -0.3 | 96 | SB rate, K% | BABIP, ISO |
-| Hyungchan Um | C | R | 276 | 0.221 | 0.124 | 0.145 | 0.309 | 0.106 | +0.6 | 95 | BABIP, BB% | ISO, Age vs level |
-| Dylan Grego | SS | S | 158 | 0.221 | 0.110 | 0.152 | 0.310 | 0.100 | +0.7 | 94 | BABIP, K% | ISO, BB% |
-| Angel Mateo | OF | R | 154 | 0.231 | 0.124 | 0.165 | 0.314 | 0.170 | -0.2 | 92 | BB%, ISO | SB rate, BABIP |
+| Nick Dumesnil | OF | R | 250 | 0.234 | 0.118 | 0.139 | 0.317 | 0.192 | +0.7 | — | — | — |
+| Julio Henriquez | OF | R | 157 | 0.247 | 0.114 | 0.138 | 0.318 | 0.138 | +0.1 | 95 | ISO, BABIP | SB rate, Age vs level |
+| Jose Monserrate | OF | R | 128 | 0.254 | 0.111 | 0.120 | 0.312 | 0.220 | +0.2 | 94 | BB%, SB rate | ISO, K% |
+| Henry Ramos | OF | L | 426 | 0.201 | 0.109 | 0.125 | 0.316 | 0.163 | +0.2 | 93 | BABIP, SB rate | K%, ISO |
+| Angel Mateo | OF | R | 154 | 0.231 | 0.124 | 0.165 | 0.314 | 0.170 | -0.2 | 92 | K%, BABIP | ISO, Age vs level |
+| Kyle Jones | OF | R | 105 | 0.205 | 0.114 | 0.113 | 0.315 | 0.203 | -0.1 | 90 | SB rate, BABIP | ISO, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Marlon Quintero | C | R | 374 | 0.181 | 0.066 | 0.135 | 0.299 | 0.088 | -2.0 | — | — | — |
-| Curley Martha | 1B | R | 184 | 0.227 | 0.085 | 0.112 | 0.296 | 0.113 | -1.8 | 87 | Age vs level, SB rate | K%, ISO |
-| Ashly Andujar | SS | S | 361 | 0.204 | 0.083 | 0.104 | 0.310 | 0.078 | -2.6 | 85 | SB rate, K% | ISO, BABIP |
-| Andreimi Antunez | SS | R | 125 | 0.211 | 0.095 | 0.162 | 0.305 | 0.116 | -1.9 | 84 | Age vs level, SB rate | BB%, ISO |
-| J.P. Cabrera | C | R | 100 | 0.227 | 0.096 | 0.130 | 0.311 | 0.094 | -1.9 | 83 | Age vs level, SB rate | BB%, BABIP |
-| J.D. Gonzalez | C | L | 229 | 0.185 | 0.070 | 0.093 | 0.313 | 0.103 | -0.8 | 80 | K%, SB rate | ISO, BABIP |
+| Caden Bodine | C | S | 152 | 0.083 | 0.105 | 0.186 | 0.330 | 0.054 | +1.0 | — | — | — |
+| Alirio Ferrebus | C | R | 307 | 0.144 | 0.069 | 0.178 | 0.326 | 0.074 | -0.8 | 67 | SB rate, ISO | BB%, Age vs level |
+| Victor Ortega | C | L | 201 | 0.132 | 0.169 | 0.163 | 0.321 | 0.026 | +0.9 | 58 | Age vs level, SB rate | BB%, K% |
+| Edian Espinal | C | S | 280 | 0.156 | 0.157 | 0.152 | 0.328 | 0.103 | +0.2 | 57 | BABIP, SB rate | BB%, K% |
+| Andrés Nolaya | C | R | 250 | 0.172 | 0.110 | 0.143 | 0.322 | 0.170 | -0.3 | 57 | BB%, BABIP | K%, ISO |
+| Rod Barajas Jr. | C | L | 384 | 0.216 | 0.100 | 0.180 | 0.316 | 0.030 | +0.4 | 57 | ISO, BB% | K%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Frederik Jimenez | C | S | 141 | 0.340 | 0.135 | 0.125 | 0.294 | 0.121 | +0.1 | — | — | — |
-| Eli Lovich | OF | L | 431 | 0.326 | 0.135 | 0.135 | 0.308 | 0.132 | -0.6 | 93 | BB%, SB rate | BABIP, Age vs level |
-| Nick Peoples | OF | L | 264 | 0.334 | 0.150 | 0.152 | 0.305 | 0.140 | +0.4 | 91 | K%, Age vs level | ISO, BABIP |
-| Yahil Melendez | SS | L | 207 | 0.339 | 0.132 | 0.115 | 0.311 | 0.079 | -0.7 | 91 | K%, BB% | BABIP, Age vs level |
-| Hayden Friese | OF | L | 114 | 0.310 | 0.163 | 0.123 | 0.306 | 0.086 | +0.3 | 87 | ISO, Age vs level | BB%, BABIP |
-| Junior Garcia | OF | L | 253 | 0.354 | 0.143 | 0.123 | 0.319 | 0.064 | -0.6 | 86 | ISO, K% | BABIP, SB rate |
+| Jack Gurevitch | 1B | L | 128 | 0.290 | 0.143 | 0.192 | 0.327 | 0.046 | +0.8 | — | — | — |
+| Grayson Fitzwater | 1B | L | 126 | 0.293 | 0.126 | 0.173 | 0.328 | 0.048 | +0.9 | 95 | SB rate, K% | BB%, ISO |
+| Brent Iredale | 3B | R | 283 | 0.290 | 0.151 | 0.202 | 0.317 | 0.098 | +1.4 | 93 | K%, BB% | BABIP, SB rate |
+| Jeremiah Jenkins | 1B | L | 464 | 0.287 | 0.147 | 0.193 | 0.309 | 0.017 | +1.6 | 91 | ISO, K% | BABIP, Age vs level |
+| David McCann | 1B | L | 130 | 0.269 | 0.115 | 0.178 | 0.328 | 0.045 | +0.7 | 90 | SB rate, Age vs level | BB%, ISO |
+| Jacob Walsh | 1B | L | 168 | 0.258 | 0.152 | 0.174 | 0.322 | 0.107 | +1.8 | 86 | BB%, BABIP | SB rate, Age vs level |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Gavin Turley | OF | R | 352 | 0.305 | 0.141 | 0.178 | 0.322 | 0.045 | +1.1 | — | — | — |
-| Jack Gurevitch | 1B | L | 128 | 0.290 | 0.143 | 0.192 | 0.327 | 0.046 | +0.8 | 97 | SB rate, BB% | ISO, BABIP |
-| Grayson Fitzwater | 1B | L | 126 | 0.293 | 0.126 | 0.173 | 0.328 | 0.048 | +0.9 | 97 | SB rate, Age vs level | BB%, BABIP |
-| Jeremiah Jenkins | 1B | L | 464 | 0.287 | 0.147 | 0.193 | 0.309 | 0.017 | +1.6 | 92 | BB%, SB rate | BABIP, ISO |
-| Brent Iredale | 3B | R | 283 | 0.290 | 0.151 | 0.202 | 0.317 | 0.098 | +1.4 | 91 | Age vs level, K% | ISO, SB rate |
-| Logan Poteet | C | R | 234 | 0.305 | 0.152 | 0.214 | 0.328 | 0.039 | +1.1 | 91 | Age vs level, K% | ISO, BABIP |
+| Angel Arredondo | SS | R | 468 | 0.187 | 0.138 | 0.142 | 0.312 | 0.047 | -1.9 | — | — | — |
+| Ilan Fernandez | SS | R | 245 | 0.241 | 0.138 | 0.146 | 0.315 | 0.112 | -1.9 | 88 | Age vs level, BB% | K%, SB rate |
+| Andruw Musett | 1B | R | 195 | 0.225 | 0.134 | 0.158 | 0.328 | 0.059 | -0.9 | 86 | SB rate, BB% | BABIP, K% |
+| Carlos Cauro | 1B | R | 271 | 0.234 | 0.134 | 0.138 | 0.317 | 0.062 | -0.5 | 86 | ISO, SB rate | Age vs level, K% |
+| Josiah Hartshorn | 1B | S | 177 | 0.170 | 0.169 | 0.165 | 0.315 | 0.084 | -2.1 | 85 | Age vs level, BABIP | BB%, ISO |
+| Juan Martinez | SS | S | 183 | 0.165 | 0.125 | 0.137 | 0.311 | 0.154 | -2.3 | 85 | BABIP, ISO | SB rate, BB% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Jake McCutcheon | OF | L | 262 | 0.254 | 0.160 | 0.148 | 0.306 | 0.078 | +1.1 | — | — | — |
-| Nick Hollifield | C | R | 160 | 0.269 | 0.161 | 0.118 | 0.300 | 0.053 | +1.4 | 93 | BB%, Age vs level | ISO, BABIP |
-| Cameron Nickens | OF | R | 116 | 0.236 | 0.171 | 0.143 | 0.323 | 0.075 | +1.4 | 93 | SB rate, ISO | BABIP, BB% |
-| Luke Heyman | C | R | 154 | 0.236 | 0.173 | 0.169 | 0.306 | 0.037 | +1.4 | 93 | BABIP, Age vs level | ISO, BB% |
-| Yannic Walther | C | R | 125 | 0.283 | 0.159 | 0.117 | 0.306 | 0.081 | +0.7 | 92 | BB%, SB rate | ISO, K% |
-| Cannon Peebles | C | S | 274 | 0.251 | 0.182 | 0.166 | 0.307 | 0.117 | +0.9 | 91 | K%, BABIP | BB%, ISO |
+| Logan Sauve | C | R | 141 | 0.176 | 0.139 | 0.118 | 0.314 | 0.069 | +1.4 | — | — | — |
+| Hyungchan Um | C | R | 276 | 0.221 | 0.124 | 0.145 | 0.309 | 0.106 | +0.6 | 84 | SB rate, BABIP | ISO, K% |
+| Tyler Howard | C | R | 198 | 0.222 | 0.164 | 0.104 | 0.325 | 0.093 | +0.7 | 84 | SB rate, ISO | BB%, BABIP |
+| Will Vierling | C | L | 284 | 0.200 | 0.110 | 0.151 | 0.306 | 0.058 | +1.3 | 84 | Age vs level, SB rate | BB%, ISO |
+| Steven Lancia | C | R | 140 | 0.226 | 0.114 | 0.128 | 0.323 | 0.074 | +2.3 | 82 | SB rate, ISO | BB%, K% |
+| Edian Espinal | C | S | 280 | 0.156 | 0.157 | 0.152 | 0.328 | 0.103 | +0.2 | 80 | K%, SB rate | BABIP, ISO |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Juan Ortega | C | R | 208 | 0.225 | 0.112 | 0.126 | 0.307 | 0.210 | -1.3 | — | — | — |
-| Matthew Boughton | SS | R | 452 | 0.207 | 0.106 | 0.108 | 0.300 | 0.243 | -0.7 | 93 | BB%, K% | ISO, BABIP |
-| Darlyn De Leon | OF | L | 237 | 0.216 | 0.111 | 0.127 | 0.305 | 0.228 | -0.2 | 93 | ISO, BB% | Age vs level, SB rate |
-| Abraham Nunez | OF | L | 283 | 0.213 | 0.108 | 0.133 | 0.325 | 0.201 | -1.2 | 93 | Age vs level, SB rate | BABIP, ISO |
-| Alejandro Blasco | OF | S | 105 | 0.219 | 0.119 | 0.130 | 0.320 | 0.220 | -2.3 | 92 | K%, SB rate | BABIP, Age vs level |
-| Jemone Nuel | 2B | S | 124 | 0.248 | 0.123 | 0.104 | 0.308 | 0.199 | -2.1 | 92 | BABIP, SB rate | ISO, Age vs level |
+| Enmanuel Tejeda | 2B | R | 144 | 0.216 | 0.167 | 0.148 | 0.314 | 0.243 | -0.0 | — | — | — |
+| Jaxon Willits | SS | S | 119 | 0.237 | 0.159 | 0.154 | 0.331 | 0.234 | +0.1 | 94 | SB rate, Age vs level | BABIP, K% |
+| Ryan Weingartner | SS | R | 382 | 0.222 | 0.157 | 0.154 | 0.299 | 0.270 | +0.4 | 93 | K%, ISO | BABIP, BB% |
+| Abrahan Ramirez | 2B | L | 189 | 0.213 | 0.144 | 0.159 | 0.320 | 0.207 | +0.2 | 92 | K%, Age vs level | BB%, BABIP |
+| Waner Luciano | 3B | R | 303 | 0.177 | 0.151 | 0.169 | 0.308 | 0.224 | -0.1 | 90 | Age vs level, SB rate | K%, ISO |
+| Carson Kerce | SS | R | 115 | 0.205 | 0.138 | 0.139 | 0.326 | 0.170 | +0.0 | 84 | Age vs level, K% | BB%, BABIP |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Edgar Montero | SS | S | 449 | 0.347 | 0.156 | 0.147 | 0.335 | 0.089 | -1.9 | — | — | — |
-| Elian Soto | OF | L | 183 | 0.299 | 0.147 | 0.142 | 0.335 | 0.087 | -1.1 | 90 | SB rate, BABIP | K%, Age vs level |
-| Junior Garcia | OF | L | 253 | 0.354 | 0.143 | 0.123 | 0.319 | 0.064 | -0.6 | 82 | K%, SB rate | BABIP, Age vs level |
-| Bralyn Brazoban | OF | L | 241 | 0.347 | 0.125 | 0.115 | 0.323 | 0.095 | -1.7 | 82 | K%, SB rate | BB%, ISO |
-| Arturo Flores | C | R | 351 | 0.357 | 0.134 | 0.182 | 0.339 | 0.055 | -0.8 | 81 | K%, BABIP | ISO, BB% |
-| Truitt Madonna | C | R | 410 | 0.310 | 0.142 | 0.128 | 0.316 | 0.154 | -2.2 | 81 | Age vs level, BB% | BABIP, SB rate |
+| Ivan Sosa | 3B | R | 162 | 0.355 | 0.065 | 0.168 | 0.300 | 0.123 | +0.3 | — | — | — |
+| Jose Perez | SS | L | 207 | 0.343 | 0.109 | 0.172 | 0.318 | 0.172 | -0.4 | 73 | ISO, K% | BB%, BABIP |
+| Derniche Valdez | 3B | R | 420 | 0.282 | 0.056 | 0.141 | 0.299 | 0.159 | -1.3 | 72 | BABIP, BB% | K%, Age vs level |
+| Tyson Lewis | 3B | L | 236 | 0.318 | 0.090 | 0.139 | 0.329 | 0.137 | -1.1 | 68 | SB rate, K% | BABIP, BB% |
+| Anyelo Marquez | 2B | L | 458 | 0.277 | 0.099 | 0.158 | 0.313 | 0.098 | -1.0 | 66 | SB rate, ISO | K%, BB% |
+| Jude Warwick | 2B | L | 446 | 0.277 | 0.103 | 0.144 | 0.304 | 0.149 | -0.7 | 66 | SB rate, BABIP | BB%, K% |
 
 | Player | Pos | Bats | PA | K% | BB% | ISO | BABIP | SB rate | Age vs level | Score | Closest | Furthest |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Arxy Hernandez | 3B | R | 123 | 0.238 | 0.081 | 0.126 | 0.313 | 0.054 | +1.4 | — | — | — |
-| Chase Meggers | C | L | 268 | 0.265 | 0.096 | 0.109 | 0.320 | 0.064 | +1.9 | 92 | SB rate, Age vs level | BABIP, BB% |
-| Manolfi Jimenez | OF | L | 117 | 0.266 | 0.098 | 0.126 | 0.312 | 0.080 | +0.1 | 86 | ISO, BABIP | Age vs level, BB% |
-| Chase Heath | C | R | 294 | 0.242 | 0.110 | 0.131 | 0.296 | 0.099 | +1.4 | 85 | Age vs level, K% | BABIP, BB% |
-| Stone Russell | 3B | R | 329 | 0.224 | 0.106 | 0.114 | 0.323 | 0.115 | +0.5 | 85 | K%, ISO | BB%, BABIP |
-| Dylan Grego | SS | S | 158 | 0.221 | 0.110 | 0.152 | 0.310 | 0.100 | +0.7 | 84 | BABIP, K% | BB%, ISO |
+| Canon Reeder | OF | R | 204 | 0.290 | 0.171 | 0.090 | 0.315 | 0.150 | +1.6 | — | — | — |
+| Hayden Friese | OF | L | 114 | 0.310 | 0.163 | 0.123 | 0.306 | 0.086 | +0.3 | 80 | BB%, K% | ISO, Age vs level |
+| Jakey Josepha | CF | L | 214 | 0.255 | 0.165 | 0.129 | 0.324 | 0.239 | +0.6 | 76 | BB%, K% | ISO, SB rate |
+| Jake Cook | OF | L | 328 | 0.279 | 0.139 | 0.131 | 0.331 | 0.201 | +1.4 | 76 | Age vs level, K% | BABIP, ISO |
+| David Beckles | LF | R | 100 | 0.284 | 0.143 | 0.122 | 0.317 | 0.050 | +0.6 | 75 | K%, BABIP | SB rate, BB% |
+| Cameron Nickens | OF | R | 116 | 0.236 | 0.171 | 0.143 | 0.323 | 0.075 | +1.4 | 74 | BB%, Age vs level | ISO, K% |
 
 ## Single-A pitchers
 
