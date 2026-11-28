@@ -7,7 +7,7 @@
  *   node --import tsx scripts/similarity-validate.ts --synthetic [--null]   # fictional data, exercises the pipeline
  *
  * Options: --level aa (one level). Owner-option comparisons only (the approved defaults are used without them):
- * --min-sample N, --no-age, --mahalanobis. Choosing among them after seeing real-data results is not allowed.
+ * --min-sample N, --no-age, --mahalanobis, --no-position-groups. Choosing among them after seeing real-data results is not allowed.
  * Progress goes to stderr.
  */
 import path from "node:path";
@@ -39,6 +39,7 @@ async function main() {
     minSample,
     useAge: !has("no-age"),
     distance: has("mahalanobis") ? "mahalanobis" : "euclidean",
+    positionGroups: !has("no-position-groups"),
   };
   if (JSON.stringify(settings) !== JSON.stringify(SIMILARITY_SETTINGS)) log("NOTE: non-default settings; not the approved configuration");
 

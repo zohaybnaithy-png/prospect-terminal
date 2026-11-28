@@ -173,10 +173,10 @@ the real-data run, report `docs/reports/similarity-validation-2026.md`, random-s
 baseball-analyst agent, verdict per level × role in §11. Building the profile UI is a separate task, only for level/roles
 that pass and only after the owner approves showing it.
 
-### T-407 Similarity next step — `needs-approval` (owner decisions in SIMILARITY-METHOD.md §11)
-(a) Approve or change the hitter position-group rule, then re-run `scripts/similarity-validate.ts` with it.
-(b) Approve showing pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive claim), with
-the display rules 2–4 of §11. No UI work before (b).
+### T-407 Similarity next step — `needs-approval` ((a) done: D-026 rule, re-validated D-027; (b) awaits the owner)
+(a) Hitter position-group rule approved 2026-11-27 (D-026); re-validated, hitters pass at every level (D-027, SIMILARITY-METHOD.md §12).
+(b) Approve showing hitter and pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive
+claim), with the display rules 2–4 of §11 and a score floor fixed in advance (§12). No UI work before (b).
 
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 
