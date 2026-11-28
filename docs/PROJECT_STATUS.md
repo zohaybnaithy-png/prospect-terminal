@@ -33,6 +33,8 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-27: Similar players on profiles (T-408, D-028): browsing aid, score floor 70, position groups for hitters; method on `/data#similarity`.
+- 2026-11-27: Hitter position-group rule approved (D-026) and re-validated (D-027): hitters and pitchers qualify as a browsing aid at every level. Display awaits owner approval (T-407 b).
 - 2026-11-27: Similarity method approved (D-024) and validated offline (T-406, D-025): pitchers pass as a browsing aid (no predictive claim), hitters fail face validity (position-blind). Owner decisions in T-407. PR #46.
 - 2026-11-26 (nightly): T-204 merged (#36). T-204b: `/orgs` and `/orgs/:slug` CDN-cached; `/organizations/*` now redirects to `/orgs`.
 - 2026-11-26 (nightly): T-303 Preview checks — CDN behaviour verified (checks 3, 8); check 7 (identity/limiter) inconclusive: bursts spread over instances, no 429. Results in VERCEL.md.

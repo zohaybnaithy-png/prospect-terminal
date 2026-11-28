@@ -13,6 +13,8 @@ import {
 } from "./config";
 import {
   closestAndFurthest,
+  isGrouped,
+  positionGroup,
   mahalanobisMatrix,
   mean,
   population,
@@ -72,10 +74,10 @@ export function baselineValue(role: SimilarityRole, t: Totals): number | null {
   return bf > 0 ? (k - bb) / bf : null;
 }
 
-function baselineNeighbors(values: Map<string, { v: number; n: number }>, id: string, depth: number) {
+function baselineNeighbors(values: Map<string, { v: number; n: number }>, id: string, depth: number, same: (o: string) => boolean) {
   const me = values.get(id)!;
   return [...values]
-    .filter(([o]) => o !== id)
+    .filter(([o]) => o !== id && same(o))
     .map(([o, x]) => ({ id: o, d: Math.abs(x.v - me.v), n: x.n }))
     .sort((a, b) => a.d - b.d || b.n - a.n || a.id.localeCompare(b.id))
     .slice(0, depth)
@@ -102,23 +104,32 @@ export function splitHalf(d: RoleGames, k: number[], settings: SimilaritySetting
   const overlaps: number[] = [];
   const baselines: number[] = [];
   const diffs: number[] = [];
+  const chances: number[] = [];
+  // D-026: with position groups, the candidates (and so chance and the baseline) are the player's group only.
+  const grouped = isGrouped(po, settings);
+  const groupOf = (id: string) => po.byId.get(id)!.group;
+  const inPool = new Map<string, number>();
+  for (const id of common) inPool.set(groupOf(id), (inPool.get(groupOf(id)) ?? 0) + 1);
   for (const id of common) {
+    const same = (o: string) => !grouped || groupOf(o) === groupOf(id);
     const a = similarPlayers(po, id, settings, { pool: common });
     const b = new Set(similarPlayers(pe, id, settings, { pool: common, depth: v.overlapDepth }).map((x) => x.id));
     if (a.length < settings.topN) continue;
     const ov = a.filter((x) => b.has(x.id)).length / a.length;
     let bl = NaN;
     if (bo.has(id) && be.has(id)) {
-      const ba = baselineNeighbors(bo, id, settings.topN);
-      const bb = new Set(baselineNeighbors(be, id, v.overlapDepth));
+      const ba = baselineNeighbors(bo, id, settings.topN, same);
+      const bb = new Set(baselineNeighbors(be, id, v.overlapDepth, same));
       bl = ba.filter((x) => bb.has(x)).length / ba.length;
     }
     overlaps.push(ov);
+    const candidates = (grouped ? inPool.get(groupOf(id))! : common.size) - 1;
+    chances.push(Math.min(1, v.overlapDepth / candidates));
     if (Number.isFinite(bl)) { baselines.push(bl); diffs.push(ov - bl); }
   }
   return {
     players: common.size,
-    chance: common.size > 1 ? Math.min(1, v.overlapDepth / (common.size - 1)) : NaN,
+    chance: mean(chances),
     overlap: ci(overlaps, v, rand),
     baseline: ci(baselines, v, rand),
     difference: ci(diffs, v, rand),
@@ -239,13 +250,7 @@ export interface FaceValidity {
   checks: MismatchStat[];
 }
 
-const positionGroup = (p: AflPlayer | undefined) => {
-  const pos = (p?.primaryPosition ?? "").toUpperCase();
-  if (pos === "C") return "C";
-  if (["1B", "2B", "3B", "SS", "IF"].includes(pos)) return "IF";
-  if (["LF", "CF", "RF", "OF"].includes(pos)) return "OF";
-  return pos || "?";
-};
+const groupOfPlayer = (p: AflPlayer | undefined) => positionGroup(p?.primaryPosition);
 
 export function faceValidity(
   pop: Population,
@@ -290,8 +295,8 @@ export function faceValidity(
       return x && y ? (x === y ? 1 : 0) : null;
     }));
   } else {
-    checks.push(pairStat("Same position group C/IF/OF/other (share)", (a, b) => (positionGroup(players.get(a)) === positionGroup(players.get(b)) ? 1 : 0)));
-    checks.push(pairStat("Catcher paired with non-catcher (share)", (a, b) => ((positionGroup(players.get(a)) === "C") !== (positionGroup(players.get(b)) === "C") ? 1 : 0)));
+    checks.push(pairStat("Same position group C/IF/OF/other (share)", (a, b) => (groupOfPlayer(players.get(a)) === groupOfPlayer(players.get(b)) ? 1 : 0)));
+    checks.push(pairStat("Catcher paired with non-catcher (share)", (a, b) => ((groupOfPlayer(players.get(a)) === "C") !== (groupOfPlayer(players.get(b)) === "C") ? 1 : 0)));
     checks.push(pairStat("Same batting side (share)", (a, b) => {
       const x = players.get(a)?.bats;
       const y = players.get(b)?.bats;
@@ -331,6 +336,7 @@ export function sensitivity(d: RoleGames, k: number[], base: Population, setting
     ...v.sensitivityMinSamples.map((m) => compare(`minSample ${m}`, { ...settings, minSample: m })),
     compare("without age vs level", { ...settings, useAge: false }),
     compare("Mahalanobis distance", { ...settings, distance: "mahalanobis" }),
+    ...(isGrouped(base, settings) ? [compare("without position groups", { ...settings, positionGroups: false })] : []),
   ];
 }
 
@@ -391,7 +397,7 @@ export function validateRole(
       detail: `improvement ${f(ho.improvement.mean, 4)} [${f(ho.improvement.lo, 4)}, ${f(ho.improvement.hi, 4)}] over ${ho.cutoffs.length} cutoffs`,
     },
     { id: "3", text: "Face validity: no systematic mismatch class", pass: null, detail: "baseball-analyst review (see the report section and the appendix)" },
-    { id: "4", text: `At least ${v.minQualified} qualified players`, pass: c4, detail: `${end.profiles.length} qualified (≥ ${settings.minSample} ${role === "hitter" ? "PA" : "BF"})` },
+    { id: "4", text: `At least ${v.minQualified} qualified players`, pass: c4, detail: `${end.profiles.length} qualified (≥ ${settings.minSample} ${role === "hitter" ? "PA" : "BF"})${isGrouped(end, settings) ? `; position groups ${[...end.groupSizes].sort().map(([g, n]) => `${g} ${n}`).join(", ")} (no lists below ${settings.minGroupSize})` : ""}` },
   ];
   const verdict = !c4 || !c1
     ? "not available at this level (criterion 1 or 4 fails)"
@@ -422,7 +428,7 @@ export function renderValidationReport(results: RoleValidation[], ctx: ReportCon
   const L: string[] = [];
   L.push("# Similarity validation report", "");
   L.push(`Method: docs/SIMILARITY-METHOD.md (approved D-024). Source: ${ctx.source}${ctx.snapshotId ? `, snapshot id ${ctx.snapshotId}` : ""}.`);
-  L.push(`Settings: minSample ${s.minSample}, top ${s.topN}, age ${s.useAge ? "on" : "off"}, ${s.distance} distance, seed ${v.seed}, bootstrap ${v.bootstrap}. ` +
+  L.push(`Settings: minSample ${s.minSample}, top ${s.topN}, age ${s.useAge ? "on" : "off"}, ${s.distance} distance, position groups ${s.positionGroups ? `on for hitters (min ${s.minGroupSize})` : "off"}, seed ${v.seed}, bootstrap ${v.bootstrap}. ` +
     (isDefault(s) ? "These are the approved defaults." : "**Not the approved defaults** (comparison run only)."), "");
   L.push("## Verdict", "", "| Level | Role | Qualified | C1 stability | C2 holdout | C3 face validity | C4 population | Verdict |", "|---|---|---|---|---|---|---|---|");
   for (const r of results) L.push(`| ${r.label} | ${r.role} | ${r.qualified} | ${r.criteria.map((c) => mark(c.pass)).join(" | ")} | ${r.verdict} |`);

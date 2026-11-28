@@ -50,6 +50,10 @@ export interface SimilaritySettings {
   distance: DistanceKind;
   /** Minimum players with a known birth date for the level median age (D-020). */
   minAgeSample: number;
+  /** D-026: hitters are compared only with hitters of the same position group (C / IF / OF / other). */
+  positionGroups: boolean;
+  /** D-026: a position group with fewer qualified hitters gets no lists ("not enough similar players"). */
+  minGroupSize: number;
 }
 
 export const SIMILARITY_SETTINGS: SimilaritySettings = {
@@ -58,6 +62,8 @@ export const SIMILARITY_SETTINGS: SimilaritySettings = {
   useAge: true,
   distance: "euclidean",
   minAgeSample: 20,
+  positionGroups: true,
+  minGroupSize: 20,
 };
 
 /** §6 and §7 validation parameters, fixed before the real-data run. */
@@ -82,4 +88,17 @@ export const SIMILARITY_VALIDATION = {
   seed: 20261127,
   /** Sensitivity variants (reported only; the approved defaults are what is validated). */
   sensitivityMinSamples: [75, 150],
+} as const;
+
+/**
+ * Display rules (D-028, owner-approved 2026-11-27, T-408): profile lists are a browsing aid only ("similar so far this
+ * season"), never a projection.
+ */
+export const SIMILARITY_DISPLAY = {
+  /** A neighbor below this score is not listed; with none at or above it the list says "no close match". */
+  scoreFloor: 70,
+  /** Flag a neighbor whose PA/BF differs from the player's by this factor or more. */
+  sampleGapFactor: 3,
+  /** "Closest" names only dimensions weighted at least this much (§3: reliability 0.3). */
+  closestMinWeight: 0.3,
 } as const;

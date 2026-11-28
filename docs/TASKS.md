@@ -185,10 +185,17 @@ the real-data run, report `docs/reports/similarity-validation-2026.md`, random-s
 baseball-analyst agent, verdict per level × role in §11. Building the profile UI is a separate task, only for level/roles
 that pass and only after the owner approves showing it.
 
-### T-407 Similarity next step — `needs-approval` (owner decisions in SIMILARITY-METHOD.md §11)
-(a) Approve or change the hitter position-group rule, then re-run `scripts/similarity-validate.ts` with it.
-(b) Approve showing pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive claim), with
-the display rules 2–4 of §11. No UI work before (b).
+### T-407 Similarity next step — `done` ((a) D-026 rule, re-validated D-027; (b) display approved 2026-11-27, D-028 → T-408)
+(a) Hitter position-group rule approved 2026-11-27 (D-026); re-validated, hitters pass at every level (D-027, SIMILARITY-METHOD.md §12).
+(b) Approve showing hitter and pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive
+claim), with the display rules 2–4 of §11 and a score floor fixed in advance (§12). No UI work before (b).
+
+### T-408 Similar players on the profile — `done` (PR #48, merged 2026-11-27; D-028)
+Profile section "Similar at <level> so far this season" per role (both for two-way players): up to 5 players with
+score ≥ 70, position, Bats/Throws, sample (flag † at ≥ 3× difference), score, observed rates, closest/furthest
+dimensions (furthest by weighted contribution), a Compare link; honest states for AFL, < 100 PA/BF, small position
+group, no close match. `/data#similarity` explains the method and that it is a browsing aid, not a projection.
+Acceptance: unit tests, lint/typecheck/test/build, CI, verify:preview.
 
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 

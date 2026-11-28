@@ -1,7 +1,7 @@
 # Player similarity — methodology proposal (T-404, P-004)
 
 **Status: approved as proposed 2026-11-27 (D-024); validated 2026-11-27 (D-025, §11): pitchers usable as a browsing aid, hitters
-need a position rule first. Nothing is shown on the site.** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
+pass with the position-group rule (D-026, D-027, §12). Shown on profiles as a browsing aid since D-028 (score floor 70).** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
 *(calibrate)* are set by the validation in §6 before anything is shown. As with breakout detection, the owner chooses
 among options **before** the real-data run, never after.
 
@@ -179,3 +179,41 @@ Proposed for the owner (not applied):
 3. Rank "closest / furthest" by weighted contribution w·Δz², not raw |Δz| (BABIP, weight 0.05–0.16, is named "furthest"
    for 59% of neighbors). Display only; scores unchanged.
 4. Mark neighbors whose sample differs from the player's by 3× or more; show observed rates beside shrunk ones.
+
+## 12. Hitter position-group rule (D-026) and re-validation
+
+Approved by the owner 2026-11-27 after §11. Hitters are compared only with qualified hitters of the same position group
+(primary position in the snapshot): **C**; **IF** (1B, 2B, 3B, SS); **OF** (LF, CF, RF); otherwise the position itself
+(DH and rare others). A group with fewer than 20 qualified hitters at the level gets no lists (in 2026 that is DH only,
+4–15 hitters per level). Everything else in §3–§5 is unchanged; pitchers are unchanged.
+
+Re-validation, fixed before the run (committed with this section): the hitter validation of §6 and §10 is re-run on the
+same snapshot with the same criteria (§7). Within the rule, the split-half chance is `10 / (group pool − 1)` per player,
+averaged, and the closest-OPS baseline searches the same group, so the rule cannot inflate criterion 1. The
+baseball-analyst agent reviews the seeded random sample of lists for criterion 3 (same seed, so the same target players as §11, with their new lists). Sensitivity adds "without position
+groups". Fictional-data check with the rule: archetypes pass criteria 1 and 2 at all levels (overlap 0.59–0.62 vs
+chance 0.13 and baseline 0.13–0.17); noise-only data fails both (overlap 0.12–0.15 ≈ chance).
+
+**Result (D-027).** Same snapshot, same criteria; pitchers unchanged from §11.
+
+| Level | Hitters C1 / C2 / C3 / C4 | Stability: overlap vs within-group chance, baseline | Holdout improvement [90%] |
+|---|---|---|---|
+| Triple-A | pass / fail / pass / pass | 0.31 vs 0.08, 0.08 | +0.001 [−0.004, 0.006] |
+| Double-A | pass / pass / pass / pass | 0.35 vs 0.09, 0.10 | +0.006 [0.001, 0.010] |
+| High-A | pass / fail / pass / pass | 0.36 vs 0.10, 0.09 | +0.005 [−0.001, 0.012] |
+| Single-A | pass / pass / pass / pass | 0.38 vs 0.10, 0.12 | +0.010 [0.001, 0.020] |
+
+- Every neighbor is now in the player's position group (1.00 vs 0.36–0.38 for random pairs) and no catcher is paired
+  with a non-catcher; the rule changes 57–63% of list entries. Groups: C 83–92, IF 229–251, OF 187–200; DH 4–15 (no
+  lists).
+- Criterion 2's passes are again about 1% of the error of the player's own rate: no predictive claim.
+- Criterion 3 (second baseball-analyst review, 40 hitter lists): passes at every level. Remaining, not failures:
+  1B next to SS within IF (16 of 110 IF neighbor slots; batting lines close, defensive value is outside the method);
+  unusual players get weak lists (7 of 40 lists include a neighbor scoring below 70); handedness neither selected for
+  nor against (disclosed).
+
+**Outcome.** Hitters and pitchers at all four levels qualify as a **browsing aid only, "similar so far this season", no
+predictive claim**. Nothing is shown until the owner approves the display (T-407 b), with the §11 display rules 2–4 and,
+proposed by the review, a score floor chosen by the owner before display: neighbors below it are not listed ("no close
+match at this level"), and an exact position next to each neighbor with the label "similar offensive profile, same
+position group".

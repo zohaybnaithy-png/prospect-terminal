@@ -40,6 +40,8 @@ import { DevelopmentFingerprint } from "@/components/analytics/fingerprint";
 import { COMPARE_MAX, addToCompareLink } from "@/services/compare/query";
 import { WatchlistStar } from "@/components/watchlist/star-button";
 import { ageVsLevel, formatAgeVsLevel, levelAgeContext } from "@/services/players/level-age";
+import { similarView } from "@/services/players/similar";
+import { SimilarPlayers } from "@/components/player/similar-players";
 
 const windows = ["7d", "14d", "30d", "season"] as const;
 const ROLE_LABEL = { hitter: "Hitting", pitcher: "Pitching" } as const;
@@ -89,10 +91,16 @@ export function AflPlayerProfileView({
     ["Trend", "trend"],
     ["Splits by window", "windows"],
     ...(analytics.roles.length ? [["Percentiles", "percentiles"]] : []),
+    ["Similar players", "similar"],
     ["Game log", "game-log"],
     ["Levels", "levels"],
     ["Roster", "roster"],
   ];
+  // Similar so far this season (D-028), in the order the profile leads with; both roles for two-way players.
+  const similarRoles = orderByRole(pitcherFirst, ["hitter", "pitcher"] as ["hitter", "pitcher"]).filter((r) =>
+    r === "hitter" ? hasBatting : hasPitching,
+  );
+  const similar = similarRoles.map((r) => similarView(snapshot, level, player.id, r));
   const recent = profile.windows["14d"];
   const strips = [
     hasBatting && (
@@ -371,6 +379,11 @@ export function AflPlayerProfileView({
           </div>
         </section>
       )}
+
+      <section id="similar" className="page-section">
+        <SectionTitle title={`Similar at ${lvl.label} so far this season`} />
+        <SimilarPlayers views={similar} level={level} playerId={player.id} />
+      </section>
 
       <section id="game-log" className="page-section">
         <SectionTitle title="Game log" />
