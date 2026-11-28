@@ -521,6 +521,9 @@ export class PostgresIngestionSink implements IngestionSink {
             case "battingGame":
             case "pitchingGame":
               return `${r.kind}:${resolve("player", r.player)}:${resolve("game", r.game)}`;
+            case "battingSeason":
+            case "pitchingSeason":
+              return `${r.kind}:${resolve("player", r.player)}:${resolve("season", r.season)}:${r.levelCode}`;
             default:
               throw new ApplyError("unsupported-record");
           }
@@ -711,6 +714,10 @@ export class PostgresIngestionSink implements IngestionSink {
         const staleLineIds = {
           battingGame: [] as string[],
           pitchingGame: [] as string[],
+        };
+        const pendingSeasons = {
+          battingSeason: new Map<string, Row>(),
+          pitchingSeason: new Map<string, Row>(),
         };
         const staleStateIds: string[] = [];
         const completedGames: string[] = [];
@@ -909,6 +916,18 @@ export class PostgresIngestionSink implements IngestionSink {
                 });
               break;
             }
+            case "battingSeason":
+            case "pitchingSeason":
+              if (claim(r, canonicalKey))
+                pendingSeasons[r.kind].set(canonicalKey, {
+                  playerId: resolve("player", r.player),
+                  seasonId: resolve("season", r.season),
+                  levelCode: r.levelCode,
+                  games: r.games,
+                  teams: r.teams,
+                  ...r.stats,
+                });
+              break;
             case "gameLineSet": {
               const gameId = resolve("game", r.game);
               if (!claim(r, canonicalKey)) break;
@@ -1017,6 +1036,19 @@ export class PostgresIngestionSink implements IngestionSink {
               ),
           );
         }
+        const seasonTables = {
+          battingSeason: core.playerBattingLevelSeasons,
+          pitchingSeason: core.playerPitchingLevelSeasons,
+        } as const;
+        for (const kind of ["battingSeason", "pitchingSeason"] as const)
+          await write(kind, [...pendingSeasons[kind].values()], (rows) =>
+            bulkUpsert(
+              tx,
+              seasonTables[kind],
+              ["playerId", "seasonId", "levelCode"],
+              rows,
+            ),
+          );
         await write(
           "game_boxscore_complete",
           completedGames.map((id) => ({ id })),

@@ -87,6 +87,12 @@ export function references(record: IngestionRecord): [EntityKind, string][] {
         ["team", record.team],
         ["game", record.game],
       ];
+    case "battingSeason":
+    case "pitchingSeason":
+      return [
+        ["player", record.player],
+        ["season", record.season],
+      ];
     default:
       return [];
   }
@@ -105,6 +111,8 @@ const priority: Record<IngestionRecord["kind"], number> = {
   battingGame: 10,
   pitchingGame: 11,
   gameLineSet: 12,
+  battingSeason: 13,
+  pitchingSeason: 14,
 };
 /** Any issue quarantines the entire batch on apply; no partially trusted snapshot is published. */
 export function buildPlan(

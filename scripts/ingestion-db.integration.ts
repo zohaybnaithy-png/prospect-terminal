@@ -310,3 +310,72 @@ test("PostgreSQL AFL proof: identity, replay, corrections, roster history, quara
     await client.end();
   }
 });
+
+test("PostgreSQL season totals (D-030, T-503): apply, replay, correction, stale capture, stored players, quarantine", async (t) => {
+  const url = process.env.INGESTION_TEST_DATABASE_URL;
+  if (!url || !new URL(url).pathname.endsWith("/prospect_ingestion_test"))
+    throw new Error("Use the disposable prospect_ingestion_test database via INGESTION_TEST_DATABASE_URL");
+  const { SeasonTotalsStatsApiSource } = await import("../src/ingestion/sources/season-totals-stats-api");
+  const { fakeTotalsFetch, hitter, pitcher } = await import("./season-totals-support");
+  const client = new Client({ connectionString: url });
+  await client.connect();
+  const sink = new PostgresIngestionSink(url);
+  const capture = (at: string, edit: (f: { hitting: Record<number, Record<string, unknown>[]>; pitching: Record<number, Record<string, unknown>[]> }) => void = () => {}, known?: number[]) => {
+    const f = { hitting: { 11: [hitter(9101), hitter(9102)], 14: [hitter(9103)] } as Record<number, Record<string, unknown>[]>, pitching: { 12: [pitcher(9201)] } as Record<number, Record<string, unknown>[]> };
+    edit(f);
+    return new SeasonTotalsStatsApiSource(
+      { season: 2014, scope: "milb" },
+      { fetcher: fakeTotalsFetch(f), sleep: async () => {}, clock: () => new Date(at), knownPlayers: known ? new Set(known) : undefined },
+    );
+  };
+  const rows = async () =>
+    (await client.query(
+      `SELECT si.external_id AS player, s.level_code, s.plate_appearances AS pa, s.hits, se.year
+         FROM player_batting_level_seasons s
+         JOIN source_identities si ON si.internal_id = s.player_id AND si.provider = 'mlb-stats-api' AND si.entity_kind = 'player'
+         JOIN seasons se ON se.id = s.season_id ORDER BY si.external_id`,
+    )).rows as { player: string; level_code: string; pa: number; hits: number; year: number }[];
+  try {
+    await t.test("first apply writes one row per player, season and level", async () => {
+      const r = await ingest(capture("2026-11-28T10:00:00Z"), sink);
+      assert.equal(r.status, "applied");
+      const got = await rows();
+      assert.deepEqual(got.map((x) => [x.player, x.level_code, x.year]), [["9101", "aaa", 2014], ["9102", "aaa", 2014], ["9103", "single-a", 2014]]);
+      assert.equal((await client.query("SELECT count(*)::int AS n FROM player_pitching_level_seasons")).rows[0].n, 1);
+    });
+    await t.test("an identical replay changes nothing", async () => {
+      const r = await ingest(capture("2026-11-28T11:00:00Z"), sink);
+      assert.equal(r.status, "applied");
+      assert.equal(r.changed, 0);
+    });
+    await t.test("a later correction updates the row in place", async () => {
+      const r = await ingest(capture("2026-11-28T12:00:00Z", (f) => (f.hitting[11][0] = hitter(9101, { hits: 95 }))), sink);
+      assert.equal(r.status, "applied");
+      assert.equal(r.changed, 1);
+      const got = await rows();
+      assert.equal(got.length, 3);
+      assert.equal(got.find((x) => x.player === "9101")!.hits, 95);
+    });
+    await t.test("an older capture is rejected and rolls back", async () => {
+      await assert.rejects(ingest(capture("2026-11-28T09:00:00Z", (f) => (f.hitting[11][0] = hitter(9101, { hits: 80 }))), sink), /stale-snapshot/);
+      assert.equal((await rows()).find((x) => x.player === "9101")!.hits, 95);
+    });
+    await t.test("stored players are referenced with their existing internal ids", async () => {
+      const before = (await client.query("SELECT internal_id FROM source_identities WHERE provider='mlb-stats-api' AND entity_kind='player' AND external_id='9101'")).rows[0].internal_id;
+      const r = await ingest(capture("2026-11-28T13:00:00Z", () => {}, [9101, 9102, 9103, 9201]), sink);
+      assert.equal(r.status, "applied");
+      const after = (await client.query("SELECT internal_id FROM source_identities WHERE provider='mlb-stats-api' AND entity_kind='player' AND external_id='9101'")).rows[0].internal_id;
+      assert.equal(after, before);
+      assert.equal((await rows()).length, 3);
+    });
+    await t.test("a malformed row is quarantined and the rest applied", async () => {
+      const r = await ingest(capture("2026-11-28T14:00:00Z", (f) => (f.hitting[14] = [hitter(9103, { hits: 999 })])), sink);
+      assert.equal(r.status, "applied-with-quarantine");
+      assert.equal(r.issues, 1);
+      assert.equal((await rows()).find((x) => x.player === "9103")!.hits, 90, "the stored row is kept, not overwritten by the malformed one");
+    });
+  } finally {
+    await sink.close();
+    await client.end();
+  }
+});

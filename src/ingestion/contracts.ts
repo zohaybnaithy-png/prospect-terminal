@@ -61,7 +61,28 @@ const pitching = z
     (s) => s.strikeouts <= s.battersFaced && s.homeRunsAllowed <= s.hitsAllowed,
     "Inconsistent pitching counts",
   );
+/**
+ * Season-totals level codes (D-030): one row per player, season and level, as the provider's season-stats endpoint
+ * reports it (already combined across teams and leagues at that level). Domain level ids, not provider ids.
+ */
+export const seasonLevelCodes = ["mlb", "aaa", "aa", "high-a", "single-a"] as const;
+const seasonTotals = <K extends string, S extends z.ZodTypeAny>(kind: K, stats: S) =>
+  z
+    .object({
+      kind: z.literal(kind),
+      key: ref,
+      player: ref,
+      season: ref,
+      levelCode: z.enum(seasonLevelCodes),
+      games: count,
+      /** Teams the player appeared for at the level (informational). */
+      teams: z.number().int().min(1).max(30),
+      stats,
+    })
+    .strict();
 export const recordSchema = z.discriminatedUnion("kind", [
+  seasonTotals("battingSeason", batting),
+  seasonTotals("pitchingSeason", pitching),
   z
     .object({
       kind: z.literal("gameLineSet"),

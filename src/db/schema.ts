@@ -259,6 +259,36 @@ export const playerPitchingSeasons = pgTable(
     uniqueIndex("pitching_season_stint").on(t.playerId, t.seasonId, t.teamId),
   ],
 );
+/**
+ * Player season totals per level (D-030, T-503): MiLB history and MLB outcomes for the Prospect Grade. One row per
+ * player, season and level code (combined across teams at that level, as the provider reports it); no team or league
+ * reference, so historical rows never rewrite current team or league attributes.
+ */
+const levelSeasonKeys = () => ({
+  playerId: uuid("player_id")
+    .notNull()
+    .references(() => players.id),
+  seasonId: uuid("season_id")
+    .notNull()
+    .references(() => seasons.id),
+  levelCode: text("level_code").notNull(),
+  games: integer("games").notNull(),
+  teams: integer("teams").notNull(),
+});
+export const playerBattingLevelSeasons = pgTable(
+  "player_batting_level_seasons",
+  { id: id(), ...levelSeasonKeys(), ...batting(), ...timestamps() },
+  (t) => [
+    uniqueIndex("batting_level_season").on(t.playerId, t.seasonId, t.levelCode),
+  ],
+);
+export const playerPitchingLevelSeasons = pgTable(
+  "player_pitching_level_seasons",
+  { id: id(), ...levelSeasonKeys(), ...pitching(), ...timestamps() },
+  (t) => [
+    uniqueIndex("pitching_level_season").on(t.playerId, t.seasonId, t.levelCode),
+  ],
+);
 export const rankings = pgTable(
   "rankings",
   {
