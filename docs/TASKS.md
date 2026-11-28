@@ -152,14 +152,26 @@ guidance. Never regenerate or loosen. Risk: low.
 
 ## Milestone 4 — Analytics depth
 
-### T-401 Age relative to level — `in-review` (branch `claude/t-401-age-vs-level`; owner-approved 2026-11-26, D-020)
+### T-401 Age relative to level — `done` (PR #44, merged 2026-11-26; owner-approved, D-020)
 Proposal in DECISIONS.md: level median age from the snapshot, shown as "+/- years vs level median".
 Built: `src/services/players/level-age.ts` (definition in D-020). Directory column "±Lvl" (sortable, key `agerel`) and a
 "vs <level> median" item on the profile; /data glossary entry. Tests: hand-computed decimal ages, median odd/even, the
 population rule (lines + birth date), the 20-player minimum, sign/rounding/formatting, directory rows and sort.
 The value is added in `directoryRows`, not `levelDirectoryRows`, so the memoized/precomputed rows and the Momentum
 golden file (which records them) are unchanged — the golden file was not regenerated (D-015).
-### T-402 Breakout detection methodology — `needs-approval` (proposal only)
+### T-402 Breakout detection methodology — `done` (approved as proposed 2026-11-26, D-021); validation → T-405
+Proposal: docs/BREAKOUT-METHOD.md. Per-level, skill-rate (K%, BB%, ISO / K%, BB%) step-change flag with shrinkage,
+permutation-calibrated false-discovery control, a level-standing bar and persistence. Includes an offline validation plan
+on the 2026 snapshot (reliability, null calibration, holdout retention vs matched controls and naive baselines, churn)
+and success criteria. No code until the owner approves §9 of the document; the first deliverable after approval is the
+validation script and report only.
+### T-405 Breakout validation (offline) — `done` (run as approved; failed at every level, D-023; report docs/reports/breakout-validation-2026.md)
+Implement the pure detector (`src/analytics/breakout/`) and `npm run analytics:breakout-validate` per
+docs/BREAKOUT-METHOD.md §6 on the 2026 snapshot; report against §7. No user-facing feature, no new data.
+Built: detector, validation, report, `--synthetic`, 13 tests. Synthetic data shows the approved detector is precise
+(null ≤ 0.02 flags/date, every flag a planted change) but underpowered and unstable (§10). Needs from the owner:
+(1) the local snapshot (`npm run -s snapshot:export` with the read-only `DATABASE_URL`; the agent has no database
+credential), then `npm run -s analytics:breakout-validate > report.md`; (2) decided 2026-11-27: run as approved (D-022).
 ### T-403 Prospect Grade methodology — `needs-approval` (proposal only)
 ### T-404 Similarity methodology — `done` (owner-approved as proposed 2026-11-27, D-024)
 Method: docs/SIMILARITY-METHOD.md. Same-level, same-role, same-season profile similarity (shrunk, reliability-weighted
@@ -178,7 +190,7 @@ that pass and only after the owner approves showing it.
 (b) Approve showing hitter and pitcher lists on the profile as "similar so far this season" (browsing aid, no predictive
 claim), with the display rules 2–4 of §11 and a score floor fixed in advance (§12). No UI work before (b).
 
-### T-408 Similar players on the profile — `in-progress` (branch `claude/t-408-similarity-display`; D-028)
+### T-408 Similar players on the profile — `done` (PR #48, merged 2026-11-27; D-028)
 Profile section "Similar at <level> so far this season" per role (both for two-way players): up to 5 players with
 score ≥ 70, position, Bats/Throws, sample (flag † at ≥ 3× difference), score, observed rates, closest/furthest
 dimensions (furthest by weighted contribution), a Compare link; honest states for AFL, < 100 PA/BF, small position

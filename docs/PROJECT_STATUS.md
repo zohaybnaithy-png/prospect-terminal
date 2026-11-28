@@ -63,5 +63,5 @@ then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103
 
 ## Approvals needed from the owner (one consolidated list)
 1. Merge PRs the gate marks `needs-human` (sensitive paths); routine `ready` PRs merge via `npm run merge:staging`.
-2. T-301 re-scope (measure `playerProfile` instead of `playerLevels`; see TASKS.md).
-3. Standing: data licensing (T-601), analytics methodologies (T-401..404), prior-season ingestion (T-501), deploy hook for refresh (T-502).
+2. Breakout detection: validated as approved and failed at every level (D-023); not built. Merge PR #45 (needs-human: package.json).
+3. Standing: data licensing (T-601), analytics methodologies (T-403, T-404), prior-season ingestion (T-501), deploy hook for refresh (T-502).

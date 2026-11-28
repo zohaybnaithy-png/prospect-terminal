@@ -91,6 +91,11 @@ Not part of Momentum. `src/services/players/level-age.ts`: player decimal age mi
 players with a completed-game line at that level (known birth date), both on the level's as-of date; 0.1-year
 rounding; hidden below 20 qualifying players. Shown as the directory "±Lvl" column and on profiles.
 
+## Breakout detection (validation only, T-405, D-021)
+
+Not shown on the site. `src/analytics/breakout/` implements docs/BREAKOUT-METHOD.md for the offline validation
+(`npm run -s analytics:breakout-validate`); nothing ships until a level passes §7 of that document.
+
 ## Known limitations
 
 - The AFL season is ~4–6 weeks: for much of it the **30D window has no valid earlier baseline**, so 30D is shown as *unavailable* (never estimated). 14D persistence can only reach ~2–3 checkpoints.
