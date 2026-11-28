@@ -179,3 +179,17 @@ Proposed for the owner (not applied):
 3. Rank "closest / furthest" by weighted contribution w·Δz², not raw |Δz| (BABIP, weight 0.05–0.16, is named "furthest"
    for 59% of neighbors). Display only; scores unchanged.
 4. Mark neighbors whose sample differs from the player's by 3× or more; show observed rates beside shrunk ones.
+
+## 12. Hitter position-group rule (D-026) and re-validation
+
+Approved by the owner 2026-11-27 after §11. Hitters are compared only with qualified hitters of the same position group
+(primary position in the snapshot): **C**; **IF** (1B, 2B, 3B, SS); **OF** (LF, CF, RF); otherwise the position itself
+(DH and rare others). A group with fewer than 20 qualified hitters at the level gets no lists (in 2026 that is DH only,
+4–15 hitters per level). Everything else in §3–§5 is unchanged; pitchers are unchanged.
+
+Re-validation, fixed before the run (committed with this section): the hitter validation of §6 and §10 is re-run on the
+same snapshot with the same criteria (§7). Within the rule, the split-half chance is `10 / (group pool − 1)` per player,
+averaged, and the closest-OPS baseline searches the same group, so the rule cannot inflate criterion 1. The
+baseball-analyst agent reviews a new seeded random sample of lists for criterion 3. Sensitivity adds "without position
+groups". Fictional-data check with the rule: archetypes pass criteria 1 and 2 at all levels (overlap 0.59–0.62 vs
+chance 0.13 and baseline 0.13–0.17); noise-only data fails both (overlap 0.12–0.15 ≈ chance).

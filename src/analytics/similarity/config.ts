@@ -50,6 +50,10 @@ export interface SimilaritySettings {
   distance: DistanceKind;
   /** Minimum players with a known birth date for the level median age (D-020). */
   minAgeSample: number;
+  /** D-026: hitters are compared only with hitters of the same position group (C / IF / OF / other). */
+  positionGroups: boolean;
+  /** D-026: a position group with fewer qualified hitters gets no lists ("not enough similar players"). */
+  minGroupSize: number;
 }
 
 export const SIMILARITY_SETTINGS: SimilaritySettings = {
@@ -58,6 +62,8 @@ export const SIMILARITY_SETTINGS: SimilaritySettings = {
   useAge: true,
   distance: "euclidean",
   minAgeSample: 20,
+  positionGroups: true,
+  minGroupSize: 20,
 };
 
 /** §6 and §7 validation parameters, fixed before the real-data run. */

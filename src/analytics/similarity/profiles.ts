@@ -11,10 +11,21 @@ import { SIMILARITY_DIMS, SIMILARITY_SETTINGS, type SimilarityRole, type Similar
 
 // ---------- data ----------
 
+/** D-026 position groups from the primary position: C, IF (1B 2B 3B SS), OF (LF CF RF), or the position itself. */
+export function positionGroup(position: string | null | undefined) {
+  const pos = (position ?? "").toUpperCase();
+  if (pos === "C") return "C";
+  if (["1B", "2B", "3B", "SS", "IF"].includes(pos)) return "IF";
+  if (["LF", "CF", "RF", "OF"].includes(pos)) return "OF";
+  return pos || "?";
+}
+
 /** One player's games at one level in date order; per-game numerators and denominators per dimension. */
 export interface PlayerGames {
   id: string;
   birthDate: string | null;
+  /** Position group (D-026); pitchers are "P". */
+  group: string;
   dates: string[];
   /** PA (hitters) / BF (pitchers) per game. */
   opp: number[];
@@ -34,13 +45,14 @@ export interface RoleGames {
 export function roleGamesFromSnapshot(snapshot: AflSnapshot, role: SimilarityRole): RoleGames {
   const ds = buildDataset(snapshot);
   const births = new Map(snapshot.players.map((p) => [p.id, p.birthDate]));
+  const positions = new Map(snapshot.players.map((p) => [p.id, p.primaryPosition]));
   const nDims = SIMILARITY_DIMS[role].length;
   const players: PlayerGames[] = [];
   const source = role === "hitter" ? ds.batting : ds.pitching;
   for (const [id, raw] of source) {
     const lines = [...raw].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const p: PlayerGames = {
-      id, birthDate: births.get(id) ?? null, dates: [], opp: [],
+      id, birthDate: births.get(id) ?? null, group: role === "pitcher" ? "P" : positionGroup(positions.get(id)), dates: [], opp: [],
       num: Array.from({ length: nDims }, () => []), den: Array.from({ length: nDims }, () => []), base: [],
     };
     const push = (date: string, opp: number, pairs: [number, number][], base: number[]) => {
@@ -87,6 +99,7 @@ export function roleGamesFromSnapshot(snapshot: AflSnapshot, role: SimilarityRol
 export interface Totals {
   id: string;
   birthDate: string | null;
+  group: string;
   games: number;
   opp: number;
   num: number[];
@@ -96,7 +109,7 @@ export interface Totals {
 
 export function totals(p: PlayerGames, pick: (g: number) => boolean): Totals {
   const t: Totals = {
-    id: p.id, birthDate: p.birthDate, games: 0, opp: 0,
+    id: p.id, birthDate: p.birthDate, group: p.group, games: 0, opp: 0,
     num: p.num.map(() => 0), den: p.den.map(() => 0), base: (p.base[0] ?? []).map(() => 0),
   };
   for (let g = 0; g < p.dates.length; g++) {
@@ -229,6 +242,7 @@ export interface DimModel {
 
 export interface Profile {
   id: string;
+  group: string;
   /** PA / BF in the range. */
   n: number;
   games: number;
@@ -248,6 +262,8 @@ export interface Population {
   asOf: string;
   dims: DimModel[];
   ageMedian: number | null;
+  /** Qualified players per position group. */
+  groupSizes: Map<string, number>;
   ageMean: number;
   ageSd: number;
   /** Qualified players (n ≥ minSample), sorted by id. */
@@ -287,7 +303,7 @@ export function population(
     const shrunk = t.num.map((x, j) => shrink(x, t.den[j], dims[j].mu, dims[j].k));
     const a = ages.get(t.id);
     return {
-      id: t.id, n: t.opp, games: t.games, den: [...t.den], raw, shrunk, z: [], rel: t.den.map((n, j) => reliabilityAt(n, dims[j].k)),
+      id: t.id, group: t.group, n: t.opp, games: t.games, den: [...t.den], raw, shrunk, z: [], rel: t.den.map((n, j) => reliabilityAt(n, dims[j].k)),
       age: ageMedian !== null && a !== undefined ? a - ageMedian : null, ageZ: null, totals: t,
     };
   });
@@ -302,7 +318,9 @@ export function population(
   const ageMean = mean(av);
   const ageSd = sd(av);
   for (const p of profiles) p.ageZ = p.age !== null && ageSd > 0 ? (p.age - ageMean) / ageSd : null;
-  return { role, asOf, dims, ageMedian, ageMean, ageSd, profiles, byId: new Map(profiles.map((p) => [p.id, p])) };
+  const groupSizes = new Map<string, number>();
+  for (const p of profiles) groupSizes.set(p.group, (groupSizes.get(p.group) ?? 0) + 1);
+  return { role, asOf, dims, ageMedian, groupSizes, ageMean, ageSd, profiles, byId: new Map(profiles.map((p) => [p.id, p])) };
 }
 
 /** Per-dimension pieces of a pair: z difference and weight (age last, when used and known for both). */
@@ -374,6 +392,9 @@ function mahalanobis(parts: PairPart[], inv: number[][], nDims: number, useAge: 
   return Math.sqrt(Math.max(0, q) / wsum);
 }
 
+/** D-026 applies to hitters only (pitcher usage is already in the profile as BF per appearance). */
+export const isGrouped = (pop: Pick<Population, "role">, settings: SimilaritySettings) => pop.role === "hitter" && settings.positionGroups;
+
 export interface Neighbor {
   id: string;
   distance: number;
@@ -394,10 +415,12 @@ export function similarPlayers(
 ): Neighbor[] {
   const me = pop.byId.get(id);
   if (!me) return [];
+  const grouped = isGrouped(pop, settings);
+  if (grouped && (pop.groupSizes.get(me.group) ?? 0) < settings.minGroupSize) return [];
   const nDims = SIMILARITY_DIMS[pop.role].length;
   const out: Neighbor[] = [];
   for (const o of pop.profiles) {
-    if (o.id === id || (opts.pool && !opts.pool.has(o.id))) continue;
+    if (o.id === id || (opts.pool && !opts.pool.has(o.id)) || (grouped && o.group !== me.group)) continue;
     const parts = pairParts(me, o, settings);
     const dist = settings.distance === "mahalanobis" && opts.inv ? mahalanobis(parts, opts.inv, nDims, settings.useAge) : distance(parts);
     if (!Number.isFinite(dist)) continue;
