@@ -1,7 +1,7 @@
 # Player similarity — methodology proposal (T-404, P-004)
 
 **Status: approved as proposed 2026-11-27 (D-024); validated 2026-11-27 (D-025, §11): pitchers usable as a browsing aid, hitters
-pass with the position-group rule (D-026, D-027, §12). Nothing is shown on the site.** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
+pass with the position-group rule (D-026, D-027, §12). Shown on profiles as a browsing aid since D-028 (score floor 70).** Parameters marked *(owner)* are decisions (the proposed defaults were approved). Parameters marked
 *(calibrate)* are set by the validation in §6 before anything is shown. As with breakout detection, the owner chooses
 among options **before** the real-data run, never after.
 

@@ -89,3 +89,16 @@ export const SIMILARITY_VALIDATION = {
   /** Sensitivity variants (reported only; the approved defaults are what is validated). */
   sensitivityMinSamples: [75, 150],
 } as const;
+
+/**
+ * Display rules (D-028, owner-approved 2026-11-27, T-408): profile lists are a browsing aid only ("similar so far this
+ * season"), never a projection.
+ */
+export const SIMILARITY_DISPLAY = {
+  /** A neighbor below this score is not listed; with none at or above it the list says "no close match". */
+  scoreFloor: 70,
+  /** Flag a neighbor whose PA/BF differs from the player's by this factor or more. */
+  sampleGapFactor: 3,
+  /** "Closest" names only dimensions weighted at least this much (§3: reliability 0.3). */
+  closestMinWeight: 0.3,
+} as const;

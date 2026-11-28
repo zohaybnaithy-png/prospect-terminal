@@ -138,3 +138,30 @@ test("the validation is deterministic", () => {
   const b = validateRole("Test", s, "pitcher");
   assert.equal(JSON.stringify(a), JSON.stringify(b));
 });
+
+test("D-028 display: floor, position groups, explanations, and the unavailable states", async () => {
+  const { similarView, explainPair } = await import("../src/services/players/similar");
+  const { SIMILARITY_DISPLAY } = await import("../src/analytics/similarity/config");
+  const s = syntheticSeason({ hitters: 200, pitchers: 60, seed: 9 });
+  const pos = new Map(s.players.map((p) => [p.id, p.primaryPosition]));
+  const group = (id: string) => positionGroup(pos.get(id));
+  let shown = 0;
+  for (const p of s.players.slice(0, 40)) {
+    const v = similarView(s, "aa", p.id, "hitter");
+    assert.ok(v.status === "ok" || v.status === "no-close-match", v.status);
+    if (v.status !== "ok") continue;
+    shown++;
+    assert.ok(v.rows.length <= 5);
+    for (const r of v.rows) {
+      assert.ok(r.score >= SIMILARITY_DISPLAY.scoreFloor);
+      assert.equal(group(r.id), group(p.id), "same position group");
+      assert.notEqual(r.id, p.id);
+    }
+  }
+  assert.ok(shown > 20);
+  assert.equal(similarView(s, "afl", s.players[0].id, "hitter").status, "not-offered");
+  assert.equal(similarView(s, "aa", "00000000-0000-4000-9000-999999999999", "hitter").status, "not-enough-data");
+  // "Furthest" weighs the difference by reliability; a barely weighted dimension is never the biggest difference.
+  const e = explainPair([{ dim: 0, dz: 1, w: 1 }, { dim: 3, dz: 3, w: 0.05 }, { dim: 1, dz: 0.1, w: 0.6 }, { dim: -1, dz: 0.5, w: 1 }], "hitter", 1);
+  assert.deepEqual(e, { furthest: ["K%"], closest: ["BB%"] });
+});
