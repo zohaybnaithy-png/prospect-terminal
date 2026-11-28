@@ -204,6 +204,9 @@ Acceptance: unit tests, lint/typecheck/test/build, CI, verify:preview.
 ## Milestone 5–6 — Data breadth and launch (owner-gated)
 
 ### T-501 Prior seasons ingestion — `needs-approval` (live ingestion + Neon capacity)
+Sizing estimate for the Prospect Grade (D-029): docs/HISTORICAL-INGESTION-SIZING.md. Recommended: season totals
+(MiLB 2012–2019, 2021; MLB 2013–2026) as one new record type, ≈ 100k rows, stays on Neon Free; per-game history
+(≈ 2M lines) likely needs paid storage. Owner decisions in §5 of that doc. Nothing ingested.
 ### T-502 In-season automatic refresh — `needs-approval` (Vercel deploy hook + scheduler secret)
 ### T-601 Data licensing — `blocked` (legal decision; hard launch blocker)
 ### T-602 Privacy notice + retention, error monitoring, production verification — `blocked` on T-601

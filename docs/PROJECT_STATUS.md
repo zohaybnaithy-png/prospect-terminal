@@ -33,6 +33,7 @@ Reading: directory pages are CDN hits; a profile's first render costs 0.2–1.1 
 then serves from the CDN at ~100 ms. Use these as the "before" numbers for T-103 and later performance work.
 
 ## Recent work
+- 2026-11-28: Prospect Grade approved (D-029). Historical data sizing estimate written (T-501, docs/HISTORICAL-INGESTION-SIZING.md): season totals recommended; awaiting owner decisions.
 - 2026-11-28: Prospect Grade proposal written (T-403, docs/GRADE-METHOD.md): needs historical seasons (T-501) before any Grade can be validated; awaiting owner decisions §9.
 - 2026-11-27: Similar players on profiles (T-408, D-028): browsing aid, score floor 70, position groups for hitters; method on `/data#similarity`.
 - 2026-11-27: Hitter position-group rule approved (D-026) and re-validated (D-027): hitters and pitchers qualify as a browsing aid at every level. Display awaits owner approval (T-407 b).
