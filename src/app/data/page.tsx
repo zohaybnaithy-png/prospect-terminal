@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SIMILARITY_DISPLAY } from "@/analytics/similarity/config";
 import Link from "@/components/ui/app-link";
 import {
   COMPONENTS_BY_ROLE,
@@ -52,6 +53,7 @@ export default function DataPage() {
         <a href="#momentum">Momentum</a>
         <a href="#reading">Reading Momentum</a>
         <a href="#statistics">Statistics</a>
+        <a href="#similarity">Similar players</a>
         <a href="#privacy">Privacy</a>
         <a href="#in-development">In development</a>
       </nav>
@@ -298,6 +300,28 @@ export default function DataPage() {
               ))}
             </dl>
           </section>
+          <section id="similarity" className="page-section method-section">
+            <h2>Similar players</h2>
+            <p className="method-text">
+              A profile&apos;s &ldquo;Similar so far this season&rdquo; table lists up to five players at the same
+              level, in the same role, whose 2026 profile there is closest. Hitters are compared on strikeout rate,
+              walk rate, ISO, BABIP, a stolen-base rate and age vs level, and only with hitters in the same position
+              group (catchers, infielders, outfielders). Pitchers are compared on strikeout rate, walk rate, home runs
+              per batter faced, BABIP allowed, batters faced per appearance (starter vs reliever usage) and age vs
+              level. Each rate is pulled toward the level average in proportion to how noisy it is at the
+              player&apos;s sample, and noisy rates count for less. Players need 100 PA or BF at the level; matches
+              scoring below {SIMILARITY_DISPLAY.scoreFloor} (of 100) are not listed. Nothing is combined across
+              levels, and the Fall League is not covered.
+            </p>
+            <p className="method-text">
+              Validated on the 2026 season before release: lists are stable (built from alternate games, they
+              overlap 3–8 times more than chance and more than matching on a single statistic), and a review of
+              random lists found no systematic mismatches once position groups were added. Similar players did
+              not predict a player&apos;s later rates beyond the player&apos;s own line, so the table is a browsing
+              aid, not a projection or a scouting comparison.
+            </p>
+          </section>
+
           <section id="privacy" className="page-section method-section">
             <h2>Privacy</h2>
             <p className="method-text">
@@ -328,7 +352,7 @@ export default function DataPage() {
                   "Breakout detection",
                   "Flags sustained, skill-driven improvement.",
                 ],
-                ["Similarity", "Historical comparable players."],
+                ["Historical comparables", "Players who looked like this at a level in past seasons, and what came next."],
                 [
                   "Top prospect rankings",
                   "Overall list, from a licensed source or the Grade.",
